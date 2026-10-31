@@ -1,4 +1,5 @@
 import type { T } from '../i18n'
+import { formatFullDate } from '../calendar'
 import { BellIcon, CalendarIcon, CloseIcon, InfoIcon, SearchIcon } from '../icons'
 
 type Props = {
@@ -6,10 +7,12 @@ type Props = {
   query: string
   unreadCount: number
   isOpen: boolean
+  selectedDate: Date
   onQueryChange: (query: string) => void
   onSearchSubmit: () => void
   onToggleLang: () => void
   onOpenNotifications: () => void
+  onOpenCalendar: () => void
   onOpenGuide: () => void
 }
 
@@ -64,12 +67,18 @@ export function Topbar({
   query,
   unreadCount,
   isOpen,
+  selectedDate,
   onQueryChange,
   onSearchSubmit,
   onToggleLang,
   onOpenNotifications,
+  onOpenCalendar,
   onOpenGuide,
 }: Props) {
+  const dateLabel = formatFullDate(selectedDate, t.dir === 'rtl' ? 'ar-EG' : 'en-US')
+  const dateButtonClass =
+    'flex items-center gap-2 whitespace-nowrap rounded-2xl border border-cream-200 bg-cream-50 px-4 py-2.5 text-sm font-semibold text-stone-600 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
+
   return (
     <header className="mx-4 mt-3 rounded-4xl bg-white px-4 py-3 shadow-card sm:mx-6 sm:mt-4 sm:px-6 sm:py-4 lg:mt-6">
       <div className="flex items-center gap-2.5 sm:gap-4">
@@ -87,10 +96,17 @@ export function Topbar({
           className="hidden max-w-xl flex-1 sm:block"
         />
 
-        <div className="hidden items-center gap-2 whitespace-nowrap rounded-2xl border border-cream-200 bg-cream-50 px-4 py-2.5 text-sm font-semibold text-stone-600 lg:flex">
+        <button
+          type="button"
+          onClick={onOpenCalendar}
+          aria-label={`${t.calendar.title}: ${dateLabel}`}
+          aria-haspopup="dialog"
+          title={t.calendar.title}
+          className={`hidden lg:flex ${dateButtonClass}`}
+        >
           <CalendarIcon className="h-4 w-4 text-stone-400" />
-          {t.today}
-        </div>
+          {dateLabel}
+        </button>
 
         <button
           type="button"
@@ -145,10 +161,17 @@ export function Topbar({
         className="mt-3 sm:hidden"
       />
 
-      <div className="mt-3 flex w-fit items-center gap-2 rounded-2xl border border-cream-200 bg-cream-50 px-4 py-2.5 text-xs font-semibold text-stone-600 lg:hidden">
+      <button
+        type="button"
+        onClick={onOpenCalendar}
+        aria-label={`${t.calendar.title}: ${dateLabel}`}
+        aria-haspopup="dialog"
+        title={t.calendar.title}
+        className={`mt-3 w-fit text-xs lg:hidden ${dateButtonClass}`}
+      >
         <CalendarIcon className="h-4 w-4 text-stone-400" />
-        {t.today}
-      </div>
+        {dateLabel}
+      </button>
     </header>
   )
 }

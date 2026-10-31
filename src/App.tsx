@@ -3,12 +3,14 @@ import type { Lang } from './i18n'
 import { translations } from './i18n'
 import type { OrderRow, OrderStatus, Profile, SectionKey, StatKey } from './types'
 import { filterOrders } from './orders'
+import { formatFullDate, parseDateKey, startOfDay, toDateKey } from './calendar'
 import { BottomNav, MobileHeader, Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
 import { StatCard } from './components/StatCard'
 import { TopItems } from './components/TopItems'
 import { SalesChart } from './components/SalesChart'
 import { OrdersTable } from './components/OrdersTable'
+import { CalendarDialog } from './components/Calendar'
 import {
   GuideDialog,
   NotificationsDialog,
@@ -21,6 +23,7 @@ import {
 import { BagIcon, CheckIcon, CoinsIcon, StarIcon, UsersIcon } from './icons'
 
 const PROFILE_KEY = 'karam-restaurant-profile'
+const DATE_KEY = 'karam-dashboard-date'
 
 type Stat = {
   key: StatKey
@@ -42,6 +45,7 @@ type ModalState =
   | { type: 'notifications' }
   | { type: 'settings' }
   | { type: 'guide' }
+  | { type: 'calendar' }
   | null
 
 export default function App() {
@@ -54,6 +58,7 @@ export default function App() {
   const [modal, setModal] = useState<ModalState>(null)
   const [readNotifications, setReadNotifications] = useState<string[]>([])
   const [profile, setProfile] = useState<Profile>({})
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date())
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null)
 
   const [statuses, setStatuses] = useState<Record<string, OrderStatus>>(() => {
@@ -100,6 +105,17 @@ export default function App() {
         phone: typeof record.phone === 'string' ? record.phone : undefined,
         address: typeof record.address === 'string' ? record.address : undefined,
       })
+    } catch {
+      // Ignore unavailable or malformed storage.
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DATE_KEY)
+      if (!raw) return
+      const parsed = parseDateKey(raw)
+      if (parsed) setSelectedDate(parsed)
     } catch {
       // Ignore unavailable or malformed storage.
     }
@@ -201,6 +217,18 @@ export default function App() {
     showToast(t.settings.saved)
   }
 
+  const selectDate = (date: Date) => {
+    const next = startOfDay(date)
+    setSelectedDate(next)
+    try {
+      localStorage.setItem(DATE_KEY, toDateKey(next))
+    } catch {
+      // Storage can be unavailable in private mode; the UI still updates.
+    }
+    setModal(null)
+    showToast(`${t.calendar.dateUpdated}: ${formatFullDate(next, t.dir === 'rtl' ? 'ar-EG' : 'en-US')}`)
+  }
+
   return (
     <div className="min-h-screen overflow-x-clip bg-cream-50">
       <div className="flex">
@@ -244,10 +272,12 @@ export default function App() {
             query={query}
             unreadCount={unreadCount}
             isOpen={isOpen}
+            selectedDate={selectedDate}
             onQueryChange={setQuery}
             onSearchSubmit={() => navigate('orders')}
             onToggleLang={() => setLang(lang === 'ar' ? 'en' : 'ar')}
             onOpenNotifications={() => setModal({ type: 'notifications' })}
+            onOpenCalendar={() => setModal({ type: 'calendar' })}
             onOpenGuide={() => setModal({ type: 'guide' })}
           />
 
@@ -365,6 +395,15 @@ export default function App() {
       )}
 
       {modal?.type === 'guide' && <GuideDialog t={t} onClose={() => setModal(null)} />}
+
+      {modal?.type === 'calendar' && (
+        <CalendarDialog
+          t={t}
+          selectedDate={selectedDate}
+          onSelect={selectDate}
+          onClose={() => setModal(null)}
+        />
+      )}
 
       {toast && (
         <div

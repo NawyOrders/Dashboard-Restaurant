@@ -10,6 +10,15 @@ export const translations = {
     greetingClosed: 'مغلق الآن – راجع ملخص أداء اليوم',
     searchPlaceholder: 'ابحث عن طلب، صنف، أو عميل...',
     today: 'الأربعاء، 26 أكتوبر 2026',
+    calendar: {
+      title: 'اختيار التاريخ',
+      subtitle: 'اختر يوماً لعرض بياناته',
+      today: 'اليوم',
+      previousMonth: 'الشهر السابق',
+      nextMonth: 'الشهر التالي',
+      selectDate: 'اختر يوماً',
+      dateUpdated: 'تم تحديث التاريخ',
+    },
     stats: {
       salesToday: 'المبيعات اليوم',
       newOrders: 'الطلبات الجديدة',
@@ -170,6 +179,7 @@ export const translations = {
       subtitle: 'شرح سريع لوظيفة كل زر في اللوحة',
       items: [
         { name: 'البحث', desc: 'ابحث عن أي طلب برقمه أو اسم العميل أو الأصناف، ثم اضغط Enter للانتقال إلى النتائج.' },
+        { name: 'التقويم', desc: 'افتح التقويم لاختيار أي يوم وتحديث التاريخ المعروض في اللوحة.' },
         { name: 'الإشعارات', desc: 'يفتح قائمة التنبيهات الحديثة، ويمكنك تعليمها كمقروءة.' },
         { name: 'دليل الأزرار', desc: 'هذه النافذة التي تشرح وظيفة كل زر.' },
         { name: 'تبديل اللغة', desc: 'يغيّر الواجهة بالكامل بين العربية والإنجليزية مع اتجاه الكتابة.' },
@@ -193,6 +203,15 @@ export const translations = {
     greetingClosed: 'Closed now – here is today’s performance summary',
     searchPlaceholder: 'Search for an order, item, or customer...',
     today: 'Wednesday, October 26, 2026',
+    calendar: {
+      title: 'Select Date',
+      subtitle: 'Pick a day to view its data',
+      today: 'Today',
+      previousMonth: 'Previous month',
+      nextMonth: 'Next month',
+      selectDate: 'Select a day',
+      dateUpdated: 'Date updated',
+    },
     stats: {
       salesToday: 'Today’s Sales',
       newOrders: 'New Orders',
@@ -353,6 +372,7 @@ export const translations = {
       subtitle: 'A quick explanation of every button in the dashboard',
       items: [
         { name: 'Search', desc: 'Find any order by number, customer, or item, then press Enter to jump to the results.' },
+        { name: 'Calendar', desc: 'Open the calendar to pick any day and update the date shown on the dashboard.' },
         { name: 'Notifications', desc: 'Opens recent alerts and lets you mark them as read.' },
         { name: 'Button guide', desc: 'This window that explains what every button does.' },
         { name: 'Language toggle', desc: 'Switches the whole interface between Arabic and English, including writing direction.' },
