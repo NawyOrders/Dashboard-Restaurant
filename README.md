@@ -8,17 +8,15 @@ The Restaurant Admin Dashboard provides a centralized interface for managing res
 
 ## Tech Stack
 
-- **React** — UI library
+- **React 18** — UI library
 - **TypeScript** — Type safety
 - **Vite** — Development server and build tool
-- **TanStack Query** — Server-state management and caching
-- **React Router** — Client-side routing
-- **Vitest** — Unit and integration testing
-- **ESLint** — Code quality and linting
+- **Tailwind CSS** — Utility-first styling and responsive design
+- **Cairo / Tajawal** — Arabic fonts (Google Fonts)
 
 ## Requirements
 
-- Node.js 18+ (tested with Node.js 20)
+- Node.js 18+ (tested with Node.js 20+)
 - npm
 
 ## Getting Started
@@ -52,103 +50,77 @@ The application will be available at:
 |---|---|
 | `npm run dev` | Start the Vite development server |
 | `npm run build` | Run TypeScript checks and build for production |
-| `npm run lint` | Run ESLint (zero warnings allowed) |
-| `npm run typecheck` | Run TypeScript checks |
-| `npm test` | Run tests using Vitest |
-| `npm run test:coverage` | Run tests with coverage thresholds enforced |
 | `npm run preview` | Preview the production build |
 
 ## Demo Environment
 
-The application currently uses a **mock data provider** for development and testing.
+The application currently uses **hard-coded demo data** rendered directly by the components for development and UI work.
 
-### Demo Data Indicator
+> **Note:** Dashboard KPIs, charts, top items, and order lists are static demo values. No real backend is connected yet.
 
-When the mock provider is active, a `Demo data` badge is displayed in the application interface to distinguish mock information from production data.
+### Planned: Mock API Provider
 
-Dashboard KPIs are dynamically calculated from the data returned by the provider. No KPI values are hard-coded.
+The following capabilities are planned but **not yet implemented**:
 
-### Testing Error States
+- A mock data provider with simulated network latency.
+- A `Demo data` badge in the interface when the mock provider is active.
+- A `?mockError=1` query parameter to simulate API failures for error-state testing.
+- TanStack Query for server-state management and caching.
+- Vitest for unit and integration testing, and ESLint for linting.
 
-Append the following query parameter to any application URL to simulate API failures:
-
-```text
-?mockError=1
-```
-
-Every API request will reject, allowing error handling and failure states to be tested.
-
-## Restaurant Management Scope
-
-The Restaurant Admin Dashboard is designed around individual restaurant operations rather than platform-wide administration.
-
-Its responsibility is to provide restaurant-specific access to operational information and management functionality.
-
-The exact available modules and permissions depend on the features implemented in the application.
-
-**Platform administration remains outside this application**, including:
-
-- Creating and managing restaurant tenants.
-- Managing platform-wide subscriptions.
-- Configuring platform packages and entitlements.
-- Monitoring delivery status across all restaurants.
-- Managing global platform settings.
-
-These responsibilities belong to the Nawy Orders Super Admin Dashboard.
-
-## Project Architecture
-
-The project follows a **Clean Architecture** approach, keeping business logic independent from frameworks and external implementations.
-
-Dependencies flow inward:
-
-`Presentation → Application → Domain`
-
-The Infrastructure layer implements the interfaces defined by the Application layer.
+## Project Structure
 
 ```text
 src/
-├── domain/                  # Enterprise business rules
-│   ├── entities/            # Domain entities and enums
-│   └── rules/               # Business rules, permissions and validation
-│
-├── application/             # Application orchestration
-│   ├── dto.ts               # API contracts and data shapes
-│   ├── ports.ts             # Repository, clock, ID and permission interfaces
-│   └── use-cases/           # Use cases and backend composition
-│
-├── infrastructure/          # Implementations of application ports
-│   ├── repositories/        # In-memory data stores
-│   ├── mock/                # Mock API adapter
-│   ├── seed/                # Development seed data
-│   ├── clock/               # System clock implementation
-│   └── ids/                 # ID generator
-│
-├── presentation/            # React presentation layer
-│   ├── components/          # UI kit and application layout
-│   ├── features/            # Dashboard feature modules
-│   ├── hooks/               # Custom React hooks
-│   ├── i18n/                # Internationalization
-│   └── lib/                 # Display and utility helpers
-│
-├── app/                     # Application composition root
-│   └── composition.ts       # Connects infrastructure to use cases
-│
-├── config/                  # Application policies and constants
-│
-└── test/                    # Test setup, fixtures and harness
+├── components/          # UI components (Sidebar, Topbar, StatCard, TopItems,
+│                        # SalesChart, OrdersTable)
+├── icons.tsx            # SVG icon set used across the UI
+├── i18n.ts              # Arabic/English translations, direction, and demo data
+├── App.tsx              # Page composition and language state
+├── main.tsx             # React entry point
+└── index.css            # Tailwind layers and global styles
 ```
 
-### Architecture Documentation
+### Component Responsibilities
 
-Additional project documentation:
+| Component | Purpose |
+|---|---|
+| `Sidebar` | Desktop sidebar: brand, open switch, navigation, settings |
+| `MobileHeader` | Mobile top card: avatar, notifications, open switch, brand |
+| `BottomNav` | Mobile fixed bottom navigation (5 items) |
+| `Topbar` | Search, date pill, notifications, greeting, language toggle |
+| `StatCard` | KPI cards with delta badges (responsive column/row layout) |
+| `TopItems` | Horizontal bar list of best-selling items |
+| `SalesChart` | SVG area chart with week/month toggle and tooltip |
+| `OrdersTable` | Latest orders: desktop table, mobile two-column cards |
 
-- `agent.md` — Architecture rules and development guidelines (Section 6).
-- `design.md` — Visual system and UI design guidelines.
-- `ASSUMPTIONS.md` — Decisions made where the original specification was incomplete.
-- `QA_REPORT.md` — Bug resolutions, testing and verification results.
+## Internationalization (RTL / LTR)
 
-Important assumptions are also documented in the source code using `// ASSUMPTION:` comments.
+The dashboard ships with full **Arabic (RTL)** and **English (LTR)** support:
+
+- All strings for both languages live in `src/i18n.ts`.
+- Toggling the language button switches `dir`/`lang` on `<html>`, the page title, and every label instantly.
+- Layouts use logical CSS properties (`start`/`end`, `ms-*`, `ps-*`, `border-s-*`) so the entire UI mirrors automatically.
+- Arabic is the default language; fonts (Cairo/Tajawal) load from Google Fonts.
+
+## Responsive Design
+
+The dashboard supports desktop, tablet, and mobile layouts.
+
+| Screen Size | Layout |
+|---|---|
+| 1280px and above (xl) | Full sidebar + 4-column KPI grid |
+| 1024px – 1279px (lg) | Full sidebar, 2-column KPI grid |
+| Below 1024px | Mobile header card, 2-column KPI grid, reordered sections |
+| Below 768px (md) | Orders become cards, chart scrolls horizontally |
+
+### Mobile Behavior
+
+- The desktop sidebar is replaced by a `MobileHeader` card and a fixed `BottomNav` with 5 items; the active item renders as a raised red pill with a badge.
+- KPI cards switch from row layout to a centered column layout (icon, label, value, delta).
+- The greeting block and date pill render on their own rows between the header and the search bar.
+- Section order adapts: the weekly sales chart appears above top-selling items on mobile, while they sit side-by-side on desktop.
+- The orders table becomes stacked two-column cards with a divider, status badge, and total.
 
 ## Restaurant Data Isolation
 
@@ -164,124 +136,32 @@ Nawy Orders operates as a multi-tenant platform. Each restaurant must access onl
 
 **Important:** Frontend route protection and UI permissions are not substitutes for backend authorization and tenant isolation.
 
-## Backend Integration
+## Backend Integration (Planned)
 
-The dashboard is designed to support switching from the mock provider to a real backend without changing feature components.
+The current UI is static demo data. The planned integration approach:
 
-### API Contract
+1. Define a single `Api` interface describing all dashboard operations (KPIs, sales series, top items, orders).
+2. Implement a mock adapter (seeded in-memory data, simulated latency) behind that interface.
+3. Swap the mock adapter for an HTTP adapter (`fetch`/`axios`) without changing feature components.
+4. Enforce restaurant-level authorization and tenant isolation on the backend for every request.
 
-The application depends on a single `Api` interface defined in:
+Until that interface exists, all data lives in `src/i18n.ts` and component props.
 
-```text
-src/application/dto.ts
-```
+## Roadmap
 
-The API implementation is connected through the composition root:
+- [ ] Mock API provider with latency and `?mockError=1` failure simulation
+- [ ] `Demo data` indicator badge
+- [ ] TanStack Query integration with cache invalidation
+- [ ] React Router for orders, menu, reports, and settings pages
+- [ ] ESLint + Vitest setup (`npm run lint`, `npm test`, coverage)
+- [ ] Real backend HTTP adapter
 
-```text
-src/app/composition.ts
-```
+## Platform Administration (Out of Scope)
 
-Current mock configuration:
+The following remains outside this application and belongs to the Nawy Orders Super Admin Dashboard:
 
-```typescript
-export const api: Api = createMockApi(backend, {
-  minDelayMs,
-  maxDelayMs,
-});
-
-export const IS_MOCK_PROVIDER = true;
-```
-
-### Connecting a Real Backend
-
-1. Create an HTTP API adapter, for example:
-
-```text
-src/infrastructure/http/http-api.ts
-```
-
-2. Implement the existing `Api` interface:
-
-```typescript
-import type { Api } from '@/application';
-
-export const httpApi: Api = {
-  // Implement the methods defined in the Api interface.
-  // Connect each method to the corresponding backend endpoint.
-};
-```
-
-3. Update `src/app/composition.ts` to use the HTTP adapter.
-
-4. Set:
-
-```typescript
-export const IS_MOCK_PROVIDER = false;
-```
-
-5. Ensure every implementation matches the existing `Api` interface and preserves restaurant-level authorization and data isolation.
-
-### Restaurant Context
-
-All restaurant-scoped API operations must use the authenticated user's authorized restaurant context.
-
-The backend must validate access to the requested restaurant and enforce tenant isolation for every relevant operation.
-
-The frontend must not rely on a client-provided restaurant identifier as proof of authorization.
-
-### Query Cache Invalidation
-
-When implementing mutations, invalidate the relevant TanStack Query cache keys to keep restaurant information synchronized with the backend.
-
-Cache invalidation should follow the existing query-key conventions defined by the application.
-
-## Responsive Design
-
-The dashboard supports desktop, tablet, and mobile layouts.
-
-| Screen Size | Layout |
-|---|---|
-| 1280px and above | Full dashboard layout |
-| 768px – 1279px | Collapsed sidebar with icon rail and tooltips |
-| Below 768px | Off-canvas sidebar drawer |
-
-### Mobile Navigation
-
-The mobile navigation drawer:
-
-- Opens through the top-bar hamburger button.
-- Displays both icons and full navigation labels.
-- Closes when tapping the backdrop.
-- Closes when pressing `Escape`.
-- Closes automatically after route navigation.
-- Traps keyboard focus while open.
-
-### RTL Readiness
-
-The application uses logical CSS properties throughout the layout, including:
-
-- `ms-*`
-- `ps-*`
-- `start-*`
-
-This approach prepares the UI for future Arabic and RTL support without requiring major layout restructuring.
-
-All English UI strings are centralized in:
-
-```text
-src/i18n/en.ts
-```
-
-## Development Guidelines
-
-Before making changes, review the following files:
-
-1. `agent.md` — Architecture and implementation rules.
-2. `design.md` — UI consistency and design system.
-3. `ASSUMPTIONS.md` — Existing business decisions.
-4. `QA_REPORT.md` — Known issues and verification history.
-
-**Important:** Maintain the separation between domain logic, application use cases, infrastructure adapters, and React presentation components when adding new features.
-
-Always preserve restaurant-level data isolation, authorization rules, and existing application architecture when implementing new functionality.
+- Creating and managing restaurant tenants.
+- Managing platform-wide subscriptions.
+- Configuring platform packages and entitlements.
+- Monitoring delivery status across all restaurants.
+- Managing global platform settings.
