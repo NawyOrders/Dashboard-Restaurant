@@ -91,8 +91,10 @@ src/
 | `Topbar` | Search, date pill, notifications, greeting, language toggle |
 | `StatCard` | KPI cards with delta badges (responsive column/row layout) |
 | `TopItems` | Horizontal bar list of best-selling items |
-| `SalesChart` | SVG area chart with week/month toggle and tooltip |
-| `OrdersTable` | Latest orders: desktop table, mobile two-column cards |
+| `SalesChart` | Responsive SVG area chart with week/month toggle, tap/hover values, RTL-aware ordering |
+| `OrdersTable` | Latest orders: desktop table, mobile two-column cards, live search results |
+| `Modal` | Accessible dialog shell: focus trap, Escape/backdrop close, scroll lock, mobile bottom sheet |
+| `Dialogs` | Detail views for orders, all orders, metrics, top items, notifications, settings, and the button guide |
 
 ## Internationalization (RTL / LTR)
 
@@ -112,15 +114,31 @@ The dashboard supports desktop, tablet, and mobile layouts.
 | 1280px and above (xl) | Full sidebar + 4-column KPI grid |
 | 1024px – 1279px (lg) | Full sidebar, 2-column KPI grid |
 | Below 1024px | Mobile header card, 2-column KPI grid, reordered sections |
-| Below 768px (md) | Orders become cards, chart scrolls horizontally |
+| Below 768px (md) | Orders become cards; the chart scales to the screen width |
 
 ### Mobile Behavior
 
-- The desktop sidebar is replaced by a `MobileHeader` card and a fixed `BottomNav` with 5 items; the active item renders as a raised red pill with a badge.
-- KPI cards switch from row layout to a centered column layout (icon, label, value, delta).
-- The greeting block and date pill render on their own rows between the header and the search bar.
-- Section order adapts: the weekly sales chart appears above top-selling items on mobile, while they sit side-by-side on desktop.
-- The orders table becomes stacked two-column cards with a divider, status badge, and total.
+- The desktop sidebar is replaced by a compact `MobileHeader` card and a fixed `BottomNav` with 5 icon-and-label items; the active item gets a top indicator, brand color, and a badge where relevant.
+- Bottom navigation respects `env(safe-area-inset-bottom)` for phones with a home indicator.
+- KPI cards switch from row layout to a centered column layout (icon, label, value, delta) and remain 2-up down to 320px.
+- The greeting block, search field, and date pill stack on their own rows; the secondary search/date/bell controls are hidden to avoid duplicating the mobile header.
+- Section order adapts: the sales chart appears above top-selling items on mobile, while they sit side-by-side on desktop.
+- The orders table becomes tappable two-column cards with a divider, status badge, total, time, and a details affordance.
+- Detail dialogs open as bottom sheets on phones and centered dialogs on larger screens.
+
+### Interactions & Detail Views
+
+Every control is functional and explains its outcome:
+
+- **Search** filters the orders list live; `Enter` jumps to the results. An empty state explains what to try next.
+- **Notification bell** opens recent alerts; items can be marked read individually or all at once (badge updates).
+- **Open/Closed switch** toggles order acceptance, updates the header summary, and shows a toast.
+- **KPI cards** open a metric detail sheet with today-vs-yesterday comparison and a shortcut to orders.
+- **Chart week/month tabs** switch datasets; every point is focusable/tappable and shows its value.
+- **Order rows / View all** open full order details (items, payment, timeline) with status actions that update the row.
+- **Top items details button** opens per-item shares and sorting.
+- **Settings** edits restaurant name, phone, address, language, and open status; changes are saved to `localStorage`.
+- **Button guide (ⓘ)** in the top bar explains every button on the dashboard.
 
 ## Restaurant Data Isolation
 

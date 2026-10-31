@@ -1,65 +1,128 @@
 import { useState } from 'react'
 import type { T } from '../i18n'
 
-const VALUES = [14800, 12480, 9900, 10600, 8900, 9700, 8300]
+const DATA = {
+  week: [14800, 12480, 9900, 10600, 8900, 9700, 8300],
+  month: [6200, 5800, 6500, 5400],
+}
 
-function Chart({ days, currency }: { days: string[]; currency: string }) {
+function Chart({
+  values,
+  labels,
+  currency,
+  ariaLabel,
+  pointLabel,
+  locale,
+  rtl,
+}: {
+  values: number[]
+  labels: string[]
+  currency: string
+  ariaLabel: string
+  pointLabel: string
+  locale: string
+  rtl: boolean
+}) {
+  const [active, setActive] = useState(0)
   const W = 640
   const H = 260
   const PAD_X = 8
   const PAD_TOP = 24
   const PAD_BOTTOM = 32
-  const max = 16000
-  const stepX = (W - PAD_X * 2) / (days.length - 1)
-  const y = (v: number) => PAD_TOP + (1 - v / max) * (H - PAD_TOP - PAD_BOTTOM)
-  const points = VALUES.map((v, i) => [PAD_X + i * stepX, y(v)] as const)
-  const line = points.map(([x, py], i) => `${i === 0 ? 'M' : 'L'}${x},${py}`).join(' ')
+  const max = Math.max(...values) * 1.15
+  const stepX = values.length > 1 ? (W - PAD_X * 2) / (values.length - 1) : 0
+  const y = (value: number) => PAD_TOP + (1 - value / max) * (H - PAD_TOP - PAD_BOTTOM)
+  const xFor = (index: number) =>
+    rtl ? W - PAD_X - index * stepX : PAD_X + index * stepX
+  const points = values.map((value, index) => [xFor(index), y(value)] as const)
+  const line = points.map(([x, py], index) => `${index === 0 ? 'M' : 'L'}${x},${py}`).join(' ')
   const area = `${line} L${points[points.length - 1][0]},${H - PAD_BOTTOM} L${points[0][0]},${H - PAD_BOTTOM} Z`
-  const ticks = [0, 4000, 8000, 12000, 16000]
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => max * ratio)
+  const format = (value: number) =>
+    new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)
+
+  const activeIndex = Math.min(active, values.length - 1)
+  const tooltipStart = Math.min(84, Math.max(16, (points[activeIndex][0] / W) * 100))
+  const tooltipTop = Math.min(88, Math.max(16, (points[activeIndex][1] / H) * 100))
 
   return (
-    <div className="overflow-x-auto -mx-1 px-1">
-      <div className="relative min-w-[480px]">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block" role="img" aria-label="sales chart">
+    <div className="w-full">
+      <div className="relative">
+        <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label={ariaLabel}>
           <defs>
             <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#D93B2B" stopOpacity="0.28" />
               <stop offset="100%" stopColor="#D93B2B" stopOpacity="0.02" />
             </linearGradient>
           </defs>
-          {ticks.map((t) => (
+          {ticks.map((tick) => (
             <line
-              key={t}
+              key={tick}
               x1={PAD_X}
               x2={W - PAD_X}
-              y1={y(t)}
-              y2={y(t)}
+              y1={y(tick)}
+              y2={y(tick)}
               stroke="#F5E7D3"
               strokeWidth="1"
             />
           ))}
           <path d={area} fill="url(#areaFill)" />
-          <path d={line} fill="none" stroke="#D93B2B" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map(([x, py], i) => (
-            <g key={i}>
-              <circle cx={x} cy={py} r="5" fill="#fff" stroke="#D93B2B" strokeWidth="2.5" />
+          <path
+            d={line}
+            fill="none"
+            stroke="#D93B2B"
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          {points.map(([x, py], index) => (
+            <g
+              key={index}
+              tabIndex={0}
+              role="button"
+              aria-label={`${pointLabel} ${labels[index]}: ${currency} ${format(values[index])}`}
+              onMouseEnter={() => setActive(index)}
+              onFocus={() => setActive(index)}
+              onClick={() => setActive(index)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  setActive(index)
+                }
+              }}
+              className="chart-point cursor-pointer outline-none"
+            >
+              <circle cx={x} cy={py} r="15" fill="transparent" />
+              <circle
+                cx={x}
+                cy={py}
+                r={index === activeIndex ? 6 : 4.5}
+                fill="#fff"
+                stroke="#D93B2B"
+                strokeWidth={index === activeIndex ? 3 : 2.5}
+                className="pointer-events-none transition-all"
+              />
             </g>
           ))}
         </svg>
-        {/* Tooltip on Thursday (index 1) */}
+
         <div
-          className="absolute bg-stone-800 text-white text-[11px] font-bold rounded-lg px-2.5 py-1.5 shadow-lg pointer-events-none hidden sm:block"
-          style={{ insetInlineStart: `${(points[1][0] / W) * 100}%`, top: `${(points[1][1] / H) * 100 - 12}%`, transform: 'translate(-50%, -100%)' }}
+          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[135%] whitespace-nowrap rounded-lg bg-stone-800 px-2.5 py-1.5 text-[11px] font-bold text-white shadow-lg"
+          style={{ left: `${tooltipStart}%`, top: `${tooltipTop}%` }}
         >
-          {currency} 12,480
+          {currency} {format(values[activeIndex])}
         </div>
-        <div className="flex justify-between min-w-[480px] px-1 mt-1">
-          {days.map((d) => (
-            <span key={d} className="text-[11px] text-stone-400 font-semibold w-12 text-center">
-              {d}
-            </span>
-          ))}
-        </div>
+      </div>
+
+      <div className="mt-1 flex w-full px-1">
+        {labels.map((label) => (
+          <span
+            key={label}
+            className="min-w-0 flex-1 truncate text-center text-[9px] font-semibold text-stone-400 sm:text-[11px]"
+          >
+            {label}
+          </span>
+        ))}
       </div>
     </div>
   )
@@ -67,16 +130,20 @@ function Chart({ days, currency }: { days: string[]; currency: string }) {
 
 export function SalesChart({ t }: { t: T }) {
   const [tab, setTab] = useState<'week' | 'month'>('week')
-  const { title, subtitle, week, month, days, currency } = t.chart
+  const { title, subtitle, monthSubtitle, week, month, days, monthLabels, currency, chartLabel, pointLabel } =
+    t.chart
+  const locale = t.dir === 'rtl' ? 'ar-EG' : 'en-US'
 
   return (
-    <section className="bg-white rounded-4xl shadow-card p-6 h-full flex flex-col">
-      <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
-        <div>
-          <h3 className="font-extrabold text-stone-800 text-lg">{title}</h3>
-          <p className="text-xs text-stone-400 mt-0.5">{subtitle}</p>
+    <section className="flex h-full flex-col rounded-4xl bg-white p-4 shadow-card sm:p-6">
+      <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-base font-extrabold text-stone-800 sm:text-lg">{title}</h3>
+          <p className="mt-0.5 text-xs text-stone-400">
+            {tab === 'week' ? subtitle : monthSubtitle}
+          </p>
         </div>
-        <div className="flex bg-cream-100 rounded-xl p-1">
+        <div className="flex rounded-xl bg-cream-100 p-1">
           {(
             [
               { key: 'week', label: week },
@@ -85,8 +152,10 @@ export function SalesChart({ t }: { t: T }) {
           ).map(({ key, label }) => (
             <button
               key={key}
+              type="button"
               onClick={() => setTab(key)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              aria-pressed={tab === key}
+              className={`min-h-[36px] rounded-lg px-4 py-1.5 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
                 tab === key ? 'bg-brand-600 text-white shadow' : 'text-stone-500 hover:text-stone-700'
               }`}
             >
@@ -95,8 +164,17 @@ export function SalesChart({ t }: { t: T }) {
           ))}
         </div>
       </div>
-      <div className="flex-1 flex items-end">
-        <Chart days={days} currency={currency} />
+      <div className="flex flex-1 items-end pt-2">
+        <Chart
+          key={tab}
+          values={tab === 'week' ? DATA.week : DATA.month}
+          labels={tab === 'week' ? days : monthLabels}
+          currency={currency}
+          ariaLabel={chartLabel}
+          pointLabel={pointLabel}
+          locale={locale}
+          rtl={t.dir === 'rtl'}
+        />
       </div>
     </section>
   )
