@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+}
+
+body {
+  background-color: #fdf8f1;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #edd9bc;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e5c878;
+}
