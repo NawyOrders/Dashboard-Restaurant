@@ -73,10 +73,11 @@ The following capabilities are planned but **not yet implemented**:
 ```text
 src/
 ├── components/          # UI components (Sidebar, Topbar, StatCard, TopItems,
-│                        # SalesChart, OrdersTable)
+│                        # SalesChart, OrdersTable, Calendar, Modal, Dialogs)
+├── calendar.ts          # Date grid, formatting, and storage helpers
 ├── icons.tsx            # SVG icon set used across the UI
 ├── i18n.ts              # Arabic/English translations, direction, and demo data
-├── App.tsx              # Page composition and language state
+├── App.tsx              # Page composition, selected date, and language state
 ├── main.tsx             # React entry point
 └── index.css            # Tailwind layers and global styles
 ```
@@ -88,11 +89,12 @@ src/
 | `Sidebar` | Desktop sidebar: brand, open switch, navigation, settings |
 | `MobileHeader` | Mobile top card: avatar, notifications, open switch, brand |
 | `BottomNav` | Mobile fixed bottom navigation (5 items) |
-| `Topbar` | Search, date pill, notifications, greeting, language toggle |
+| `Topbar` | Search, functional date picker, notifications, greeting, language toggle |
 | `StatCard` | KPI cards with delta badges (responsive column/row layout) |
 | `TopItems` | Horizontal bar list of best-selling items |
 | `SalesChart` | Responsive SVG area chart with week/month toggle, tap/hover values, RTL-aware ordering |
 | `OrdersTable` | Latest orders: desktop table, mobile two-column cards, live search results |
+| `CalendarDialog` | Localized month grid, RTL/LTR month navigation, today/selected states, saved selection |
 | `Modal` | Accessible dialog shell: focus trap, Escape/backdrop close, scroll lock, mobile bottom sheet |
 | `Dialogs` | Detail views for orders, all orders, metrics, top items, notifications, settings, and the button guide |
 
@@ -131,6 +133,7 @@ The dashboard supports desktop, tablet, and mobile layouts.
 Every control is functional and explains its outcome:
 
 - **Search** filters the orders list live; `Enter` jumps to the results. An empty state explains what to try next.
+- **Date pill / calendar** opens a localized month picker with previous/next navigation, highlights today and the selected day, and saves the choice to `localStorage`.
 - **Notification bell** opens recent alerts; items can be marked read individually or all at once (badge updates).
 - **Open/Closed switch** toggles order acceptance, updates the header summary, and shows a toast.
 - **KPI cards** open a metric detail sheet with today-vs-yesterday comparison and a shortcut to orders.
