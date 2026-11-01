@@ -4,10 +4,20 @@
 
 html {
   font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+  scroll-behavior: smooth;
 }
 
 body {
   background-color: #fdf8f1;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+[role='switch'] {
+  -webkit-tap-highlight-color: transparent;
 }
 
 ::-webkit-scrollbar {
@@ -23,4 +33,78 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #e5c878;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.18s ease-out both;
+}
+.animate-modal-in {
+  animation: modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.animate-sheet-in {
+  animation: sheet-in 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.animate-toast-in {
+  animation: toast-in 0.2s ease-out both;
+}
+
+.chart-point:focus-visible circle:last-child {
+  stroke-width: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-fade-in,
+  .animate-modal-in,
+  .animate-sheet-in,
+  .animate-toast-in {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
 }
