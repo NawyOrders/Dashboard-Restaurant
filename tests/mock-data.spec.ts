@@ -44,3 +44,24 @@ test('mock error mode shows a retryable error state', async ({ page }) => {
   await expect(alert.getByRole('button', { name: t.orders.retry, exact: true })).toBeVisible()
   expect(errors).toEqual([])
 })
+
+for (const role of ['Owner', 'Manager', 'Staff'] as const) {
+  test(`demo sign-in mounts the dashboard as ${role}`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    await page.setViewportSize({ width: 390, height: 900 })
+    await page.goto('/?mock=1')
+    const t = translations.en
+
+    await page.getByRole('button', { name: 'English', exact: true }).click()
+    const labels = { Owner: t.auth.demoOwner, Manager: t.auth.demoManager, Staff: t.auth.demoStaff }
+    await page.getByRole('button', { name: labels[role], exact: true }).click()
+
+    await expect(page.getByRole('heading', { level: 1, name: t.dashboard.overview })).toBeVisible()
+    await expect(page.getByText(t.auth.mockTitle, { exact: true })).toBeVisible()
+    await expect(page.getByText('#ORD-2841', { exact: true }).last()).toBeVisible()
+    const roleKey = role === 'Owner' ? 'owner' : role === 'Manager' ? 'manager' : 'staff'
+    await expect(page.getByText(t.roles[roleKey], { exact: true }).first()).toBeVisible()
+    expect(errors).toEqual([])
+  })
+}
