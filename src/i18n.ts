@@ -61,6 +61,9 @@ export const translations = {
         { id: '#ORD-2836', customer: 'علي حاتم', items: 'طرب × 2، كباب × 1', total: 'ج.م 250', status: 'done', time: '7:22 م' },
         { id: '#ORD-2835', customer: 'عبدالرحمن البيه', items: 'فراخ مشوية × 1، حمام محشي × 1', total: 'ج.م 300', status: 'done', time: '7:05 م' },
       ],
+      loading: 'جارٍ تحميل الطلبات…',
+      loadError: 'تعذّر تحميل الطلبات من الخادم. حاول مرة أخرى.',
+      retry: 'إعادة المحاولة',
       status: { new: 'جديد', preparing: 'قيد التحضير', done: 'مكتمل' },
     },
     nav: {
@@ -108,6 +111,8 @@ export const translations = {
       previewTitle: 'بيانات عرض تجريبية',
       previewHint: 'تسجيل الدخول متصل بخادم المطعم. الأرقام والطلبات والإعدادات أدناه تجريبية؛ التعديلات لا تُرسل إلى المطعم.',
       tenantContext: 'خادم المطعم المتصل',
+      mockTitle: 'وضع البيانات التجريبية',
+      mockHint: 'تُعرض الطلبات من مزوّد بيانات تجريبي محلي؛ التغييرات لا تُرسل إلى المطعم.',
     },
     dashboard: {
       overview: 'نظرة على مطعمك',
@@ -297,6 +302,9 @@ export const translations = {
         { id: '#ORD-2836', customer: 'Ali Hatem', items: 'Tarb × 2, Kebab × 1', total: 'EGP 250', status: 'done', time: '7:22 PM' },
         { id: '#ORD-2835', customer: 'Abdelrahman', items: 'Grilled Chicken × 1, Stuffed Pigeon × 1', total: 'EGP 300', status: 'done', time: '7:05 PM' },
       ],
+      loading: 'Loading orders…',
+      loadError: 'Could not load orders from the server. Try again.',
+      retry: 'Retry',
       status: { new: 'New', preparing: 'Preparing', done: 'Completed' },
     },
     nav: {
@@ -344,6 +352,8 @@ export const translations = {
       previewTitle: 'Demo dashboard data',
       previewHint: 'Sign-in uses your restaurant’s server. The figures, orders and settings below are sample data; changes are not sent to your restaurant.',
       tenantContext: 'Connected restaurant server',
+      mockTitle: 'Mock data mode',
+      mockHint: 'Orders are served by a local mock provider; changes are not sent to your restaurant.',
     },
     dashboard: {
       overview: 'Your restaurant at a glance',
