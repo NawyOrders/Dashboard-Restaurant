@@ -221,17 +221,17 @@ describe('development account defaults', () => {
     expect(screen.getByLabelText(ar.auth.email)).toHaveValue('owner@example.test')
     expect(screen.getByLabelText(ar.auth.password)).toHaveValue('fixture-only')
     expect(screen.getByLabelText(ar.auth.password)).toHaveAttribute('type', 'password')
-    expect(screen.getByRole('button', { name: ar.roles.owner })).toHaveAttribute('aria-pressed', 'true')
+    for (const role of ['owner', 'manager', 'staff'] as const) {
+      expect(screen.queryByRole('button', { name: ar.roles[role] })).not.toBeInTheDocument()
+    }
     expect(fetchMock).not.toHaveBeenCalled()
     expect(storageWrite).not.toHaveBeenCalled()
   })
 
-  it.each(['owner', 'manager', 'staff'] as const)('submits the %s preset but trusts only server roles', async (role) => {
+  it.each(['owner', 'manager', 'staff'] as const)('accepts manual %s entry and trusts only server roles', async (role) => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(staffLoginResponse('Staff'))))
     mount()
-    await userEvent.click(screen.getByRole('button', { name: ar.roles[role] }))
-    expect(screen.getByLabelText(ar.auth.email)).toHaveValue(`${role}@example.test`)
-    expect(screen.getByLabelText(ar.auth.password)).toHaveValue('fixture-only')
+    fireEvent.change(screen.getByLabelText(ar.auth.email), { target: { value: `${role}@example.test` } })
     expect(fetchMock).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: ar.auth.submit }))
     await screen.findByText(ar.auth.previewTitle)
@@ -242,42 +242,23 @@ describe('development account defaults', () => {
     await userEvent.click(screen.getByRole('button', { name: ar.logout }))
     expect(await screen.findByLabelText(ar.auth.password)).toHaveValue('')
     expect(screen.getByLabelText(ar.auth.email)).toHaveValue('')
-    await userEvent.click(screen.getByRole('button', { name: ar.roles[role] }))
-    expect(screen.getByLabelText(ar.auth.password)).toHaveValue('fixture-only')
   })
 
-  it('clears errors and masks the password when switching accounts after failure', async () => {
+  it('does not bypass a failed login with prefilled credentials', async () => {
     fetchMock.mockResolvedValueOnce(new Response('{}', { status: 401 }))
     mount()
-    await userEvent.click(screen.getByRole('button', { name: ar.auth.show }))
     await userEvent.click(screen.getByRole('button', { name: ar.auth.submit }))
     expect(await screen.findByRole('alert')).toHaveTextContent(ar.auth.error)
     expect(screen.queryByText(ar.auth.previewTitle)).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: ar.roles.manager }))
+    fireEvent.change(screen.getByLabelText(ar.auth.email), { target: { value: 'custom@example.test' } })
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByLabelText(ar.auth.password)).toHaveAttribute('type', 'password')
-    fireEvent.change(screen.getByLabelText(ar.auth.email), { target: { value: 'custom@example.test' } })
-    expect(screen.getByRole('button', { name: ar.roles.manager })).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('disables account switching during authentication', async () => {
-    let resolve!: (response: Response) => void
-    fetchMock.mockImplementationOnce(() => new Promise((done) => { resolve = done }))
-    mount()
-    fireEvent.submit(screen.getByRole('form'))
-    for (const role of ['owner', 'manager', 'staff'] as const) {
-      expect(screen.getByRole('button', { name: ar.roles[role] })).toBeDisabled()
-    }
-    await userEvent.click(screen.getByRole('button', { name: ar.roles.manager }))
-    expect(screen.getByLabelText(ar.auth.email)).toHaveValue('owner@example.test')
-    await act(async () => { resolve(new Response('{}', { status: 401 })) })
-    expect(screen.getByRole('button', { name: ar.roles.manager })).toBeEnabled()
   })
 
   it('ignores configured credentials outside development', () => {
     vi.stubEnv('DEV', false)
     mount()
-    expect(screen.queryByRole('group', { name: ar.auth.defaultAccounts })).not.toBeInTheDocument()
+    expect(screen.queryByRole('group')).not.toBeInTheDocument()
     expect(screen.getByLabelText(ar.auth.email)).toHaveValue('')
     expect(screen.getByLabelText(ar.auth.password)).toHaveValue('')
     expect(fetchMock).not.toHaveBeenCalled()
@@ -288,7 +269,7 @@ describe('development account defaults', () => {
     vi.stubEnv('VITE_DEV_LOGIN_MANAGER_EMAIL', '')
     vi.stubEnv('VITE_DEV_LOGIN_STAFF_EMAIL', '')
     mount()
-    expect(screen.queryByRole('group', { name: ar.auth.defaultAccounts })).not.toBeInTheDocument()
+    expect(screen.queryByRole('group')).not.toBeInTheDocument()
     expect(screen.getByLabelText(ar.auth.password)).toHaveValue('')
   })
 })

@@ -19,14 +19,10 @@ type FieldErrors = {
 }
 
 export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }: Props) {
-  const defaultAccounts = import.meta.env.DEV ? [
-    { role: 'owner' as const, email: import.meta.env.VITE_DEV_LOGIN_OWNER_EMAIL as string | undefined },
-    { role: 'manager' as const, email: import.meta.env.VITE_DEV_LOGIN_MANAGER_EMAIL as string | undefined },
-    { role: 'staff' as const, email: import.meta.env.VITE_DEV_LOGIN_STAFF_EMAIL as string | undefined },
-  ].filter((account): account is typeof account & { email: string } => Boolean(account.email)) : []
+  const defaultEmail = import.meta.env.DEV ? import.meta.env.VITE_DEV_LOGIN_OWNER_EMAIL ?? '' : ''
   const defaultPassword = import.meta.env.DEV ? import.meta.env.VITE_DEV_LOGIN_PASSWORD ?? '' : ''
-  const [email, setEmail] = useState(initialNotice ? '' : defaultAccounts[0]?.email ?? '')
-  const [password, setPassword] = useState(initialNotice || !defaultAccounts.length ? '' : defaultPassword)
+  const [email, setEmail] = useState(initialNotice ? '' : defaultEmail)
+  const [password, setPassword] = useState(initialNotice || !defaultEmail ? '' : defaultPassword)
   const [showPassword, setShowPassword] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [errorCode, setErrorCode] = useState<AuthErrorCode | null>(null)
@@ -166,33 +162,6 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
               {t.auth.welcome}
             </h1>
             <p className="mb-7 mt-2 text-base leading-relaxed text-[#726255]">{t.auth.subtitle}</p>
-
-            {defaultAccounts.length > 0 && (
-              <fieldset disabled={pending} aria-describedby="default-accounts-hint" className="mb-6 min-w-0 rounded-xl border border-[#D9C9B5] bg-[#F3ECE2]/60 p-3">
-                <legend className="px-1 text-sm font-bold">{t.auth.defaultAccounts}</legend>
-                <div className="grid grid-cols-3 gap-2">
-                  {defaultAccounts.map((account) => (
-                    <button
-                      key={account.role}
-                      type="button"
-                      aria-pressed={email === account.email && password === defaultPassword}
-                      onClick={() => {
-                        if (submittingRef.current) return
-                        setEmail(account.email)
-                        setPassword(defaultPassword)
-                        setShowPassword(false)
-                        setFieldErrors({})
-                        setErrorCode(null)
-                      }}
-                      className={`min-h-11 rounded-lg border border-[#D9C9B5] bg-white px-2 py-2 text-sm font-bold motion-safe:transition-colors hover:border-[#C2281A] aria-pressed:border-[#C2281A] aria-pressed:bg-[#C2281A]/5 aria-pressed:text-[#C2281A] disabled:cursor-wait disabled:opacity-50 ${focusClass}`}
-                    >
-                      {t.roles[account.role]}
-                    </button>
-                  ))}
-                </div>
-                <p id="default-accounts-hint" className="mt-3 text-xs leading-relaxed text-[#726255]">{t.auth.defaultAccountsHint}</p>
-              </fieldset>
-            )}
 
             {initialNotice && (
               <p role="status" className="mb-5 rounded-xl border border-[#D9C9B5] bg-white/60 px-4 py-3 text-sm leading-relaxed">

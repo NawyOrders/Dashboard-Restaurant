@@ -77,12 +77,17 @@ The application currently uses **hard-coded demo data** rendered directly by the
 
 > **Note:** Only staff login and session revocation use the real API. Dashboard KPIs, charts, top items, orders and settings remain sample data. A persistent demo-data banner explains that dashboard interactions do not update the restaurant backend.
 
-### Planned: Mock API Provider
+### Data Integration Foundation
 
-The following capabilities are planned but **not yet implemented**:
+`src/api/` defines a single `Api` interface plus two interchangeable adapters, both unit-tested with Vitest:
 
-- A mock data provider with simulated network latency.
-- A `?mockError=1` query parameter to simulate API failures for error-state testing.
+- `httpApi.ts` — real tenant adapter for `GET /api/v1/admin/orders`, `POST /api/v1/admin/orders/{id}/transition-status`, and `GET /api/v1/Branding`. It sends the Bearer token, validates the `isSuccess`/`data` envelope, maps failures to safe error codes, and supports ETag/304 conditional branding requests.
+- `mockApi.ts` — seeded in-memory adapter with simulated latency and a failure mode.
+- `?mock=1` selects the mock adapter; `?mockError=1` simulates backend failures for error-state testing.
+
+Still planned:
+
+- Wiring dashboard components to consume the `Api` interface (they still render sample data).
 - TanStack Query for server-state management and caching.
 - ESLint and coverage thresholds (Vitest tests are implemented).
 
@@ -93,6 +98,7 @@ src/
 ├── components/          # UI components (Sidebar, Topbar, StatCard, TopItems,
 │                        # SalesChart, OrdersTable, Calendar, Modal, Dialogs, Login)
 ├── auth.ts              # Real tenant staff login/revocation HTTP adapter
+├── api/                 # Typed Api interface + HTTP/mock data adapters
 ├── test/                # Test setup and synthetic API fixtures
 ├── calendar.ts          # Date grid, formatting, and storage helpers
 ├── icons.tsx            # SVG icon set used across the UI
@@ -190,14 +196,14 @@ Until that interface exists, all data lives in `src/i18n.ts` and component props
 
 ## Roadmap
 
-- [ ] Mock API provider with latency and `?mockError=1` failure simulation
+- [x] Typed `Api` interface with HTTP and mock adapters (latency + `?mockError=1`)
 - [x] Demo dashboard indicator
 - [x] Real restaurant staff login and session revocation
 - [x] Vitest regression tests and Playwright responsive login tests
+- [ ] Wire dashboard components to the `Api` interface (orders, branding)
 - [ ] TanStack Query integration with cache invalidation
 - [ ] React Router for orders, menu, reports, and settings pages
 - [ ] ESLint and test coverage thresholds
-- [ ] Real operational data adapter
 
 ## Platform Administration (Out of Scope)
 

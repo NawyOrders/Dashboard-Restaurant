@@ -20,12 +20,12 @@ export function OrdersTable({ t, orders, statuses, query, onSelect, onViewAll }:
   const empty = orders.length === 0
 
   return (
-    <section className="rounded-4xl bg-white p-4 shadow-card sm:p-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <section dir={t.dir} className="dashboard-panel min-w-0 p-4 sm:p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#E9E1D7] pb-4">
         <div className="min-w-0">
-          <h3 className="text-base font-extrabold text-stone-800 sm:text-lg">{title}</h3>
+          <h3 className="text-base font-extrabold leading-7 text-[#302B28] sm:text-lg">{title}</h3>
           {query.trim() && (
-            <p className="mt-0.5 text-xs font-semibold text-stone-400">
+            <p className="mt-1 text-xs font-semibold text-[#756B62]">
               {orders.length} {t.search.results}
             </p>
           )}
@@ -34,7 +34,7 @@ export function OrdersTable({ t, orders, statuses, query, onSelect, onViewAll }:
           type="button"
           onClick={onViewAll}
           title={`${viewAll} — ${title}`}
-          className="inline-flex items-center gap-1.5 rounded-xl px-2 py-1.5 text-sm font-bold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#E9E1D7] px-3 py-2 text-sm font-bold text-[#C2281A] transition-colors hover:border-[#C2281A]/30 hover:bg-[#FDF8F1] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2"
         >
           {viewAll}
           <Arrow className="h-4 w-4" />
@@ -42,24 +42,23 @@ export function OrdersTable({ t, orders, statuses, query, onSelect, onViewAll }:
       </div>
 
       {empty ? (
-        <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-          <SearchXIcon className="h-10 w-10 text-stone-300" />
-          <p className="text-sm font-bold text-stone-500">{t.search.empty}</p>
-          <p className="max-w-xs text-xs text-stone-400">{t.search.emptyHint}</p>
+        <div className="flex flex-col items-center gap-2 rounded-xl bg-[#FDF8F1] px-4 py-12 text-center">
+          <SearchXIcon className="mb-1 h-9 w-9 text-[#8B8177]" />
+          <p className="text-sm font-bold text-[#302B28]">{t.search.empty}</p>
+          <p className="max-w-xs text-xs leading-5 text-[#756B62]">{t.search.emptyHint}</p>
         </div>
       ) : (
         <>
-          {/* Desktop table */}
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-cream-200 text-xs font-bold text-stone-400">
-                  <th className="py-3 pe-4 text-start font-bold">{cols.id}</th>
-                  <th className="py-3 pe-4 text-start font-bold">{cols.customer}</th>
-                  <th className="py-3 pe-4 text-start font-bold">{cols.items}</th>
-                  <th className="py-3 pe-4 text-start font-bold">{cols.total}</th>
-                  <th className="py-3 pe-4 text-start font-bold">{cols.status}</th>
-                  <th className="py-3 text-center font-bold">
+                <tr className="border-b border-[#E9E1D7] bg-[#FDF8F1] text-xs text-[#756B62]">
+                  <th scope="col" className="py-3 pe-4 ps-3 text-start font-bold">{cols.id}</th>
+                  <th scope="col" className="py-3 pe-4 text-start font-bold">{cols.customer}</th>
+                  <th scope="col" className="py-3 pe-4 text-start font-bold">{cols.items}</th>
+                  <th scope="col" className="py-3 pe-4 text-start font-bold">{cols.total}</th>
+                  <th scope="col" className="py-3 pe-4 text-start font-bold">{cols.status}</th>
+                  <th scope="col" className="px-2 py-3 text-center font-bold">
                     <span className="sr-only">{cols.action}</span>
                   </th>
                 </tr>
@@ -70,28 +69,29 @@ export function OrdersTable({ t, orders, statuses, query, onSelect, onViewAll }:
                   return (
                     <tr
                       key={row.id}
-                      className="border-b border-cream-100 transition-colors last:border-0 hover:bg-cream-50/60"
+                      className="border-b border-[#E9E1D7]/70 transition-colors last:border-0 hover:bg-[#FDF8F1]/70"
                     >
-                      <td className="whitespace-nowrap py-3.5 pe-4 font-extrabold text-stone-700">
-                        {row.id}
+                      <td className="whitespace-nowrap py-4 pe-4 ps-3">
+                        <bdi className="block font-extrabold text-[#302B28] tabular-nums">{row.id}</bdi>
+                        <span className="mt-1 block text-xs font-medium text-[#756B62] tabular-nums">{row.time}</span>
                       </td>
-                      <td className="whitespace-nowrap py-3.5 pe-4 font-bold text-stone-600">
+                      <td className="py-4 pe-4 font-bold leading-6 text-[#302B28]">
                         {row.customer}
                       </td>
-                      <td className="py-3.5 pe-4 text-stone-500">{row.items}</td>
-                      <td className="whitespace-nowrap py-3.5 pe-4 font-bold text-stone-700">
-                        {row.total}
+                      <td className="py-4 pe-4 leading-6 text-[#756B62]">{row.items}</td>
+                      <td className="whitespace-nowrap py-4 pe-4 font-extrabold text-[#302B28] tabular-nums">
+                        <bdi>{row.total}</bdi>
                       </td>
-                      <td className="py-3.5 pe-4">
+                      <td className="py-4 pe-4">
                         <StatusBadge status={current} label={status[current]} />
                       </td>
-                      <td className="py-3.5 text-center">
+                      <td className="px-2 py-4 text-center">
                         <button
                           type="button"
                           onClick={() => onSelect(row)}
                           title={`${t.actions.viewDetails} ${row.id}`}
                           aria-label={`${t.actions.viewDetails} ${row.id}`}
-                          className="mx-auto grid h-9 w-9 place-items-center rounded-xl text-stone-400 transition-colors hover:bg-cream-100 hover:text-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                          className="mx-auto grid h-11 w-11 place-items-center rounded-lg border border-[#E9E1D7] text-[#756B62] transition-colors hover:border-[#C2281A]/30 hover:bg-white hover:text-[#C2281A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2"
                         >
                           <EyeIcon className="h-5 w-5" />
                         </button>
@@ -103,7 +103,6 @@ export function OrdersTable({ t, orders, statuses, query, onSelect, onViewAll }:
             </table>
           </div>
 
-          {/* Mobile cards */}
           <ul className="flex flex-col gap-3 md:hidden">
             {orders.map((row) => {
               const current = statusOf(row, statuses)
@@ -113,25 +112,29 @@ export function OrdersTable({ t, orders, statuses, query, onSelect, onViewAll }:
                     type="button"
                     onClick={() => onSelect(row)}
                     title={`${t.actions.viewDetails} ${row.id}`}
-                    className="grid w-full grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-cream-200 p-3.5 text-start transition-colors hover:border-brand-100 hover:bg-cream-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                    className="group flex w-full min-w-0 flex-col rounded-xl border border-[#E9E1D7] bg-white p-3.5 text-start transition-colors hover:border-[#C2281A]/30 hover:bg-[#FDF8F1] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2"
                   >
-                    <span className="min-w-0">
-                      <span className="font-extrabold text-stone-700">{row.id}</span>
-                      <span className="mt-1 block truncate text-sm font-bold text-stone-700">
-                        {row.customer}
-                      </span>
-                      <span className="mt-1 block text-xs leading-relaxed text-stone-400">
-                        {row.items}
-                      </span>
-                      <span className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-brand-500">
-                        <EyeIcon className="h-3.5 w-3.5" />
-                        {t.actions.viewDetails}
+                    <span className="flex w-full flex-wrap items-center justify-between gap-2">
+                      <bdi className="text-sm font-extrabold text-[#302B28] tabular-nums">{row.id}</bdi>
+                      <StatusBadge status={current} label={status[current]} size="xs" />
+                    </span>
+                    <span className="mt-2.5 block w-full break-words text-sm font-bold leading-6 text-[#302B28]">
+                      {row.customer}
+                    </span>
+                    <span className="mt-0.5 block w-full break-words text-sm leading-6 text-[#756B62]">
+                      {row.items}
+                    </span>
+                    <span className="mt-3 flex w-full flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-dashed border-[#E9E1D7] pt-3">
+                      <span className="text-xs font-semibold text-[#756B62] tabular-nums">{row.time}</span>
+                      <span className="inline-flex flex-wrap items-baseline gap-2">
+                        <span className="text-xs text-[#756B62]">{cols.total}</span>
+                        <bdi className="text-base font-extrabold text-[#302B28] tabular-nums">{row.total}</bdi>
                       </span>
                     </span>
-                    <span className="flex flex-col items-center justify-center gap-2 self-stretch border-s border-cream-200 ps-3">
-                      <StatusBadge status={current} label={status[current]} size="xs" />
-                      <span className="whitespace-nowrap font-extrabold text-stone-700">{row.total}</span>
-                      <span className="text-[10px] font-semibold text-stone-400">{row.time}</span>
+                    <span className="mt-1 flex min-h-11 w-full items-center justify-end gap-1.5 text-xs font-bold text-[#C2281A]">
+                      <EyeIcon className="h-4 w-4" />
+                      {t.actions.viewDetails}
+                      <Arrow className="h-3.5 w-3.5" />
                     </span>
                   </button>
                 </li>

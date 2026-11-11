@@ -8,7 +8,6 @@ type Props = {
   user: AuthUser
   query: string
   unreadCount: number
-  isOpen: boolean
   selectedDate: Date
   onQueryChange: (query: string) => void
   onSearchSubmit: () => void
@@ -19,181 +18,54 @@ type Props = {
   onOpenGuide: () => void
 }
 
-function SearchField({
-  t,
-  value,
-  onChange,
-  onSubmit,
-  className = '',
-}: {
-  t: T
-  value: string
-  onChange: (value: string) => void
-  onSubmit: () => void
-  className?: string
-}) {
-  return (
-    <form
-      role="search"
-      onSubmit={(event) => {
-        event.preventDefault()
-        onSubmit()
-      }}
-      className={`relative min-w-0 ${className}`}
-    >
-      <SearchIcon className="absolute start-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-stone-400" />
-      <input
-        type="search"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={t.searchPlaceholder}
-        aria-label={t.searchPlaceholder}
-        className="w-full rounded-2xl border border-cream-200 bg-cream-50 py-2.5 pe-11 ps-11 text-sm text-stone-600 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-200 [&::-webkit-search-cancel-button]:hidden"
-      />
-      {value && (
-        <button
-          type="button"
-          onClick={() => onChange('')}
-          aria-label={t.actions.clearSearch}
-          title={t.actions.clearSearch}
-          className="absolute end-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-stone-400 transition-colors hover:bg-cream-200 hover:text-stone-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-        >
-          <CloseIcon className="h-4 w-4" />
-        </button>
-      )}
-    </form>
-  )
-}
-
 export function Topbar({
-  t,
-  user,
-  query,
-  unreadCount,
-  isOpen,
-  selectedDate,
-  onQueryChange,
-  onSearchSubmit,
-  onToggleLang,
-  onLogout,
-  onOpenNotifications,
-  onOpenCalendar,
-  onOpenGuide,
+  t, user, query, unreadCount, selectedDate, onQueryChange, onSearchSubmit,
+  onToggleLang, onLogout, onOpenNotifications, onOpenCalendar, onOpenGuide,
 }: Props) {
   const dateLabel = formatFullDate(selectedDate, t.dir === 'rtl' ? 'ar-EG' : 'en-US')
   const roleLabels: Record<string, string> = { Owner: t.roles.owner, BranchManager: t.roles.manager, Staff: t.roles.staff }
   const roleLabel = user.roles.map((role) => roleLabels[role] ?? role).join(', ') || t.auth.staffOnly
-  const dateButtonClass =
-    'flex items-center gap-2 whitespace-nowrap rounded-2xl border border-cream-200 bg-cream-50 px-4 py-2.5 text-sm font-semibold text-stone-600 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
+  const iconButton = 'grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#E9E1D7] bg-white text-stone-500 transition-colors hover:bg-cream-50 hover:text-brand-700'
 
   return (
-    <header className="mx-4 mt-3 rounded-4xl bg-white px-4 py-3 shadow-card sm:mx-6 sm:mt-4 sm:px-6 sm:py-4 lg:mt-6">
-      <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
-        <div className="flex min-w-0 items-center gap-2.5" title={`${user.email} — ${roleLabel}`}>
-          <div className="h-11 w-11 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 p-0.5">
-            <div className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-gold-300">
-              <span className="font-black text-brand-700">{user.name.trim().charAt(0)}</span>
-            </div>
+    <header className="dashboard-panel p-3 sm:p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E9E1D7] pb-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 max-[379px]:basis-full" title={`${user.email} — ${roleLabel}`}>
+          <div aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cream-100 font-bold text-brand-700">
+            {user.name.trim().charAt(0)}
           </div>
-          <div className="min-w-0 max-w-40 leading-tight">
-            <p className="truncate text-sm font-extrabold text-stone-800"><bdi>{user.name}</bdi></p>
-            <p className="truncate text-[11px] font-semibold text-stone-500"><bdi>{roleLabel}</bdi></p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold leading-snug text-stone-800"><bdi>{user.name}</bdi></p>
+            <p className="mt-1 truncate text-xs text-stone-500"><bdi>{roleLabel}</bdi></p>
           </div>
         </div>
-
-        <SearchField
-          t={t}
-          value={query}
-          onChange={onQueryChange}
-          onSubmit={onSearchSubmit}
-          className="hidden max-w-xl flex-1 sm:block"
-        />
-
-        <button
-          type="button"
-          onClick={onOpenCalendar}
-          aria-label={`${t.calendar.title}: ${dateLabel}`}
-          aria-haspopup="dialog"
-          title={t.calendar.title}
-          className={`hidden lg:flex ${dateButtonClass}`}
-        >
-          <CalendarIcon className="h-4 w-4 text-stone-400" />
-          {dateLabel}
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenNotifications}
-          aria-label={t.actions.notifications}
-          title={t.actions.notifications}
-          className="relative hidden h-11 w-11 shrink-0 place-items-center rounded-2xl border border-cream-200 bg-cream-50 text-stone-500 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 lg:grid"
-        >
-          <BellIcon className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1.5 -end-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-black text-white ring-2 ring-white">
-              {unreadCount}
-            </span>
-          )}
-        </button>
-
-        <div className="hidden flex-1 xl:block" />
-
-        <div className="hidden text-end xl:block">
-          <h2 className="font-extrabold leading-tight text-stone-800">{t.greeting}</h2>
-          <p className="text-xs font-semibold text-mint-600">
-            {isOpen ? t.greetingSub : t.greetingClosed}
-          </p>
-        </div>
-
-        <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
-          <button
-            type="button"
-            onClick={onLogout}
-            aria-label={t.logout}
-            title={t.logout}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-cream-200 bg-cream-50 text-stone-500 transition-colors hover:bg-brand-50 hover:text-brand-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-          >
-            <LogoutIcon className="h-5 w-5" />
+        <div className="flex shrink-0 items-center gap-1.5 max-[379px]:ms-auto">
+          <button type="button" onClick={onOpenNotifications} aria-label={t.actions.notifications} title={t.actions.notifications} className={`${iconButton} relative hidden lg:grid`}>
+            <BellIcon className="h-5 w-5" />
+            {unreadCount > 0 && <span className="absolute -end-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white ring-2 ring-white">{unreadCount}</span>}
           </button>
-          <button
-            type="button"
-            onClick={onOpenGuide}
-            aria-label={t.actions.help}
-            title={t.actions.help}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-cream-200 bg-cream-50 text-stone-500 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-          >
+          <button type="button" onClick={onOpenGuide} aria-label={t.actions.help} title={t.actions.help} className={iconButton}>
             <InfoIcon className="h-5 w-5" />
           </button>
-          <button
-            type="button"
-            onClick={onToggleLang}
-            title={t.nav.langToggle}
-            className="min-h-[44px] whitespace-nowrap rounded-xl bg-cream-100 px-3.5 py-2 text-xs font-bold text-stone-600 transition-colors hover:bg-cream-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-          >
+          <button type="button" onClick={onLogout} aria-label={t.logout} title={t.logout} className={iconButton}>
+            <LogoutIcon className="h-5 w-5" />
+          </button>
+          <button type="button" onClick={onToggleLang} lang={t.dir === 'rtl' ? 'en' : 'ar'} dir="auto" className="min-h-11 rounded-xl bg-cream-100 px-3 text-xs font-bold text-stone-700 transition-colors hover:bg-cream-200">
             {t.nav.langToggle}
           </button>
         </div>
       </div>
-
-      <SearchField
-        t={t}
-        value={query}
-        onChange={onQueryChange}
-        onSubmit={onSearchSubmit}
-        className="mt-3 sm:hidden"
-      />
-
-      <button
-        type="button"
-        onClick={onOpenCalendar}
-        aria-label={`${t.calendar.title}: ${dateLabel}`}
-        aria-haspopup="dialog"
-        title={t.calendar.title}
-        className={`mt-3 w-fit text-xs lg:hidden ${dateButtonClass}`}
-      >
-        <CalendarIcon className="h-4 w-4 text-stone-400" />
-        {dateLabel}
-      </button>
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+        <form role="search" className="relative min-w-0 flex-1" onSubmit={(event) => { event.preventDefault(); onSearchSubmit() }}>
+          <SearchIcon className="pointer-events-none absolute start-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-stone-500" />
+          <input type="search" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder={t.searchPlaceholder} aria-label={t.searchPlaceholder} className="min-h-11 w-full min-w-0 rounded-xl border border-[#E9E1D7] bg-cream-50 py-2.5 pe-12 ps-10 text-base text-stone-800 placeholder:text-sm placeholder:text-stone-500 [&::-webkit-search-cancel-button]:hidden" />
+          {query && <button type="button" onClick={() => onQueryChange('')} aria-label={t.actions.clearSearch} title={t.actions.clearSearch} className="absolute end-0.5 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-xl text-stone-500 hover:text-brand-600"><CloseIcon className="h-4 w-4" /></button>}
+        </form>
+        <button type="button" onClick={onOpenCalendar} aria-label={`${t.calendar.title}: ${dateLabel}`} aria-haspopup="dialog" title={t.calendar.title} className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#E9E1D7] bg-white px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-cream-50 sm:shrink-0">
+          <CalendarIcon className="h-4 w-4 shrink-0 text-brand-600" />
+          <span>{dateLabel}</span>
+        </button>
+      </div>
     </header>
   )
 }

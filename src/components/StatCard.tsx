@@ -32,34 +32,35 @@ export function StatCard({
       onClick={onClick}
       title={`${label} — ${detailsLabel}`}
       aria-label={`${label} — ${detailsLabel}`}
-      className={`group flex flex-col items-center gap-2 rounded-4xl bg-white p-4 text-center shadow-card transition-all hover:-translate-y-0.5 hover:shadow-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 active:translate-y-0 sm:flex-row sm:items-center sm:gap-4 sm:p-5 sm:text-start ${orderClass}`}
+      className={`dashboard-panel group flex min-w-0 flex-col items-start p-3.5 text-start transition-colors hover:border-[#D9B45A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2 sm:p-5 ${orderClass}`}
     >
-      <div
-        className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl sm:order-last sm:h-16 sm:w-16 ${iconBg}`}
-      >
-        {icon}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col items-center sm:items-start">
-        <p className="mb-0.5 w-full truncate text-xs font-semibold text-stone-500 sm:mb-1 sm:text-sm">
+      <span className="mb-3 flex w-full items-center gap-2.5">
+        <span
+          className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg [&>svg]:h-5 [&>svg]:w-5 ${iconBg}`}
+        >
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1 text-xs font-semibold leading-5 text-[#756B62] sm:text-sm">
           {label}
-        </p>
-        <p className="text-xl font-black leading-tight text-stone-800 sm:text-3xl">
-          {value} {suffix && <span className="text-xs font-bold text-stone-400 sm:text-sm">{suffix}</span>}
-        </p>
-        <span className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold">
+        </span>
+      </span>
+      <span className="flex w-full flex-wrap items-baseline gap-x-1.5 gap-y-0 text-2xl font-extrabold leading-tight tracking-tight text-[#302B28] tabular-nums sm:text-3xl">
+        <bdi>{value}</bdi>
+        {suffix && <span className="text-xs font-semibold tracking-normal text-[#756B62] sm:text-sm">{suffix}</span>}
+      </span>
+      <span className="mt-auto w-full pt-3">
+        <span className="flex items-center justify-between gap-2 border-t border-[#E9E1D7] pt-2.5">
           <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 ${
-              up ? 'bg-mint-100 text-mint-600' : 'bg-brand-50 text-brand-500'
+            className={`inline-flex items-center gap-1 text-xs font-bold tabular-nums ${
+              up ? 'text-[#1E9E6A]' : 'text-[#C2281A]'
             }`}
           >
-            {up ? <ArrowUpIcon className="h-3 w-3" /> : <ArrowDownIcon className="h-3 w-3" />}
-            {delta}
+            {up ? <ArrowUpIcon className="h-3.5 w-3.5" /> : <ArrowDownIcon className="h-3.5 w-3.5" />}
+            <bdi>{delta}</bdi>
           </span>
-          <span className="hidden items-center gap-0.5 text-stone-300 group-hover:text-brand-400 sm:inline-flex">
-            <EyeIcon className="h-3.5 w-3.5" />
-          </span>
+          <EyeIcon className="h-4 w-4 shrink-0 text-[#8B8177] transition-colors group-hover:text-[#C2281A]" />
         </span>
-      </div>
+      </span>
     </button>
   )
 }

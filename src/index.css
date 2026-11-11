@@ -11,6 +11,44 @@ body {
   background-color: #fdf8f1;
 }
 
+.dashboard-shell {
+  --dashboard-border: #e9e1d7;
+  color: #302b28;
+  font-family: 'Tajawal', 'Cairo', system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-shell :is(h1, h2, h3) {
+  font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+  text-wrap: balance;
+}
+
+.dashboard-main {
+  width: 100%;
+  max-width: 1500px;
+  margin-inline: auto;
+}
+
+.dashboard-panel {
+  border: 1px solid var(--dashboard-border);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(48 43 40 / 2%);
+}
+
+.dashboard-shell :is(button, a, input, select):focus-visible {
+  outline: 2px solid #c2281a;
+  outline-offset: 3px;
+}
+
+.dashboard-shell .text-stone-400 {
+  color: #756d66;
+}
+
+.dashboard-shell :is(input, select, textarea) {
+  min-height: 44px;
+}
+
 button,
 a,
 input,
@@ -86,10 +124,6 @@ textarea,
 }
 .animate-toast-in {
   animation: toast-in 0.2s ease-out both;
-}
-
-.chart-point:focus-visible circle:last-child {
-  stroke-width: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
