@@ -133,7 +133,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null)
 
   const search = typeof window === 'undefined' ? '' : window.location.search
-  const mockMode = isMockRequested(search)
+  const mockMode = isMockRequested(search) || session.apiOrigin.startsWith('mock:')
   const api = useMemo(
     () =>
       mockMode

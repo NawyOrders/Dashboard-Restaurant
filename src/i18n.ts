@@ -113,6 +113,11 @@ export const translations = {
       tenantContext: 'خادم المطعم المتصل',
       mockTitle: 'وضع البيانات التجريبية',
       mockHint: 'تُعرض الطلبات من مزوّد بيانات تجريبي محلي؛ التغييرات لا تُرسل إلى المطعم.',
+      demoTitle: 'دخول تجريبي (للتطوير فقط)',
+      demoHint: 'اختر حسابًا تجريبيًا لاستعراض لوحة التحكم دون الاتصال بخادم المطعم.',
+      demoOwner: 'المالك التجريبي',
+      demoManager: 'المدير التجريبي',
+      demoStaff: 'الموظف التجريبي',
     },
     dashboard: {
       overview: 'نظرة على مطعمك',
@@ -354,6 +359,11 @@ export const translations = {
       tenantContext: 'Connected restaurant server',
       mockTitle: 'Mock data mode',
       mockHint: 'Orders are served by a local mock provider; changes are not sent to your restaurant.',
+      demoTitle: 'Demo sign-in (development only)',
+      demoHint: 'Choose a demo account to explore the dashboard without the restaurant server.',
+      demoOwner: 'Demo Owner',
+      demoManager: 'Demo Manager',
+      demoStaff: 'Demo Staff',
     },
     dashboard: {
       overview: 'Your restaurant at a glance',

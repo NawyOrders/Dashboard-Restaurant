@@ -2,8 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { AuthError, login } from '../auth'
 import type { AuthErrorCode, Session } from '../auth'
+import { isMockRequested } from '../api'
+import type { MockRole } from '../mockAuth'
 import type { T } from '../i18n'
 import { EyeIcon, SpinnerIcon, UtensilsIcon } from '../icons'
+
+const DEMO_ROLES: MockRole[] = ['Owner', 'Manager', 'Staff']
 
 type Props = {
   t: T
@@ -27,6 +31,16 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [errorCode, setErrorCode] = useState<AuthErrorCode | null>(null)
   const [pending, setPending] = useState(false)
+  const [demoPending, setDemoPending] = useState<MockRole | null>(null)
+  const demoAvailable =
+    import.meta.env.DEV &&
+    typeof window !== 'undefined' &&
+    isMockRequested(window.location.search)
+  const demoLabels: Record<MockRole, string> = {
+    Owner: t.auth.demoOwner,
+    Manager: t.auth.demoManager,
+    Staff: t.auth.demoStaff,
+  }
   const emailRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
   const errorRef = useRef<HTMLParagraphElement>(null)
@@ -97,6 +111,19 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
         submittingRef.current = false
         if (!controller.signal.aborted) setPending(false)
       }
+    }
+  }
+
+  const handleDemoSignIn = async (role: MockRole) => {
+    if (!import.meta.env.DEV || demoPending) return
+    setErrorCode(null)
+    setDemoPending(role)
+    try {
+      const { createMockSession } = await import('../mockAuth')
+      onSuccess(createMockSession(role))
+    } catch {
+      setDemoPending(null)
+      setErrorCode('service')
     }
   }
 
@@ -280,6 +307,29 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
               </button>
             </form>
             <p role="status" className="sr-only">{pending ? t.auth.submitting : ''}</p>
+
+            {demoAvailable && (
+              <section
+                aria-labelledby="login-demo-heading"
+                className="mt-6 rounded-xl border border-dashed border-[#D9C9B5] bg-white/70 p-4"
+              >
+                <h2 id="login-demo-heading" className="text-sm font-bold text-[#806116]">{t.auth.demoTitle}</h2>
+                <p className="mt-1 text-xs leading-relaxed text-[#726255]">{t.auth.demoHint}</p>
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {DEMO_ROLES.map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => void handleDemoSignIn(role)}
+                      disabled={demoPending !== null}
+                      className="min-h-11 rounded-lg border border-[#D9C9B5] bg-white px-3 py-2 text-sm font-bold text-[#342B27] motion-safe:transition-colors hover:border-[#C2281A] hover:text-[#C2281A] disabled:cursor-wait disabled:opacity-70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FDF8F1]"
+                    >
+                      {demoPending === role ? t.auth.submitting : demoLabels[role]}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <div className="mt-6 border-t border-[#D9C9B5] pt-5 text-[#726255]">
               <p id="login-help" className="text-sm leading-relaxed">{t.auth.help}</p>

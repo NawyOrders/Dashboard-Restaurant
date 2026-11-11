@@ -62,7 +62,7 @@ Browser tests use installed Google Chrome and start an isolated Vite server on p
 
 Login connects to the [Nawy Orders Tenant API documentation](https://el-fahm-01a1c1ed11cf79ffbe51681899bb90fd.api.nawyorders.com/swagger/index.html). The server origin is configured as `API_BASE_URL` in `src/auth.ts`.
 
-- `POST /api/v1/auth/login` sends `{ email, password }` over HTTPS. Enter your existing restaurant credentials; there is no built-in demo password or account bypass.
+- `POST /api/v1/auth/login` sends `{ email, password }` over HTTPS. Enter your existing restaurant credentials. Development builds also expose an explicit demo sign-in behind `?mock=1` (see below).
 - The adapter validates the documented `isSuccess`/`data` response envelope. Identity, roles, permissions and token expiry come from the server, not a local account list.
 - Access and refresh tokens are kept in memory only. Reloading the page or reaching token expiry requires signing in again. Automatic refresh is intentionally not implemented.
 - Sign-out clears the local dashboard immediately and attempts `POST /api/v1/auth/revoke`. A warning remains visible if server revocation fails.
@@ -71,11 +71,20 @@ Login connects to the [Nawy Orders Tenant API documentation](https://el-fahm-01a
 
 The API must enforce tenant context and permissions for every future operational request. Frontend session gating is not a security boundary. This implementation does not verify JWT signatures or implement a backend authentication service.
 
+### Development Demo Sign-In
+
+The El Fahm tenant currently rejects the sample credentials in `.env.development.local` with `401 Invalid email or password`. For local UI work, open `http://localhost:5173/?mock=1` and use the **Demo sign-in (development only)** buttons to mount the dashboard as Owner, Manager, or Staff.
+
+- Demo sessions exist only in development builds (`import.meta.env.DEV`) and only when `?mock=1` is present.
+- They are created in memory, never sent to the tenant API, and use the mock orders adapter.
+- They are not a production authentication path; real login remains the default and server roles stay authoritative.
+- Real sign-in requires valid tenant credentials. Update `.env.development.local` or initialize accounts through the invitation flow (`POST /api/v1/auth/set-initial-password`).
+
 ## Demo Environment
 
 The application currently uses **hard-coded demo data** rendered directly by the components for development and UI work.
 
-> **Note:** Only staff login and session revocation use the real API. Dashboard KPIs, charts, top items and settings remain sample data. Orders are sample data by default; append `?mock=1` to load them through the `Api` mock adapter. A persistent banner explains the active data mode.
+> **Note:** Only staff login and session revocation use the real API. Dashboard KPIs, charts, top items and settings remain sample data. Orders are sample data by default; append `?mock=1` to load them through the `Api` mock adapter and to reveal the development demo sign-in. A persistent banner explains the active data mode.
 
 ### Data Integration Foundation
 
