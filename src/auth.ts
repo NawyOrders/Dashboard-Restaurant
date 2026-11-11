@@ -3,7 +3,24 @@
 // Access and refresh tokens live in React memory only, not browser storage.
 // Authorization and tenant isolation MUST be enforced by the API on every request.
 
-export const API_BASE_URL = 'https://el-fahm-01a1c1ed11cf79ffbe51681899bb90fd.api.nawyorders.com'
+const DEFAULT_API_BASE_URL = 'https://el-fahm-01a1c1ed11cf79ffbe51681899bb90fd.api.nawyorders.com'
+
+function resolveApiBaseUrl(): string {
+  const configured = typeof import.meta.env.VITE_API_BASE_URL === 'string'
+    ? import.meta.env.VITE_API_BASE_URL.trim()
+    : ''
+  if (!configured) return DEFAULT_API_BASE_URL
+  try {
+    const url = new URL(configured)
+    // Accept only HTTPS origins without embedded credentials.
+    if (url.protocol !== 'https:' || url.username || url.password) return DEFAULT_API_BASE_URL
+    return configured.replace(/\/+$/, '')
+  } catch {
+    return DEFAULT_API_BASE_URL
+  }
+}
+
+export const API_BASE_URL = resolveApiBaseUrl()
 export const REQUEST_TIMEOUT_MS = 15_000
 
 export interface AuthUser {

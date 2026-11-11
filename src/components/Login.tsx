@@ -23,8 +23,13 @@ type FieldErrors = {
 }
 
 export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }: Props) {
-  const defaultEmail = import.meta.env.DEV ? import.meta.env.VITE_DEV_LOGIN_OWNER_EMAIL ?? '' : ''
-  const defaultPassword = import.meta.env.DEV ? import.meta.env.VITE_DEV_LOGIN_PASSWORD ?? '' : ''
+  const env = import.meta.env
+  const defaultEmail = env.DEV
+    ? env.VITE_LOGIN_OWNER_EMAIL ?? env.VITE_DEV_LOGIN_OWNER_EMAIL ?? ''
+    : ''
+  const defaultPassword = env.DEV
+    ? env.VITE_LOGIN_PASSWORD ?? env.VITE_DEV_LOGIN_PASSWORD ?? ''
+    : ''
   const [email, setEmail] = useState(initialNotice ? '' : defaultEmail)
   const [password, setPassword] = useState(initialNotice || !defaultEmail ? '' : defaultPassword)
   const [showPassword, setShowPassword] = useState(false)

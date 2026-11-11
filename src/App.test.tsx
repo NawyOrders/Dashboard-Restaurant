@@ -13,10 +13,10 @@ const en = translations.en
 beforeEach(() => {
   fetchMock.mockReset()
   vi.stubGlobal('fetch', fetchMock)
-  vi.stubEnv('VITE_DEV_LOGIN_OWNER_EMAIL', '')
-  vi.stubEnv('VITE_DEV_LOGIN_MANAGER_EMAIL', '')
-  vi.stubEnv('VITE_DEV_LOGIN_STAFF_EMAIL', '')
-  vi.stubEnv('VITE_DEV_LOGIN_PASSWORD', '')
+  vi.stubEnv('VITE_LOGIN_OWNER_EMAIL', '')
+  vi.stubEnv('VITE_LOGIN_MANAGER_EMAIL', '')
+  vi.stubEnv('VITE_LOGIN_STAFF_EMAIL', '')
+  vi.stubEnv('VITE_LOGIN_PASSWORD', '')
   localStorage.clear()
 })
 
@@ -209,10 +209,10 @@ describe('login form validation and feedback', () => {
 describe('development account defaults', () => {
   beforeEach(() => {
     vi.stubEnv('DEV', true)
-    vi.stubEnv('VITE_DEV_LOGIN_OWNER_EMAIL', 'owner@example.test')
-    vi.stubEnv('VITE_DEV_LOGIN_MANAGER_EMAIL', 'manager@example.test')
-    vi.stubEnv('VITE_DEV_LOGIN_STAFF_EMAIL', 'staff@example.test')
-    vi.stubEnv('VITE_DEV_LOGIN_PASSWORD', 'fixture-only')
+    vi.stubEnv('VITE_LOGIN_OWNER_EMAIL', 'owner@example.test')
+    vi.stubEnv('VITE_LOGIN_MANAGER_EMAIL', 'manager@example.test')
+    vi.stubEnv('VITE_LOGIN_STAFF_EMAIL', 'staff@example.test')
+    vi.stubEnv('VITE_LOGIN_PASSWORD', 'fixture-only')
   })
 
   it('prefills Owner without signing in or writing credentials to storage', () => {
@@ -265,9 +265,9 @@ describe('development account defaults', () => {
   })
 
   it('keeps the form empty when no default accounts are configured', () => {
-    vi.stubEnv('VITE_DEV_LOGIN_OWNER_EMAIL', '')
-    vi.stubEnv('VITE_DEV_LOGIN_MANAGER_EMAIL', '')
-    vi.stubEnv('VITE_DEV_LOGIN_STAFF_EMAIL', '')
+    vi.stubEnv('VITE_LOGIN_OWNER_EMAIL', '')
+    vi.stubEnv('VITE_LOGIN_MANAGER_EMAIL', '')
+    vi.stubEnv('VITE_LOGIN_STAFF_EMAIL', '')
     mount()
     expect(screen.queryByRole('group')).not.toBeInTheDocument()
     expect(screen.getByLabelText(ar.auth.password)).toHaveValue('')
