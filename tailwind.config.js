@@ -4,6 +4,17 @@ export default {
   theme: {
     extend: {
       colors: {
+        ink: {
+          900: '#302B28',
+          700: '#4A413B',
+          500: '#756B62',
+        },
+        surface: {
+          DEFAULT: '#FFFFFF',
+          muted: '#FDF8F1',
+          sunken: '#F6EEE4',
+        },
+        line: '#E9E1D7',
         cream: {
           50: '#FDF8F1',
           100: '#FAF1E4',
@@ -35,6 +46,8 @@ export default {
       boxShadow: {
         card: '0 2px 12px rgba(160, 31, 19, 0.06)',
         soft: '0 8px 30px rgba(160, 31, 19, 0.10)',
+        lift: '0 18px 40px -24px rgba(160, 31, 19, 0.28)',
+        hero: '0 24px 60px -40px rgba(160, 31, 19, 0.55)',
       },
       borderRadius: {
         '4xl': '2rem',

@@ -89,9 +89,9 @@ export function Sidebar({
   ]
 
   const itemClass = (isActive: boolean) =>
-    `flex min-h-12 w-full items-center gap-3 rounded-full px-4 py-3 text-sm font-bold transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E6BF78] focus-visible:ring-offset-2 focus-visible:ring-offset-[#A01F13] ${
+    `relative flex min-h-12 w-full items-center gap-3 rounded-full px-4 py-3 text-sm font-bold transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E6BF78] focus-visible:ring-offset-2 focus-visible:ring-offset-[#A01F13] ${
       isActive
-        ? 'bg-white text-[#A01F13]'
+        ? 'bg-white text-[#A01F13] shadow-sm'
         : 'text-[#FFF8EF] hover:bg-white/10'
     }`
 
@@ -107,11 +107,16 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between gap-2 rounded-2xl border border-white/20 bg-black/10 px-3 py-2">
-        <span className="text-sm font-bold text-white">
-          {isOpen ? t.nav.open : t.nav.closed}
+      <div className="flex shrink-0 flex-col gap-2 rounded-2xl border border-white/20 bg-black/10 p-3">
+        <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-[#FFF8EF]/70">
+          <span className={`h-2 w-2 rounded-full ${isOpen ? 'bg-mint-400' : 'bg-stone-400'}`} aria-hidden="true" />
+          {t.nav.statusLabel}
         </span>
-        <OpenSwitch t={t} isOpen={isOpen} onToggle={onToggleOpen} />
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-bold text-white">{isOpen ? t.nav.open : t.nav.closed}</span>
+          <OpenSwitch t={t} isOpen={isOpen} onToggle={onToggleOpen} />
+        </div>
+        <p className="text-[11px] leading-relaxed text-[#FFF8EF]/70">{isOpen ? t.greetingSub : t.greetingClosed}</p>
       </div>
 
       <nav className="flex flex-col gap-2" aria-label={t.nav.label}>
@@ -122,6 +127,7 @@ export function Sidebar({
           title={`${t.nav.home}`}
           className={itemClass(active === 'home')}
         >
+          {active === 'home' && <span aria-hidden="true" className="absolute inset-y-2 start-1 w-1 rounded-full bg-[#A01F13]" />}
           <HomeIcon className="h-5 w-5" />
           <span className="flex-1 text-start">{t.nav.home}</span>
         </button>
@@ -134,6 +140,7 @@ export function Sidebar({
             title={`${t.nav[key]}`}
             className={itemClass(active === key)}
           >
+            {active === key && <span aria-hidden="true" className="absolute inset-y-2 start-1 w-1 rounded-full bg-[#A01F13]" />}
             <Icon className="h-5 w-5 shrink-0" />
             <span className="min-w-0 flex-1 break-words text-start">{t.nav[key]}</span>
             {badge !== undefined && <NavBadge count={badge} active={active === key} />}

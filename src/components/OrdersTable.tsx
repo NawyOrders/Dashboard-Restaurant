@@ -2,7 +2,9 @@ import type { T } from '../i18n'
 import type { OrderRow, OrderStatus } from '../types'
 import { statusOf } from '../orders'
 import { StatusBadge } from './StatusBadge'
-import { ArrowLeftIcon, ArrowRightIcon, EyeIcon, SearchXIcon } from '../icons'
+import { ArrowLeftIcon, ArrowRightIcon, EyeIcon, RefreshIcon, SearchXIcon } from '../icons'
+
+const FILTERS: Array<OrderStatus | 'all'> = ['all', 'new', 'preparing', 'done']
 
 type Props = {
   t: T
@@ -10,16 +12,38 @@ type Props = {
   statuses: Record<string, OrderStatus>
   query: string
   state?: 'loading' | 'ready' | 'error'
+  statusFilter?: OrderStatus | 'all'
+  onStatusFilterChange?: (status: OrderStatus | 'all') => void
   onRetry?: () => void
+  onRefresh?: () => void
   onSelect: (order: OrderRow) => void
   onViewAll: () => void
 }
 
-export function OrdersTable({ t, orders, statuses, query, state = 'ready', onRetry, onSelect, onViewAll }: Props) {
+export function OrdersTable({
+  t,
+  orders,
+  statuses,
+  query,
+  state = 'ready',
+  statusFilter = 'all',
+  onStatusFilterChange,
+  onRetry,
+  onRefresh,
+  onSelect,
+  onViewAll,
+}: Props) {
   const { title, viewAll, cols, status } = t.orders
   const isRtl = t.dir === 'rtl'
   const Arrow = isRtl ? ArrowLeftIcon : ArrowRightIcon
-  const empty = orders.length === 0
+  const queryActive = query.trim().length > 0
+  const counts: Record<OrderStatus | 'all', number> = { all: orders.length, new: 0, preparing: 0, done: 0 }
+  for (const row of orders) {
+    counts[statusOf(row, statuses)] += 1
+  }
+  const visibleOrders =
+    statusFilter === 'all' ? orders : orders.filter((row) => statusOf(row, statuses) === statusFilter)
+  const empty = visibleOrders.length === 0
 
   return (
     <section dir={t.dir} className="dashboard-panel min-w-0 p-4 sm:p-5">
@@ -28,7 +52,7 @@ export function OrdersTable({ t, orders, statuses, query, state = 'ready', onRet
           <h3 className="text-base font-extrabold leading-7 text-[#302B28] sm:text-lg">{title}</h3>
           {query.trim() && (
             <p className="mt-1 text-xs font-semibold text-[#756B62]">
-              {orders.length} {t.search.results}
+              {visibleOrders.length} {t.search.results}
             </p>
           )}
         </div>
@@ -42,6 +66,50 @@ export function OrdersTable({ t, orders, statuses, query, state = 'ready', onRet
           <Arrow className="h-4 w-4" />
         </button>
       </div>
+
+      {state === 'ready' && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div role="group" aria-label={title} className="flex flex-wrap gap-1.5">
+            {FILTERS.map((filter) => {
+              const active = statusFilter === filter
+              const label = filter === 'all' ? t.orders.filterAll : status[filter]
+              return (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => onStatusFilterChange?.(filter)}
+                  aria-pressed={active}
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2 ${
+                    active
+                      ? 'bg-[#C2281A] text-white'
+                      : 'border border-[#E9E1D7] bg-white text-[#756B62] hover:border-[#D9B45A] hover:text-[#302B28]'
+                  }`}
+                >
+                  {label}
+                  <span
+                    className={`rounded-full px-1.5 text-[10px] tabular-nums ${
+                      active ? 'bg-white/20' : 'bg-[#F6EEE4] text-[#756B62]'
+                    }`}
+                  >
+                    {counts[filter]}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              title={t.orders.refresh}
+              aria-label={t.orders.refresh}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-[#E9E1D7] bg-white text-[#756B62] transition-colors hover:border-[#C2281A]/30 hover:text-[#C2281A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2"
+            >
+              <RefreshIcon className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+      )}
 
       {state === 'loading' ? (
         <div role="status" aria-live="polite" className="flex flex-col gap-3">
@@ -68,8 +136,21 @@ export function OrdersTable({ t, orders, statuses, query, state = 'ready', onRet
       ) : empty ? (
         <div className="flex flex-col items-center gap-2 rounded-xl bg-[#FDF8F1] px-4 py-12 text-center">
           <SearchXIcon className="mb-1 h-9 w-9 text-[#8B8177]" />
-          <p className="text-sm font-bold text-[#302B28]">{t.search.empty}</p>
-          <p className="max-w-xs text-xs leading-5 text-[#756B62]">{t.search.emptyHint}</p>
+          <p className="text-sm font-bold text-[#302B28]">
+            {queryActive ? t.search.empty : t.orders.emptyFilter}
+          </p>
+          <p className="max-w-xs text-xs leading-5 text-[#756B62]">
+            {queryActive ? t.search.emptyHint : t.orders.emptyFilter}
+          </p>
+          {statusFilter !== 'all' && (
+            <button
+              type="button"
+              onClick={() => onStatusFilterChange?.('all')}
+              className="mt-1 inline-flex min-h-11 items-center rounded-lg border border-[#E9E1D7] bg-white px-4 py-2 text-sm font-bold text-[#C2281A] transition-colors hover:border-[#C2281A]/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2"
+            >
+              {t.orders.clearFilters}
+            </button>
+          )}
         </div>
       ) : (
         <>
@@ -88,7 +169,7 @@ export function OrdersTable({ t, orders, statuses, query, state = 'ready', onRet
                 </tr>
               </thead>
               <tbody>
-                {orders.map((row) => {
+                {visibleOrders.map((row) => {
                   const current = statusOf(row, statuses)
                   return (
                     <tr
@@ -128,7 +209,7 @@ export function OrdersTable({ t, orders, statuses, query, state = 'ready', onRet
           </div>
 
           <ul className="flex flex-col gap-3 md:hidden">
-            {orders.map((row) => {
+            {visibleOrders.map((row) => {
               const current = statusOf(row, statuses)
               return (
                 <li key={row.id}>
@@ -165,6 +246,22 @@ export function OrdersTable({ t, orders, statuses, query, state = 'ready', onRet
               )
             })}
           </ul>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#E9E1D7] pt-3 text-xs font-semibold text-[#756B62]">
+            <p className="tabular-nums">
+              {t.orders.showing} <bdi className="font-extrabold text-[#302B28]">{visibleOrders.length}</bdi> {t.orders.of}{' '}
+              <bdi className="font-extrabold text-[#302B28]">{orders.length}</bdi>
+            </p>
+            {statusFilter !== 'all' && (
+              <button
+                type="button"
+                onClick={() => onStatusFilterChange?.('all')}
+                className="inline-flex min-h-11 items-center rounded-lg px-2 py-2 font-bold text-[#C2281A] transition-colors hover:bg-[#FDF8F1] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2"
+              >
+                {t.orders.clearFilters}
+              </button>
+            )}
+          </div>
         </>
       )}
     </section>

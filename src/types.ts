@@ -5,6 +5,7 @@ export type OrderRow = {
   customer: string
   items: string
   total: string
+  totalValue?: number
   status: string
   time: string
 }

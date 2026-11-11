@@ -4,6 +4,8 @@ import { EyeIcon } from '../icons'
 export function TopItems({ t, onOpenDetails }: { t: T; onOpenDetails: () => void }) {
   const { title, subtitle, items } = t.topItems
   const max = Math.max(...items.map((item) => item.count), 1)
+  const total = items.reduce((sum, item) => sum + item.count, 0)
+  const totalForShare = total || 1
   const rankedItems = [...items].sort((a, b) => b.count - a.count)
 
   return (
@@ -12,6 +14,10 @@ export function TopItems({ t, onOpenDetails }: { t: T; onOpenDetails: () => void
         <div className="min-w-0">
           <h3 className="text-base font-extrabold leading-7 text-[#302B28] sm:text-lg">{title}</h3>
           <p className="mt-1 text-xs leading-5 text-[#756B62]">{subtitle}</p>
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#FDF8F1] px-2.5 py-1 text-[11px] font-bold text-[#756B62]">
+            {t.topItems.totalOrders}
+            <bdi className="tabular-nums text-[#302B28]">{total}</bdi>
+          </p>
         </div>
         <button
           type="button"
@@ -41,8 +47,16 @@ export function TopItems({ t, onOpenDetails }: { t: T; onOpenDetails: () => void
                 <span className="min-w-0 break-words text-sm font-bold leading-6 text-[#302B28]">
                   {item.name}
                 </span>
-                <span className="shrink-0 text-sm font-extrabold leading-6 text-[#302B28] tabular-nums">
-                  {item.count}
+                <span className="shrink-0 text-end">
+                  <span className="block text-sm font-extrabold leading-6 text-[#302B28] tabular-nums">
+                    {item.count}
+                  </span>
+                  <span
+                    title={`${t.topItems.share}: ${Math.round((item.count / totalForShare) * 100)}%`}
+                    className="block text-[11px] font-semibold leading-4 text-[#756B62] tabular-nums"
+                  >
+                    {Math.round((item.count / totalForShare) * 100)}%
+                  </span>
                 </span>
               </div>
               <div aria-hidden="true" className="relative h-1.5 overflow-hidden rounded-full bg-[#F6EEE4]">

@@ -167,9 +167,28 @@ function Chart({
 
 export function SalesChart({ t }: { t: T }) {
   const [tab, setTab] = useState<'week' | 'month'>('week')
-  const { title, subtitle, monthSubtitle, week, month, days, monthLabels, currency, chartLabel, pointLabel } =
-    t.chart
+  const {
+    title,
+    subtitle,
+    monthSubtitle,
+    week,
+    month,
+    days,
+    monthLabels,
+    currency,
+    chartLabel,
+    pointLabel,
+    total: totalLabel,
+    average: averageLabel,
+    peak: peakLabel,
+  } = t.chart
   const locale = t.dir === 'rtl' ? 'ar-EG' : 'en-US'
+  const values = tab === 'week' ? DATA.week : DATA.month
+  const total = values.reduce((sum, value) => sum + value, 0)
+  const average = values.length > 0 ? total / values.length : 0
+  const peak = values.length > 0 ? Math.max(...values) : 0
+  const format = (value: number) =>
+    new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)
 
   return (
     <section dir={t.dir} className="dashboard-panel flex h-full min-w-0 flex-col p-4 sm:p-5">
@@ -201,10 +220,25 @@ export function SalesChart({ t }: { t: T }) {
           ))}
         </div>
       </div>
+      <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
+        {[
+          { label: totalLabel, value: total },
+          { label: averageLabel, value: average },
+          { label: peakLabel, value: peak },
+        ].map((item) => (
+          <div key={item.label} className="rounded-xl border border-[#E9E1D7] bg-[#FDF8F1] px-3 py-2">
+            <p className="text-[11px] font-semibold text-[#756B62]">{item.label}</p>
+            <p className="mt-0.5 flex items-baseline gap-1 text-sm font-extrabold tabular-nums text-[#302B28] sm:text-base">
+              <bdi>{format(item.value)}</bdi>
+              <span className="text-[10px] font-semibold text-[#756B62] sm:text-xs">{currency}</span>
+            </p>
+          </div>
+        ))}
+      </div>
       <div className="flex min-w-0 flex-1 items-end">
         <Chart
           key={tab}
-          values={tab === 'week' ? DATA.week : DATA.month}
+          values={values}
           labels={tab === 'week' ? days : monthLabels}
           currency={currency}
           ariaLabel={chartLabel}
