@@ -23,7 +23,7 @@ import {
   StatDetails,
   TopItemsDialog,
 } from './components/Dialogs'
-import { BagIcon, CheckIcon, CoinsIcon, StarIcon, UsersIcon } from './icons'
+import { ArrowLeftIcon, ArrowRightIcon, BagIcon, CheckIcon, CoinsIcon, InfoIcon, StarIcon, UsersIcon } from './icons'
 
 type Stat = {
   key: StatKey
@@ -204,9 +204,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
       suffix: t.chart.currency,
       delta: '12.5%',
       up: true,
-      iconBg: 'bg-gradient-to-br from-gold-300 to-gold-500',
-      icon: <CoinsIcon className="h-6 w-6 text-white" />,
-      orderClass: 'order-2 xl:order-4',
+      iconBg: 'bg-[#FBF1D8]',
+      icon: <CoinsIcon className="h-5 w-5 text-[#806116]" />,
+      orderClass: 'order-1',
     },
     {
       key: 'newOrders',
@@ -214,9 +214,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
       value: '148',
       delta: '8.2%',
       up: true,
-      iconBg: 'bg-gradient-to-br from-brand-400 to-brand-700',
-      icon: <BagIcon className="h-6 w-6 text-white" />,
-      orderClass: 'order-1 xl:order-3',
+      iconBg: 'bg-brand-50',
+      icon: <BagIcon className="h-5 w-5 text-brand-600" />,
+      orderClass: 'order-2',
     },
     {
       key: 'employees',
@@ -224,9 +224,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
       value: '326',
       delta: '4.1%',
       up: true,
-      iconBg: 'bg-gradient-to-br from-brand-100 to-brand-100',
-      icon: <UsersIcon className="h-6 w-6 text-brand-500" />,
-      orderClass: 'order-4 xl:order-2',
+      iconBg: 'bg-mint-100',
+      icon: <UsersIcon className="h-5 w-5 text-[#176B4B]" />,
+      orderClass: 'order-3',
     },
     {
       key: 'avgOrder',
@@ -235,9 +235,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
       suffix: t.chart.currency,
       delta: '2.3%',
       up: false,
-      iconBg: 'bg-gradient-to-br from-gold-300 to-gold-500',
-      icon: <StarIcon className="h-6 w-6 text-white" />,
-      orderClass: 'order-3 xl:order-1',
+      iconBg: 'bg-cream-100',
+      icon: <StarIcon className="h-5 w-5 text-[#806116]" />,
+      orderClass: 'order-4',
     },
   ]
 
@@ -298,9 +298,14 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     showToast(`${t.calendar.dateUpdated}: ${formatFullDate(next, t.dir === 'rtl' ? 'ar-EG' : 'en-US')}`)
   }
 
+  const ForwardIcon = t.dir === 'rtl' ? ArrowLeftIcon : ArrowRightIcon
+
   return (
-    <div className="min-h-screen overflow-x-clip bg-cream-50">
-      <div className="flex">
+    <div className="dashboard-shell min-h-screen bg-cream-50">
+      <a href="#dashboard-content" className="sr-only z-[70] rounded-lg bg-white p-3 font-bold text-brand-700 focus:not-sr-only focus:fixed focus:start-4 focus:top-4">
+        {t.dashboard.skip}
+      </a>
+      <div className="flex items-start">
         <Sidebar
           t={t}
           active={section}
@@ -314,11 +319,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           onOpenSettings={() => setModal({ type: 'settings' })}
         />
 
-        <main className="min-w-0 flex-1 pb-28 lg:pb-10">
-          <aside aria-label={t.auth.previewTitle} className="mx-4 mt-4 rounded-xl border border-gold-300 bg-cream-100 px-4 py-3 text-sm text-stone-700 sm:mx-6">
-            <p className="font-bold">{t.auth.previewTitle}</p>
-            <p className="mt-1 text-xs leading-relaxed">{t.auth.previewHint}</p>
-          </aside>
+        <main id="dashboard-content" tabIndex={-1} className="dashboard-main min-w-0 flex-1 px-4 pt-4 pb-28 outline-none sm:px-6 sm:pt-6 lg:px-7 lg:pb-10 xl:px-8">
           <MobileHeader
             t={t}
             active={section}
@@ -333,19 +334,11 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             onOpenNotifications={() => setModal({ type: 'notifications' })}
           />
 
-          <div className="mt-5 px-4 sm:px-6 lg:hidden">
-            <h2 className="text-xl font-black text-brand-600">{t.greeting} 👋</h2>
-            <p className="mt-1 text-xs font-semibold text-mint-600">
-              {isOpen ? t.greetingSub : t.greetingClosed}
-            </p>
-          </div>
-
           <Topbar
             t={t}
             user={session.user}
             query={query}
             unreadCount={unreadCount}
-            isOpen={isOpen}
             selectedDate={selectedDate}
             onQueryChange={setQuery}
             onSearchSubmit={() => navigate('orders')}
@@ -356,10 +349,26 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             onOpenGuide={() => setModal({ type: 'guide' })}
           />
 
-          <div
-            id="home"
-            className="mt-6 grid scroll-mt-4 grid-cols-2 gap-3 px-4 sm:gap-4 sm:px-6 xl:grid-cols-4"
-          >
+          <div className="my-6 flex flex-wrap items-end justify-between gap-4 sm:my-7">
+            <div className="min-w-0">
+              <p className="mb-2 text-xs font-bold text-brand-700"><bdi>Nawy Orders</bdi><span className="mx-2 text-gold-500">/</span>{brandName}</p>
+              <h1 className="text-2xl font-extrabold leading-snug text-stone-800 sm:text-3xl">{t.dashboard.overview}</h1>
+              <p className="mt-2 text-sm leading-relaxed text-stone-500">{t.dashboard.summary}</p>
+            </div>
+            <button type="button" onClick={() => setModal({ type: 'orders' })} className="inline-flex min-h-11 items-center gap-3 rounded-xl bg-brand-600 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-700">
+              {t.statDetails.viewOrders}<ForwardIcon className="h-4 w-4" />
+            </button>
+          </div>
+
+          <aside aria-label={t.auth.previewTitle} className="mb-5 flex items-start gap-3 rounded-xl border border-gold-300/60 bg-[#FBF1D8]/50 px-4 py-3 text-stone-600">
+            <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#806116]" />
+            <div>
+              <p className="text-xs font-bold text-[#806116]">{t.auth.previewTitle}</p>
+              <p className="mt-1 text-xs leading-relaxed">{t.auth.previewHint}</p>
+            </div>
+          </aside>
+
+          <div id="home" className="grid scroll-mt-6 grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             {stats.map((stat) => (
               <StatCard
                 key={stat.key}
@@ -377,16 +386,31 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             ))}
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-4 px-4 sm:px-6 lg:grid-cols-5">
-            <div id="menu" className="order-2 scroll-mt-4 lg:order-1 lg:col-span-2">
-              <TopItems t={t} onOpenDetails={() => setModal({ type: 'topItems' })} />
-            </div>
-            <div id="reports" className="order-1 scroll-mt-4 lg:order-2 lg:col-span-3">
+          <section aria-label={t.dashboard.queue} className="dashboard-panel mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4 sm:px-5">
+            <h2 className="text-xs font-bold text-stone-600">{t.dashboard.queue}</h2>
+            <dl className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-2">
+              {(['new', 'preparing', 'done'] as const).map((status) => (
+                <div key={status} className="flex items-center gap-2 text-sm">
+                  <dt className="flex items-center gap-2 text-stone-500">
+                    <span aria-hidden="true" className={`h-2 w-2 rounded-full ${status === 'new' ? 'bg-brand-500' : status === 'preparing' ? 'bg-gold-500' : 'bg-mint-600'}`} />
+                    {t.orders.status[status]}
+                  </dt>
+                  <dd className="font-bold tabular-nums text-stone-800">{orders.filter((order) => order.status === status).length}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+
+          <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-5">
+            <div id="reports" className="scroll-mt-6 xl:col-span-3">
               <SalesChart t={t} />
+            </div>
+            <div id="menu" className="scroll-mt-6 xl:col-span-2">
+              <TopItems t={t} onOpenDetails={() => setModal({ type: 'topItems' })} />
             </div>
           </div>
 
-          <div id="orders" className="mt-4 scroll-mt-4 px-4 sm:px-6">
+          <div id="orders" className="mt-5 scroll-mt-6">
             <OrdersTable
               t={t}
               orders={filteredOrders}

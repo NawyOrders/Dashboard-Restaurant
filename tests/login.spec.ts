@@ -94,7 +94,7 @@ test('reload requires real sign-in, not a stored demo session', async ({ page })
 })
 
 for (const lang of ['ar', 'en'] as const) {
-  test(`development account defaults and switching ${lang}`, async ({ page }) => {
+  test(`development defaults with manual account entry ${lang}`, async ({ page }) => {
     const errors: string[] = []
     const requests: unknown[] = []
     page.on('pageerror', (error) => errors.push(error.message))
@@ -110,15 +110,16 @@ for (const lang of ['ar', 'en'] as const) {
     await page.goto('/')
     if (lang === 'en') await page.getByRole('button', { name: 'English', exact: true }).click()
     const t = translations[lang]
-    await expect(page.getByRole('group', { name: t.auth.defaultAccounts })).toBeVisible()
+    await expect(page.getByRole('group')).toHaveCount(0)
+    for (const role of ['owner', 'manager', 'staff'] as const) {
+      await expect(page.getByRole('button', { name: t.roles[role], exact: true })).toHaveCount(0)
+    }
     await expect(page.getByLabel(t.auth.email, { exact: true })).toHaveValue('owner@example.test')
     await expect(page.getByLabel(t.auth.password, { exact: true })).toHaveValue('fixture-only')
     expect(requests).toEqual([])
     for (const role of ['owner', 'manager', 'staff'] as const) {
-      const button = page.getByRole('button', { name: t.roles[role], exact: true })
-      await button.focus()
-      await button.press('Enter')
-      await expect(button).toHaveAttribute('aria-pressed', 'true')
+      await page.getByLabel(t.auth.email, { exact: true }).fill(`${role}@example.test`)
+      await page.getByLabel(t.auth.password, { exact: true }).fill('fixture-only')
       await expect(page.getByLabel(t.auth.email, { exact: true })).toHaveValue(`${role}@example.test`)
       await expect(page.getByLabel(t.auth.password, { exact: true })).toHaveAttribute('type', 'password')
       await page.getByRole('button', { name: t.auth.submit, exact: true }).click()

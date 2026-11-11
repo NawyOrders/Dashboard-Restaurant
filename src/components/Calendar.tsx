@@ -63,13 +63,13 @@ export function CalendarDialog({ t, selectedDate, onSelect, onClose }: Props) {
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-2">
+      <div className="mt-4 grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2">
         <button
           type="button"
           onClick={() => setViewDate((current) => addMonths(current, -1))}
           aria-label={t.calendar.previousMonth}
           title={t.calendar.previousMonth}
-          className="grid h-10 w-10 place-items-center rounded-xl bg-cream-50 text-stone-500 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+          className="grid h-11 w-11 place-items-center rounded-xl bg-cream-50 text-stone-500 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
         >
           <PrevIcon className="h-5 w-5" />
         </button>
@@ -82,7 +82,7 @@ export function CalendarDialog({ t, selectedDate, onSelect, onClose }: Props) {
           onClick={() => setViewDate((current) => addMonths(current, 1))}
           aria-label={t.calendar.nextMonth}
           title={t.calendar.nextMonth}
-          className="ms-auto grid h-10 w-10 place-items-center rounded-xl bg-cream-50 text-stone-500 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+          className="ms-auto grid h-11 w-11 place-items-center rounded-xl bg-cream-50 text-stone-500 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
         >
           <NextIcon className="h-5 w-5" />
         </button>
@@ -114,7 +114,7 @@ export function CalendarDialog({ t, selectedDate, onSelect, onClose }: Props) {
               aria-pressed={selected}
               aria-current={isToday ? 'date' : undefined}
               title={formatFullDate(cell, locale)}
-              className={`relative flex h-10 w-full items-center justify-center rounded-xl text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 ${
+              className={`relative flex h-11 w-full items-center justify-center rounded-xl text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 ${
                 selected
                   ? 'bg-brand-600 text-white shadow'
                   : isToday

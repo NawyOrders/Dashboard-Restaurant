@@ -20,7 +20,7 @@ const primaryButton =
 const secondaryButton =
   'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-cream-100 px-4 py-2.5 text-sm font-bold text-stone-600 transition-colors hover:bg-cream-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 const inputClass =
-  'w-full rounded-xl border border-cream-200 bg-cream-50 px-3.5 py-2.5 text-sm text-stone-700 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-200'
+  'w-full min-h-11 rounded-xl border border-[#D9C9B5] bg-white px-3.5 py-3 text-base text-stone-700 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-200'
 
 export function OrderDetails({
   t,
@@ -219,7 +219,7 @@ export function OrdersDialog({
               type="button"
               onClick={() => setFilter(value)}
               aria-pressed={active}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
+              className={`min-h-11 shrink-0 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
                 active
                   ? 'bg-brand-600 text-white'
                   : 'bg-cream-100 text-stone-500 hover:bg-cream-200 hover:text-stone-700'
@@ -408,7 +408,7 @@ export function TopItemsDialog({
             type="button"
             onClick={() => setSortBy(key)}
             aria-pressed={sortBy === key}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
+            className={`min-h-11 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
               sortBy === key
                 ? 'bg-brand-600 text-white'
                 : 'bg-cream-100 text-stone-500 hover:bg-cream-200'
@@ -681,15 +681,11 @@ export function SettingsDialog({
             aria-label={t.actions.toggleOpen}
             title={t.actions.toggleOpen}
             onClick={onToggleOpen}
-            className={`relative h-7 w-12 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 ${
-              isOpen ? 'bg-mint-600' : 'bg-stone-300'
-            }`}
+            className="grid h-11 w-14 shrink-0 place-items-center rounded-full"
           >
-            <span
-              className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${
-                isOpen ? 'start-6' : 'start-1'
-              }`}
-            />
+            <span aria-hidden="true" className={`relative h-7 w-12 rounded-full transition-colors ${isOpen ? 'bg-mint-600' : 'bg-stone-300'}`}>
+              <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${isOpen ? 'start-6' : 'start-1'}`} />
+            </span>
           </button>
         </div>
       </form>

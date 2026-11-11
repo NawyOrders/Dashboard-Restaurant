@@ -79,14 +79,14 @@ export function Modal({ open, onClose, title, subtitle, closeLabel, children, fo
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`relative flex max-h-[92vh] w-full animate-sheet-in flex-col overflow-hidden rounded-t-4xl bg-white shadow-soft sm:max-h-[88vh] sm:animate-modal-in sm:rounded-4xl ${sizes[size]}`}
+        className={`relative flex max-h-[92dvh] w-full animate-sheet-in flex-col overflow-hidden rounded-t-3xl border border-[#E9E1D7] bg-white shadow-xl sm:max-h-[88dvh] sm:animate-modal-in sm:rounded-2xl ${sizes[size]}`}
       >
-        <div className="flex items-start gap-3 border-b border-cream-200 px-4 py-4 sm:px-6">
-          <div className="min-w-0 flex-1">
-            <h2 id="modal-title" className="truncate text-base font-extrabold text-stone-800 sm:text-lg">
+        <div className="flex items-start gap-3 border-b border-[#E9E1D7] bg-cream-50/60 px-4 py-5 sm:px-6">
+          <div className="min-w-0 flex-1 border-s-2 border-gold-400 ps-3">
+            <h2 id="modal-title" className="text-base font-extrabold leading-relaxed text-stone-800 sm:text-lg">
               {title}
             </h2>
-            {subtitle && <p className="mt-0.5 line-clamp-2 text-xs text-stone-400">{subtitle}</p>}
+            {subtitle && <p className="mt-1 text-sm leading-relaxed text-stone-500">{subtitle}</p>}
           </div>
           <button
             ref={closeRef}
@@ -94,7 +94,7 @@ export function Modal({ open, onClose, title, subtitle, closeLabel, children, fo
             onClick={onClose}
             aria-label={closeLabel}
             title={closeLabel}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cream-50 text-stone-500 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#E9E1D7] bg-white text-stone-500 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
