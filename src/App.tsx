@@ -17,7 +17,6 @@ import { SalesChart } from './components/SalesChart'
 import { OrdersTable } from './components/OrdersTable'
 import { CalendarDialog } from './components/Calendar'
 import {
-  GuideDialog,
   NotificationsDialog,
   OrderDetails,
   OrdersDialog,
@@ -47,7 +46,6 @@ type ModalState =
   | { type: 'topItems' }
   | { type: 'notifications' }
   | { type: 'settings' }
-  | { type: 'guide' }
   | { type: 'calendar' }
   | null
 
@@ -383,7 +381,6 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             onLogout={onLogout}
             onOpenNotifications={() => setModal({ type: 'notifications' })}
             onOpenCalendar={() => setModal({ type: 'calendar' })}
-            onOpenGuide={() => setModal({ type: 'guide' })}
           />
 
           <section className="dashboard-hero my-6 flex flex-col gap-5 p-5 sm:my-7 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
@@ -578,8 +575,6 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           onSave={saveProfile}
         />
       )}
-
-      {modal?.type === 'guide' && <GuideDialog t={t} onClose={() => setModal(null)} />}
 
       {modal?.type === 'calendar' && (
         <CalendarDialog

@@ -114,11 +114,6 @@ for (const width of [390, 1440]) {
       await dialog.getByRole('button', { name: t.settings.save, exact: true }).click()
       await expect(dialog).toHaveCount(0)
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-      await page.getByRole('button', { name: t.actions.help, exact: true }).click()
-      await expect(dialog.getByRole('heading', { name: t.guide.title, exact: true })).toBeVisible()
-      await page.keyboard.press('Tab')
-      expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true)
-      await page.keyboard.press('Escape')
 
       await page.getByRole('button', { name: t.nav.langToggle, exact: true }).click()
       const other = translations[lang === 'ar' ? 'en' : 'ar']

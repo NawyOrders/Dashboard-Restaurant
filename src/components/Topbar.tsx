@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { T } from '../i18n'
 import type { AuthUser } from '../auth'
 import { formatFullDate } from '../calendar'
-import { BellIcon, CalendarIcon, CloseIcon, InfoIcon, LogoutIcon, SearchIcon } from '../icons'
+import { BellIcon, CalendarIcon, CloseIcon, LogoutIcon, SearchIcon } from '../icons'
 
 type Props = {
   t: T
@@ -16,12 +16,11 @@ type Props = {
   onLogout: () => void
   onOpenNotifications: () => void
   onOpenCalendar: () => void
-  onOpenGuide: () => void
 }
 
 export function Topbar({
   t, user, query, unreadCount, selectedDate, onQueryChange, onSearchSubmit,
-  onToggleLang, onLogout, onOpenNotifications, onOpenCalendar, onOpenGuide,
+  onToggleLang, onLogout, onOpenNotifications, onOpenCalendar,
 }: Props) {
   const searchRef = useRef<HTMLInputElement>(null)
   const dateLabel = formatFullDate(selectedDate, t.dir === 'rtl' ? 'ar-EG' : 'en-US')
@@ -63,9 +62,6 @@ export function Topbar({
           <button type="button" onClick={onOpenNotifications} aria-label={t.actions.notifications} title={t.actions.notifications} className={`${iconButton} relative hidden lg:grid`}>
             <BellIcon className="h-5 w-5" />
             {unreadCount > 0 && <span className="absolute -end-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white ring-2 ring-white">{unreadCount}</span>}
-          </button>
-          <button type="button" onClick={onOpenGuide} aria-label={t.actions.help} title={t.actions.help} className={iconButton}>
-            <InfoIcon className="h-5 w-5" />
           </button>
           <button type="button" onClick={onLogout} aria-label={t.logout} title={t.logout} className={iconButton}>
             <LogoutIcon className="h-5 w-5" />
