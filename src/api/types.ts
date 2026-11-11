@@ -99,7 +99,3 @@ export function stringOrNull(value: unknown): string | null {
 export function numberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
-
-export function finiteNumber(value: unknown): number | null {
-  return numberOrNull(value)
-}

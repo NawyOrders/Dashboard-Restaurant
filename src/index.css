@@ -13,9 +13,60 @@ body {
 
 .dashboard-shell {
   --dashboard-border: #e9e1d7;
-  color: #302b28;
+  --dashboard-surface: #ffffff;
+  --dashboard-surface-muted: #fdf8f1;
+  --dashboard-surface-sunken: #f6eee4;
+  --dashboard-text: #302b28;
+  --dashboard-text-muted: #756b62;
+  --dashboard-accent: #c2281a;
+  --dashboard-gold: #c9a227;
+  color: var(--dashboard-text);
   font-family: 'Tajawal', 'Cairo', system-ui, sans-serif;
   overflow-wrap: anywhere;
+  background-image:
+    radial-gradient(circle at 10% 0%, rgb(217 180 90 / 10%), transparent 30rem),
+    radial-gradient(circle at 100% 14%, rgb(194 40 26 / 5%), transparent 26rem);
+  background-repeat: no-repeat;
+}
+
+.dashboard-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 24px;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgb(217 180 90 / 22%), transparent 55%),
+    linear-gradient(135deg, #ffffff 0%, #fdf8f1 100%);
+  box-shadow: 0 24px 60px -40px rgb(160 31 19 / 55%);
+}
+
+.dashboard-hero::before,
+.dashboard-hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.dashboard-hero::before {
+  inset-inline-end: -4rem;
+  top: -5rem;
+  width: 16rem;
+  height: 16rem;
+  border: 1px solid rgb(201 162 39 / 35%);
+}
+
+.dashboard-hero::after {
+  inset-inline-end: 2rem;
+  bottom: -6rem;
+  width: 12rem;
+  height: 12rem;
+  border: 1px dashed rgb(194 40 26 / 15%);
+}
+
+.dashboard-shell ::selection {
+  background: rgb(201 162 39 / 28%);
+  color: var(--dashboard-text);
 }
 
 .dashboard-shell :is(h1, h2, h3) {

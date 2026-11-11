@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { CloseIcon } from '../icons'
 
 type Props = {
@@ -22,6 +22,8 @@ export function Modal({ open, onClose, title, subtitle, closeLabel, children, fo
   const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const onCloseRef = useRef(onClose)
+  const titleId = useId()
+  const subtitleId = useId()
   onCloseRef.current = onClose
 
   useEffect(() => {
@@ -78,15 +80,16 @@ export function Modal({ open, onClose, title, subtitle, closeLabel, children, fo
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
+        aria-labelledby={titleId}
+        aria-describedby={subtitle ? subtitleId : undefined}
         className={`relative flex max-h-[92dvh] w-full animate-sheet-in flex-col overflow-hidden rounded-t-3xl border border-[#E9E1D7] bg-white shadow-xl sm:max-h-[88dvh] sm:animate-modal-in sm:rounded-2xl ${sizes[size]}`}
       >
-        <div className="flex items-start gap-3 border-b border-[#E9E1D7] bg-cream-50/60 px-4 py-5 sm:px-6">
+        <div className="flex items-start gap-3 border-b border-[#E9E1D7] bg-gradient-to-r from-cream-50/80 to-white px-4 py-5 sm:px-6">
           <div className="min-w-0 flex-1 border-s-2 border-gold-400 ps-3">
-            <h2 id="modal-title" className="text-base font-extrabold leading-relaxed text-stone-800 sm:text-lg">
+            <h2 id={titleId} className="text-base font-extrabold leading-relaxed text-stone-800 sm:text-lg">
               {title}
             </h2>
-            {subtitle && <p className="mt-1 text-sm leading-relaxed text-stone-500">{subtitle}</p>}
+            {subtitle && <p id={subtitleId} className="mt-1 text-sm leading-relaxed text-stone-500">{subtitle}</p>}
           </div>
           <button
             ref={closeRef}

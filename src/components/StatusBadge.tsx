@@ -1,6 +1,6 @@
 import type { OrderStatus } from '../types'
 
-export const statusStyle: Record<OrderStatus, string> = {
+const statusStyle: Record<OrderStatus, string> = {
   new: 'bg-brand-50 text-brand-700',
   preparing: 'bg-[#FBF1D8] text-[#806116]',
   done: 'bg-mint-100 text-[#176B4B]',

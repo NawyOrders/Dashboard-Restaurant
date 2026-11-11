@@ -27,6 +27,17 @@ export function formatOrderTotal(total: number, lang: Lang): string {
   return `${currency} ${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(total)}`
 }
 
+export function formatNumber(value: number, lang: Lang, maximumFractionDigits = 0): string {
+  return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits }).format(value)
+}
+
+export function orderTotalValue(row: OrderRow): number {
+  if (typeof row.totalValue === 'number' && Number.isFinite(row.totalValue)) return row.totalValue
+  const normalized = row.total.replace(/[^\d.,-]/g, '').replace(/,/g, '')
+  const value = Number.parseFloat(normalized)
+  return Number.isFinite(value) ? value : 0
+}
+
 export function formatOrderTime(iso: string, lang: Lang): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return '—'
@@ -44,6 +55,7 @@ export function mapAdminOrder(item: AdminOrderListItem, lang: Lang): OrderRow {
     customer: item.customerName?.trim() || (lang === 'ar' ? 'عميل' : 'Customer'),
     items: '—',
     total: formatOrderTotal(item.total, lang),
+    totalValue: item.total,
     status: mapOrderStatus(item.status),
     time: formatOrderTime(item.createdAtUtc, lang),
   }
