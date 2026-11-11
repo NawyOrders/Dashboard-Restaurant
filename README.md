@@ -16,7 +16,7 @@ The Restaurant Admin Dashboard provides a centralized interface for managing res
 
 ## Requirements
 
-- Node.js 18+ (tested with Node.js 20+)
+- Node.js 20+ (verified with Node.js 24.20.0)
 - npm
 
 ## Getting Started
@@ -51,29 +51,49 @@ The application will be available at:
 | `npm run dev` | Start the Vite development server |
 | `npm run build` | Run TypeScript checks and build for production |
 | `npm run preview` | Preview the production build |
+| `npm run typecheck` | Check application and unit-test TypeScript |
+| `npm test` | Run Vitest authentication and React regression tests |
+| `npm run test:watch` | Run Vitest in watch mode |
+| `npm run test:e2e` | Run Chrome login, keyboard and responsive tests |
+
+Browser tests use installed Google Chrome and start an isolated Vite server on port 5178. All test authentication responses are intercepted fixtures; no real account credentials are submitted. Screenshots and reports are ignored by Git. Tracing is disabled to avoid recording credentials.
+
+## Restaurant Staff Login
+
+Login connects to the [Nawy Orders Tenant API documentation](https://el-fahm-01a1c1ed11cf79ffbe51681899bb90fd.api.nawyorders.com/swagger/index.html). The server origin is configured as `API_BASE_URL` in `src/auth.ts`.
+
+- `POST /api/v1/auth/login` sends `{ email, password }` over HTTPS. Enter your existing restaurant credentials; there is no built-in demo password or account bypass.
+- The adapter validates the documented `isSuccess`/`data` response envelope. Identity, roles, permissions and token expiry come from the server, not a local account list.
+- Access and refresh tokens are kept in memory only. Reloading the page or reaching token expiry requires signing in again. Automatic refresh is intentionally not implemented.
+- Sign-out clears the local dashboard immediately and attempts `POST /api/v1/auth/revoke`. A warning remains visible if server revocation fails.
+- Authentication never persists passwords or tokens in browser storage. The obsolete `nawy_session` demo key is removed on startup.
+- Each login mounts a fresh dashboard. Local preview preferences are partitioned by API origin and user ID; they are not backend authorization.
+
+The API must enforce tenant context and permissions for every future operational request. Frontend session gating is not a security boundary. This implementation does not verify JWT signatures or implement a backend authentication service.
 
 ## Demo Environment
 
 The application currently uses **hard-coded demo data** rendered directly by the components for development and UI work.
 
-> **Note:** Dashboard KPIs, charts, top items, and order lists are static demo values. No real backend is connected yet.
+> **Note:** Only staff login and session revocation use the real API. Dashboard KPIs, charts, top items, orders and settings remain sample data. A persistent demo-data banner explains that dashboard interactions do not update the restaurant backend.
 
 ### Planned: Mock API Provider
 
 The following capabilities are planned but **not yet implemented**:
 
 - A mock data provider with simulated network latency.
-- A `Demo data` badge in the interface when the mock provider is active.
 - A `?mockError=1` query parameter to simulate API failures for error-state testing.
 - TanStack Query for server-state management and caching.
-- Vitest for unit and integration testing, and ESLint for linting.
+- ESLint and coverage thresholds (Vitest tests are implemented).
 
 ## Project Structure
 
 ```text
 src/
 ├── components/          # UI components (Sidebar, Topbar, StatCard, TopItems,
-│                        # SalesChart, OrdersTable, Calendar, Modal, Dialogs)
+│                        # SalesChart, OrdersTable, Calendar, Modal, Dialogs, Login)
+├── auth.ts              # Real tenant staff login/revocation HTTP adapter
+├── test/                # Test setup and synthetic API fixtures
 ├── calendar.ts          # Date grid, formatting, and storage helpers
 ├── icons.tsx            # SVG icon set used across the UI
 ├── i18n.ts              # Arabic/English translations, direction, and demo data
@@ -157,9 +177,9 @@ Nawy Orders operates as a multi-tenant platform. Each restaurant must access onl
 
 **Important:** Frontend route protection and UI permissions are not substitutes for backend authorization and tenant isolation.
 
-## Backend Integration (Planned)
+## Dashboard Data Integration (Planned)
 
-The current UI is static demo data. The planned integration approach:
+Staff authentication is implemented in `src/auth.ts`. Operational dashboard data is still local sample data. The planned integration approach:
 
 1. Define a single `Api` interface describing all dashboard operations (KPIs, sales series, top items, orders).
 2. Implement a mock adapter (seeded in-memory data, simulated latency) behind that interface.
@@ -171,11 +191,13 @@ Until that interface exists, all data lives in `src/i18n.ts` and component props
 ## Roadmap
 
 - [ ] Mock API provider with latency and `?mockError=1` failure simulation
-- [ ] `Demo data` indicator badge
+- [x] Demo dashboard indicator
+- [x] Real restaurant staff login and session revocation
+- [x] Vitest regression tests and Playwright responsive login tests
 - [ ] TanStack Query integration with cache invalidation
 - [ ] React Router for orders, menu, reports, and settings pages
-- [ ] ESLint + Vitest setup (`npm run lint`, `npm test`, coverage)
-- [ ] Real backend HTTP adapter
+- [ ] ESLint and test coverage thresholds
+- [ ] Real operational data adapter
 
 ## Platform Administration (Out of Scope)
 

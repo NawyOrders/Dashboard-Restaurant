@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 import type { Lang } from './i18n'
 import { translations } from './i18n'
+import type { Session } from './auth'
+import { clearLegacySession, revokeSession } from './auth'
+import { Login } from './components/Login'
 import type { OrderRow, OrderStatus, Profile, SectionKey, StatKey } from './types'
 import { filterOrders } from './orders'
 import { formatFullDate, parseDateKey, startOfDay, toDateKey } from './calendar'
@@ -21,9 +24,6 @@ import {
   TopItemsDialog,
 } from './components/Dialogs'
 import { BagIcon, CheckIcon, CoinsIcon, StarIcon, UsersIcon } from './icons'
-
-const PROFILE_KEY = 'karam-restaurant-profile'
-const DATE_KEY = 'karam-dashboard-date'
 
 type Stat = {
   key: StatKey
@@ -50,8 +50,77 @@ type ModalState =
 
 export default function App() {
   const [lang, setLang] = useState<Lang>('ar')
+  const [session, setSession] = useState<Session | null>(null)
+  const [notice, setNotice] = useState<'sessionExpired' | 'loggedOut' | 'revokeFailed' | null>(null)
+  const sessionVersion = useRef(0)
   const t = translations[lang]
 
+  useEffect(() => { clearLegacySession() }, [])
+
+  // Direction applies to the login screen too, before any dashboard mounts.
+  useEffect(() => {
+    document.documentElement.lang = lang
+    document.documentElement.dir = t.dir
+    if (!session) document.title = `${t.auth.welcome} — Nawy Orders`
+  }, [lang, t, session])
+
+  useEffect(() => {
+    if (!session) return
+    let timer: ReturnType<typeof setTimeout>
+    const checkExpiry = () => {
+      clearTimeout(timer)
+      const remaining = session.expiresAt - Date.now()
+      if (remaining <= 0) {
+        sessionVersion.current += 1
+        setSession(null)
+        setNotice('sessionExpired')
+        void revokeSession(session)
+      } else {
+        timer = setTimeout(checkExpiry, Math.min(remaining, 2_147_483_647))
+      }
+    }
+    checkExpiry()
+    window.addEventListener('focus', checkExpiry)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('focus', checkExpiry)
+    }
+  }, [session])
+
+  const handleLogout = () => {
+    if (!session) return
+    const version = ++sessionVersion.current
+    setSession(null)
+    setNotice('loggedOut')
+    void revokeSession(session).then((revoked) => {
+      if (!revoked && version === sessionVersion.current) setNotice('revokeFailed')
+    })
+  }
+
+  const handleSuccess = (next: Session) => {
+    sessionVersion.current += 1
+    setNotice(null)
+    setSession(next)
+  }
+
+  return session ? (
+    <Dashboard key={`${session.apiOrigin}:${session.user.id}`} session={session} lang={lang} setLang={setLang} onLogout={handleLogout} />
+  ) : (
+    <Login t={t} langToggle={t.nav.langToggle} onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')} onSuccess={handleSuccess} initialNotice={notice ? t.auth[notice] : undefined} />
+  )
+}
+
+// The authenticated subtree has its own lifecycle. Logging out unmounts all
+// dashboard hooks, open dialogs, searches and operational preview state.
+function Dashboard({ session, lang, setLang, onLogout }: {
+  session: Session
+  lang: Lang
+  setLang: Dispatch<SetStateAction<Lang>>
+  onLogout: () => void
+}) {
+  const t = translations[lang]
+  const PROFILE_KEY = `nawy-preview-profile:${session.apiOrigin}:${session.user.id}`
+  const DATE_KEY = `nawy-preview-date:${session.apiOrigin}:${session.user.id}`
   const [section, setSection] = useState<SectionKey>('home')
   const [isOpen, setIsOpen] = useState(true)
   const [query, setQuery] = useState('')
@@ -108,7 +177,7 @@ export default function App() {
     } catch {
       // Ignore unavailable or malformed storage.
     }
-  }, [])
+  }, [PROFILE_KEY])
 
   useEffect(() => {
     try {
@@ -119,7 +188,7 @@ export default function App() {
     } catch {
       // Ignore unavailable or malformed storage.
     }
-  }, [])
+  }, [DATE_KEY])
 
   useEffect(() => {
     if (!toast) return
@@ -246,6 +315,10 @@ export default function App() {
         />
 
         <main className="min-w-0 flex-1 pb-28 lg:pb-10">
+          <aside aria-label={t.auth.previewTitle} className="mx-4 mt-4 rounded-xl border border-gold-300 bg-cream-100 px-4 py-3 text-sm text-stone-700 sm:mx-6">
+            <p className="font-bold">{t.auth.previewTitle}</p>
+            <p className="mt-1 text-xs leading-relaxed">{t.auth.previewHint}</p>
+          </aside>
           <MobileHeader
             t={t}
             active={section}
@@ -269,13 +342,15 @@ export default function App() {
 
           <Topbar
             t={t}
+            user={session.user}
             query={query}
             unreadCount={unreadCount}
             isOpen={isOpen}
             selectedDate={selectedDate}
             onQueryChange={setQuery}
             onSearchSubmit={() => navigate('orders')}
-            onToggleLang={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+            onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')}
+            onLogout={onLogout}
             onOpenNotifications={() => setModal({ type: 'notifications' })}
             onOpenCalendar={() => setModal({ type: 'calendar' })}
             onOpenGuide={() => setModal({ type: 'guide' })}
