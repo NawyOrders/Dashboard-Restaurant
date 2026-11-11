@@ -44,6 +44,24 @@ The application will be available at:
 
 [http://localhost:5173](http://localhost:5173)
 
+### 4. Configure environment variables
+
+Copy `.env.example` to `.env` and fill in valid El Fahm tenant credentials:
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Purpose |
+|---|---|
+| `VITE_API_BASE_URL` | Tenant API origin (HTTPS only, no embedded credentials) |
+| `VITE_LOGIN_OWNER_EMAIL` | Owner account prefilled on the login form |
+| `VITE_LOGIN_MANAGER_EMAIL` | Branch manager account |
+| `VITE_LOGIN_STAFF_EMAIL` | Staff account |
+| `VITE_LOGIN_PASSWORD` | Password for the prefilled development accounts |
+
+`.env` is gitignored and never committed. Vite loads `.env` in every mode. Do not add `.env.development.local`, because it would override `.env` during development.
+
 ## Available Scripts
 
 | Command | Description |
@@ -60,7 +78,7 @@ Browser tests use installed Google Chrome and start an isolated Vite server on p
 
 ## Restaurant Staff Login
 
-Login connects to the [Nawy Orders Tenant API documentation](https://el-fahm-01a1c1ed11cf79ffbe51681899bb90fd.api.nawyorders.com/swagger/index.html). The server origin is configured as `API_BASE_URL` in `src/auth.ts`.
+Login connects to the [Nawy Orders Tenant API documentation](https://el-fahm-01a1c1ed11cf79ffbe51681899bb90fd.api.nawyorders.com/swagger/index.html). The server origin comes from `VITE_API_BASE_URL` in `.env` (falling back to the El Fahm URL) and is exposed as `API_BASE_URL` in `src/auth.ts`.
 
 - `POST /api/v1/auth/login` sends `{ email, password }` over HTTPS. Enter your existing restaurant credentials. Development builds also expose an explicit demo sign-in behind `?mock=1` (see below).
 - The adapter validates the documented `isSuccess`/`data` response envelope. Identity, roles, permissions and token expiry come from the server, not a local account list.
@@ -73,12 +91,12 @@ The API must enforce tenant context and permissions for every future operational
 
 ### Development Demo Sign-In
 
-The El Fahm tenant currently rejects the sample credentials in `.env.development.local` with `401 Invalid email or password`. For local UI work, open `http://localhost:5173/?mock=1` and use the **Demo sign-in (development only)** buttons to mount the dashboard as Owner, Manager, or Staff.
+The El Fahm tenant currently rejects the sample credentials in `.env` with `401 Invalid email or password`. For local UI work, open `http://localhost:5173/?mock=1` and use the **Demo sign-in (development only)** buttons to mount the dashboard as Owner, Manager, or Staff.
 
 - Demo sessions exist only in development builds (`import.meta.env.DEV`) and only when `?mock=1` is present.
 - They are created in memory, never sent to the tenant API, and use the mock orders adapter.
 - They are not a production authentication path; real login remains the default and server roles stay authoritative.
-- Real sign-in requires valid tenant credentials. Update `.env.development.local` or initialize accounts through the invitation flow (`POST /api/v1/auth/set-initial-password`).
+- Real sign-in requires valid tenant credentials. Update `.env` or initialize accounts through the invitation flow (`POST /api/v1/auth/set-initial-password`).
 
 ## Demo Environment
 

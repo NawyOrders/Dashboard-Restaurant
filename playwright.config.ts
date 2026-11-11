@@ -19,10 +19,11 @@ export default defineConfig({
     url: 'http://127.0.0.1:5178',
     reuseExistingServer: false,
     env: {
-      VITE_DEV_LOGIN_OWNER_EMAIL: 'owner@example.test',
-      VITE_DEV_LOGIN_MANAGER_EMAIL: 'manager@example.test',
-      VITE_DEV_LOGIN_STAFF_EMAIL: 'staff@example.test',
-      VITE_DEV_LOGIN_PASSWORD: 'fixture-only',
+      VITE_API_BASE_URL: 'https://tenant.test',
+      VITE_LOGIN_OWNER_EMAIL: 'owner@example.test',
+      VITE_LOGIN_MANAGER_EMAIL: 'manager@example.test',
+      VITE_LOGIN_STAFF_EMAIL: 'staff@example.test',
+      VITE_LOGIN_PASSWORD: 'fixture-only',
     },
   },
 })
