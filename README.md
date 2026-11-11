@@ -75,7 +75,7 @@ The API must enforce tenant context and permissions for every future operational
 
 The application currently uses **hard-coded demo data** rendered directly by the components for development and UI work.
 
-> **Note:** Only staff login and session revocation use the real API. Dashboard KPIs, charts, top items, orders and settings remain sample data. A persistent demo-data banner explains that dashboard interactions do not update the restaurant backend.
+> **Note:** Only staff login and session revocation use the real API. Dashboard KPIs, charts, top items and settings remain sample data. Orders are sample data by default; append `?mock=1` to load them through the `Api` mock adapter. A persistent banner explains the active data mode.
 
 ### Data Integration Foundation
 
@@ -85,9 +85,10 @@ The application currently uses **hard-coded demo data** rendered directly by the
 - `mockApi.ts` — seeded in-memory adapter with simulated latency and a failure mode.
 - `?mock=1` selects the mock adapter; `?mockError=1` simulates backend failures for error-state testing.
 
-Still planned:
+Orders are now wired to the `Api` interface through `useOrders` and the `?mock=1` mock adapter, including loading, error, and retry states. Still planned:
 
-- Wiring dashboard components to consume the `Api` interface (they still render sample data).
+- Wiring branding, KPIs, charts, and top items to the `Api` interface.
+- Sending status transitions through `POST /admin/orders/{id}/transition-status` (UI updates are local for now).
 - TanStack Query for server-state management and caching.
 - ESLint and coverage thresholds (Vitest tests are implemented).
 
@@ -183,16 +184,18 @@ Nawy Orders operates as a multi-tenant platform. Each restaurant must access onl
 
 **Important:** Frontend route protection and UI permissions are not substitutes for backend authorization and tenant isolation.
 
-## Dashboard Data Integration (Planned)
+## Dashboard Data Integration
 
-Staff authentication is implemented in `src/auth.ts`. Operational dashboard data is still local sample data. The planned integration approach:
+Staff authentication is implemented in `src/auth.ts`. The orders feed is wired to the `Api` interface: `useOrders` calls `listOrders`, maps `AdminOrderListItem` rows, and renders loading, error, and retry states in `OrdersTable`. By default the dashboard still renders local sample data; `?mock=1` switches the orders feed to the seeded mock adapter and `?mockError=1` exercises the error state.
 
-1. Define a single `Api` interface describing all dashboard operations (KPIs, sales series, top items, orders).
-2. Implement a mock adapter (seeded in-memory data, simulated latency) behind that interface.
-3. Swap the mock adapter for an HTTP adapter (`fetch`/`axios`) without changing feature components.
+Remaining integration work:
+
+1. Wire branding (`getBranding`), KPIs, sales series, and top items to the `Api` interface.
+2. Route order status actions through `transitionOrderStatus` (UI transitions are local for now).
+3. Make the HTTP adapter the default once the backend is available.
 4. Enforce restaurant-level authorization and tenant isolation on the backend for every request.
 
-Until that interface exists, all data lives in `src/i18n.ts` and component props.
+Until each feed is wired, non-order data lives in `src/i18n.ts` and component props.
 
 ## Roadmap
 
@@ -200,7 +203,9 @@ Until that interface exists, all data lives in `src/i18n.ts` and component props
 - [x] Demo dashboard indicator
 - [x] Real restaurant staff login and session revocation
 - [x] Vitest regression tests and Playwright responsive login tests
-- [ ] Wire dashboard components to the `Api` interface (orders, branding)
+- [x] Wire the orders feed to the `Api` interface (`?mock=1`) with loading/error/retry states
+- [ ] Wire branding, KPIs, charts, and top items to the `Api` interface
+- [ ] Send order status transitions through the API
 - [ ] TanStack Query integration with cache invalidation
 - [ ] React Router for orders, menu, reports, and settings pages
 - [ ] ESLint and test coverage thresholds

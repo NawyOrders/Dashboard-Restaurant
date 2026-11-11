@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, ty
 import type { Lang } from './i18n'
 import { translations } from './i18n'
 import type { Session } from './auth'
-import { clearLegacySession, revokeSession } from './auth'
+import { API_BASE_URL, clearLegacySession, revokeSession } from './auth'
+import { createApi, isMockErrorRequested, isMockRequested } from './api'
+import { useOrders } from './useOrders'
 import { Login } from './components/Login'
 import type { OrderRow, OrderStatus, Profile, SectionKey, StatKey } from './types'
 import { filterOrders } from './orders'
@@ -130,20 +132,38 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date())
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null)
 
+  const search = typeof window === 'undefined' ? '' : window.location.search
+  const mockMode = isMockRequested(search)
+  const api = useMemo(
+    () =>
+      mockMode
+        ? createApi({
+            baseUrl: API_BASE_URL,
+            getAccessToken: () => session.accessToken,
+            mock: true,
+            mockError: isMockErrorRequested(search),
+          })
+        : null,
+    [mockMode, search, session],
+  )
+  const remote = useOrders(api, lang)
+
   const [statuses, setStatuses] = useState<Record<string, OrderStatus>>(() => {
+    if (api) return {}
     const entries = translations.ar.orders.rows.map((row) => [row.id, row.status as OrderStatus])
     return Object.fromEntries(entries) as Record<string, OrderStatus>
   })
 
   const brandName = profile.name?.trim() || t.brandName
 
+  const baseRows = api ? remote.rows : t.orders.rows
   const orders = useMemo<OrderRow[]>(
     () =>
-      t.orders.rows.map((row) => ({
+      baseRows.map((row) => ({
         ...row,
         status: statuses[row.id] ?? (row.status as OrderStatus),
       })),
-    [t, statuses],
+    [baseRows, statuses],
   )
 
   const filteredOrders = useMemo(
@@ -360,11 +380,11 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             </button>
           </div>
 
-          <aside aria-label={t.auth.previewTitle} className="mb-5 flex items-start gap-3 rounded-xl border border-gold-300/60 bg-[#FBF1D8]/50 px-4 py-3 text-stone-600">
+          <aside aria-label={api ? t.auth.mockTitle : t.auth.previewTitle} className="mb-5 flex items-start gap-3 rounded-xl border border-gold-300/60 bg-[#FBF1D8]/50 px-4 py-3 text-stone-600">
             <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#806116]" />
             <div>
-              <p className="text-xs font-bold text-[#806116]">{t.auth.previewTitle}</p>
-              <p className="mt-1 text-xs leading-relaxed">{t.auth.previewHint}</p>
+              <p className="text-xs font-bold text-[#806116]">{api ? t.auth.mockTitle : t.auth.previewTitle}</p>
+              <p className="mt-1 text-xs leading-relaxed">{api ? t.auth.mockHint : t.auth.previewHint}</p>
             </div>
           </aside>
 
@@ -416,6 +436,8 @@ function Dashboard({ session, lang, setLang, onLogout }: {
               orders={filteredOrders}
               statuses={statuses}
               query={query}
+              state={api ? remote.state : 'ready'}
+              onRetry={remote.reload}
               onSelect={(order) => setModal({ type: 'order', id: order.id })}
               onViewAll={() => setModal({ type: 'orders' })}
             />

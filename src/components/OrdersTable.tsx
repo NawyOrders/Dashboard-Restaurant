@@ -9,11 +9,13 @@ type Props = {
   orders: OrderRow[]
   statuses: Record<string, OrderStatus>
   query: string
+  state?: 'loading' | 'ready' | 'error'
+  onRetry?: () => void
   onSelect: (order: OrderRow) => void
   onViewAll: () => void
 }
 
-export function OrdersTable({ t, orders, statuses, query, onSelect, onViewAll }: Props) {
+export function OrdersTable({ t, orders, statuses, query, state = 'ready', onRetry, onSelect, onViewAll }: Props) {
   const { title, viewAll, cols, status } = t.orders
   const isRtl = t.dir === 'rtl'
   const Arrow = isRtl ? ArrowLeftIcon : ArrowRightIcon
@@ -41,7 +43,29 @@ export function OrdersTable({ t, orders, statuses, query, onSelect, onViewAll }:
         </button>
       </div>
 
-      {empty ? (
+      {state === 'loading' ? (
+        <div role="status" aria-live="polite" className="flex flex-col gap-3">
+          <p className="text-sm font-semibold text-[#756B62]">{t.orders.loading}</p>
+          <ul aria-hidden="true" className="flex flex-col gap-3">
+            {[0, 1, 2].map((index) => (
+              <li key={index} className="h-16 animate-pulse rounded-xl bg-[#F6EEE4] motion-reduce:animate-none" />
+            ))}
+          </ul>
+        </div>
+      ) : state === 'error' ? (
+        <div role="alert" className="flex flex-col items-start gap-3 rounded-xl border border-[#E9E1D7] bg-[#FDF8F1] px-4 py-6">
+          <p className="text-sm font-bold text-[#302B28]">{t.orders.loadError}</p>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex min-h-11 items-center rounded-lg bg-[#C2281A] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#A01F13] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2"
+            >
+              {t.orders.retry}
+            </button>
+          )}
+        </div>
+      ) : empty ? (
         <div className="flex flex-col items-center gap-2 rounded-xl bg-[#FDF8F1] px-4 py-12 text-center">
           <SearchXIcon className="mb-1 h-9 w-9 text-[#8B8177]" />
           <p className="text-sm font-bold text-[#302B28]">{t.search.empty}</p>
