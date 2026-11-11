@@ -150,7 +150,7 @@ src/
 | `OrdersTable` | Latest orders: desktop table, mobile two-column cards, live search results |
 | `CalendarDialog` | Localized month grid, RTL/LTR month navigation, today/selected states, saved selection |
 | `Modal` | Accessible dialog shell: focus trap, Escape/backdrop close, scroll lock, mobile bottom sheet |
-| `Dialogs` | Detail views for orders, all orders, metrics, top items, notifications, settings, and the button guide |
+| `Dialogs` | Detail views for orders, all orders, metrics, top items, notifications, and settings |
 
 ## Internationalization (RTL / LTR)
 
@@ -195,7 +195,6 @@ Every control is functional and explains its outcome:
 - **Order rows / View all** open full order details (items, payment, timeline) with status actions that update the row.
 - **Top items details button** opens per-item shares and sorting.
 - **Settings** edits restaurant name, phone, address, language, and open status; changes are saved to `localStorage`.
-- **Button guide (ⓘ)** in the top bar explains every button on the dashboard.
 
 ## Restaurant Data Isolation
 
