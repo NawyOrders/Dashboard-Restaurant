@@ -1,9 +1,11 @@
 import type { T } from '../i18n'
+import type { AuthUser } from '../auth'
 import { formatFullDate } from '../calendar'
-import { BellIcon, CalendarIcon, CloseIcon, InfoIcon, SearchIcon } from '../icons'
+import { BellIcon, CalendarIcon, CloseIcon, InfoIcon, LogoutIcon, SearchIcon } from '../icons'
 
 type Props = {
   t: T
+  user: AuthUser
   query: string
   unreadCount: number
   isOpen: boolean
@@ -11,6 +13,7 @@ type Props = {
   onQueryChange: (query: string) => void
   onSearchSubmit: () => void
   onToggleLang: () => void
+  onLogout: () => void
   onOpenNotifications: () => void
   onOpenCalendar: () => void
   onOpenGuide: () => void
@@ -64,6 +67,7 @@ function SearchField({
 
 export function Topbar({
   t,
+  user,
   query,
   unreadCount,
   isOpen,
@@ -71,20 +75,29 @@ export function Topbar({
   onQueryChange,
   onSearchSubmit,
   onToggleLang,
+  onLogout,
   onOpenNotifications,
   onOpenCalendar,
   onOpenGuide,
 }: Props) {
   const dateLabel = formatFullDate(selectedDate, t.dir === 'rtl' ? 'ar-EG' : 'en-US')
+  const roleLabels: Record<string, string> = { Owner: t.roles.owner, BranchManager: t.roles.manager, Staff: t.roles.staff }
+  const roleLabel = user.roles.map((role) => roleLabels[role] ?? role).join(', ') || t.auth.staffOnly
   const dateButtonClass =
     'flex items-center gap-2 whitespace-nowrap rounded-2xl border border-cream-200 bg-cream-50 px-4 py-2.5 text-sm font-semibold text-stone-600 transition-colors hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
   return (
     <header className="mx-4 mt-3 rounded-4xl bg-white px-4 py-3 shadow-card sm:mx-6 sm:mt-4 sm:px-6 sm:py-4 lg:mt-6">
-      <div className="flex items-center gap-2.5 sm:gap-4">
-        <div className="h-11 w-11 shrink-0 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 p-0.5">
-          <div className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-gold-300">
-            <span className="font-black text-brand-700">م</span>
+      <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-2.5" title={`${user.email} — ${roleLabel}`}>
+          <div className="h-11 w-11 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 p-0.5">
+            <div className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-gold-300">
+              <span className="font-black text-brand-700">{user.name.trim().charAt(0)}</span>
+            </div>
+          </div>
+          <div className="min-w-0 max-w-40 leading-tight">
+            <p className="truncate text-sm font-extrabold text-stone-800"><bdi>{user.name}</bdi></p>
+            <p className="truncate text-[11px] font-semibold text-stone-500"><bdi>{roleLabel}</bdi></p>
           </div>
         </div>
 
@@ -133,6 +146,15 @@ export function Topbar({
         </div>
 
         <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+          <button
+            type="button"
+            onClick={onLogout}
+            aria-label={t.logout}
+            title={t.logout}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-cream-200 bg-cream-50 text-stone-500 transition-colors hover:bg-brand-50 hover:text-brand-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+          >
+            <LogoutIcon className="h-5 w-5" />
+          </button>
           <button
             type="button"
             onClick={onOpenGuide}

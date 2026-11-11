@@ -108,3 +108,15 @@ textarea,
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Login typography stays separate from the dashboard. */
+.login-page {
+  font-family: 'Tajawal', 'Cairo', system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.login-page h1,
+.login-page h2,
+.login-page .login-brand-name {
+  font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+}
