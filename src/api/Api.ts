@@ -2,7 +2,11 @@ import type {
   AdminOrderListItem,
   BrandingFetchResult,
   ListOrdersQuery,
+  MenuCategory,
   PagedResult,
+  ReportRange,
+  ReportsSummary,
+  RestaurantSettings,
 } from './types'
 
 // Single interface describing the dashboard operations. Feature components
@@ -13,4 +17,9 @@ export interface Api {
   listOrders(query?: ListOrdersQuery, signal?: AbortSignal): Promise<PagedResult<AdminOrderListItem>>
   transitionOrderStatus(id: string, targetStatus: number, signal?: AbortSignal): Promise<void>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
+  listMenu(signal?: AbortSignal): Promise<MenuCategory[]>
+  updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void>
+  getReportsSummary(range: ReportRange, signal?: AbortSignal): Promise<ReportsSummary>
+  getRestaurantSettings(signal?: AbortSignal): Promise<RestaurantSettings>
+  updateRestaurantSettings(settings: RestaurantSettings, signal?: AbortSignal): Promise<void>
 }

@@ -8,6 +8,7 @@ import {
   HomeIcon,
   UtensilsIcon,
 } from '../icons'
+import { BrandLogo } from './BrandLogo'
 
 type Props = {
   t: T
@@ -19,16 +20,22 @@ type Props = {
   unreadCount: number
   onToggleOpen: () => void
   onNavigate: (key: SectionKey) => void
-  onOpenSettings: () => void
   onOpenNotifications?: () => void
 }
+
+const NAV_ITEMS: { key: SectionKey; icon: typeof HomeIcon }[] = [
+  { key: 'home', icon: HomeIcon },
+  { key: 'orders', icon: ClipboardIcon },
+  { key: 'menu', icon: UtensilsIcon },
+  { key: 'reports', icon: ChartIcon },
+]
 
 function NavBadge({ count, active }: { count: number; active?: boolean }) {
   if (count <= 0) return null
   return (
     <span
-      className={`inline-flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums ${
-        active ? 'bg-[#A01F13]/10 text-[#A01F13]' : 'bg-white/15 text-white'
+      className={`inline-flex h-6 min-w-[24px] shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums ${
+        active ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-700'
       }`}
     >
       {count}
@@ -36,15 +43,7 @@ function NavBadge({ count, active }: { count: number; active?: boolean }) {
   )
 }
 
-function OpenSwitch({
-  t,
-  isOpen,
-  onToggle,
-}: {
-  t: T
-  isOpen: boolean
-  onToggle: () => void
-}) {
+function OpenSwitch({ t, isOpen, onToggle }: { t: T; isOpen: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"
@@ -53,16 +52,16 @@ function OpenSwitch({
       aria-label={t.actions.toggleOpen}
       title={t.actions.toggleOpen}
       onClick={onToggle}
-      className="grid h-11 w-14 shrink-0 place-items-center rounded-full p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A01F13] focus-visible:ring-offset-2"
+      className="grid h-10 w-14 shrink-0 place-items-center rounded-full p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
     >
       <span
         aria-hidden="true"
-        className={`relative block h-7 w-12 rounded-full transition-colors motion-reduce:transition-none ${
-          isOpen ? 'bg-mint-600' : 'bg-stone-400'
+        className={`relative block h-6 w-11 rounded-full transition-colors motion-reduce:transition-none ${
+          isOpen ? 'bg-mint-600' : 'bg-stone-300'
         }`}
       >
         <span
-          className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all motion-reduce:transition-none ${
+          className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all motion-reduce:transition-none ${
             isOpen ? 'start-6' : 'start-1'
           }`}
         />
@@ -80,123 +79,99 @@ export function Sidebar({
   orderBadge,
   onToggleOpen,
   onNavigate,
-  onOpenSettings,
 }: Props) {
-  const items: { key: SectionKey; icon: typeof HomeIcon; badge?: number }[] = [
-    { key: 'orders', icon: ClipboardIcon, badge: orderBadge },
-    { key: 'menu', icon: UtensilsIcon },
-    { key: 'reports', icon: ChartIcon },
-  ]
-
   const itemClass = (isActive: boolean) =>
-    `relative flex min-h-12 w-full items-center gap-3 rounded-full px-4 py-3 text-sm font-bold transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E6BF78] focus-visible:ring-offset-2 focus-visible:ring-offset-[#A01F13] ${
-      isActive
-        ? 'bg-white text-[#A01F13] shadow-sm'
-        : 'text-[#FFF8EF] hover:bg-white/10'
+    `flex min-h-12 w-full items-center gap-3 rounded-full px-4 py-3 text-sm font-bold transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${
+      isActive ? 'bg-brand-600 text-white shadow-card' : 'text-stone-600 hover:bg-cream-50 hover:text-brand-700'
     }`
 
   return (
-    <aside className="sticky top-0 hidden h-[100dvh] w-[240px] shrink-0 flex-col gap-6 overflow-y-auto bg-[#A01F13] p-5 text-[#FFF8EF] lg:flex [&_button:focus-visible]:outline-gold-300">
-      <div className="flex shrink-0 items-center gap-3">
-        <div aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#E6BF78]/40 text-[#E6BF78]">
-          <UtensilsIcon className="h-6 w-6" />
-        </div>
+    <aside className="sticky top-0 hidden h-[100dvh] w-[260px] shrink-0 flex-col gap-5 overflow-y-auto border-e border-line bg-white p-5 lg:flex">
+      <div className="flex items-center gap-3">
+        <BrandLogo />
         <div className="min-w-0">
-          <p className="truncate text-lg font-extrabold leading-tight text-white" title={brandName}>{brandName}</p>
-          <p className="mt-1 truncate text-xs text-[#FFF8EF]/80" title={brandSub}>{brandSub}</p>
+          <p className="truncate text-lg font-extrabold leading-tight text-stone-800" title={brandName}>{brandName}</p>
+          <p className="mt-0.5 truncate text-xs text-stone-500" title={brandSub}>{brandSub}</p>
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-col gap-2 rounded-2xl border border-white/20 bg-black/10 p-3">
-        <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-[#FFF8EF]/70">
-          <span className={`h-2 w-2 rounded-full ${isOpen ? 'bg-mint-400' : 'bg-stone-400'}`} aria-hidden="true" />
-          {t.nav.statusLabel}
-        </span>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-bold text-white">{isOpen ? t.nav.open : t.nav.closed}</span>
-          <OpenSwitch t={t} isOpen={isOpen} onToggle={onToggleOpen} />
-        </div>
-        <p className="text-[11px] leading-relaxed text-[#FFF8EF]/70">{isOpen ? t.greetingSub : t.greetingClosed}</p>
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-cream-50/70 px-4 py-3">
+        <span className="text-sm font-bold text-stone-700">{isOpen ? t.nav.open : t.nav.closed}</span>
+        <OpenSwitch t={t} isOpen={isOpen} onToggle={onToggleOpen} />
       </div>
 
       <nav className="flex flex-col gap-2" aria-label={t.nav.label}>
-        <button
-          type="button"
-          onClick={() => onNavigate('home')}
-          aria-current={active === 'home' ? 'page' : undefined}
-          title={`${t.nav.home}`}
-          className={itemClass(active === 'home')}
-        >
-          {active === 'home' && <span aria-hidden="true" className="absolute inset-y-2 start-1 w-1 rounded-full bg-[#A01F13]" />}
-          <HomeIcon className="h-5 w-5" />
-          <span className="flex-1 text-start">{t.nav.home}</span>
-        </button>
-        {items.map(({ key, icon: Icon, badge }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onNavigate(key)}
-            aria-current={active === key ? 'page' : undefined}
-            title={`${t.nav[key]}`}
-            className={itemClass(active === key)}
-          >
-            {active === key && <span aria-hidden="true" className="absolute inset-y-2 start-1 w-1 rounded-full bg-[#A01F13]" />}
-            <Icon className="h-5 w-5 shrink-0" />
-            <span className="min-w-0 flex-1 break-words text-start">{t.nav[key]}</span>
-            {badge !== undefined && <NavBadge count={badge} active={active === key} />}
-          </button>
-        ))}
-      </nav>
-
-      <div className="mt-auto shrink-0 border-t border-white/20 pt-4">
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          title={t.actions.settings}
-          className={itemClass(false)}
-        >
-          <GearIcon className="h-5 w-5 shrink-0" />
-          <span className="min-w-0 flex-1 break-words text-start">{t.nav.settings}</span>
-        </button>
-        <p className="mt-1 px-4 text-xs leading-relaxed text-[#FFF8EF]/80">{t.nav.settingsSub}</p>
-      </div>
-    </aside>
-  )
-}
-
-export function BottomNav({ t, active, orderBadge, onNavigate, onOpenSettings }: Props) {
-  const items: { key: SectionKey; icon: typeof HomeIcon; badge?: number }[] = [
-    { key: 'home', icon: HomeIcon },
-    { key: 'orders', icon: ClipboardIcon, badge: orderBadge },
-    { key: 'menu', icon: UtensilsIcon },
-    { key: 'reports', icon: ChartIcon },
-  ]
-  const itemClass = (isActive: boolean) =>
-    `flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#A01F13] ${
-      isActive ? 'bg-cream-50 text-[#A01F13]' : 'text-stone-600 hover:bg-cream-50 hover:text-[#A01F13]'
-    }`
-
-  return (
-    <nav
-      aria-label={t.nav.label}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E9E1D7] bg-white pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] lg:hidden"
-    >
-      <div className="grid grid-cols-5 gap-1 px-2 py-1">
-        {items.map(({ key, icon: Icon, badge }) => {
+        {NAV_ITEMS.map(({ key, icon: Icon }) => {
           const isActive = active === key
+          const badge = key === 'orders' ? orderBadge : undefined
           return (
             <button
               key={key}
               type="button"
               onClick={() => onNavigate(key)}
               aria-current={isActive ? 'page' : undefined}
-              title={`${t.nav[key]}`}
+              title={t.nav[key]}
+              className={itemClass(isActive)}
+            >
+              <Icon className="h-5 w-5 shrink-0" />
+              <span className="min-w-0 flex-1 break-words text-start">{t.nav[key]}</span>
+              {badge !== undefined && <NavBadge count={badge} active={isActive} />}
+            </button>
+          )
+        })}
+      </nav>
+
+      <button
+        type="button"
+        onClick={() => onNavigate('settings')}
+        aria-current={active === 'settings' ? 'page' : undefined}
+        title={t.nav.settings}
+        className="mt-auto flex w-full items-center gap-3 rounded-2xl border border-gold-300/60 bg-[#FBF1D8]/70 p-3 text-start transition-colors hover:bg-[#FBF1D8] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+      >
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gold-400/30 text-[#806116]">
+          <GearIcon className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-extrabold text-stone-800">{t.nav.settings}</span>
+          <span className="mt-0.5 block text-xs text-stone-500">{t.nav.settingsSub}</span>
+        </span>
+      </button>
+    </aside>
+  )
+}
+
+export function BottomNav({ t, active, orderBadge, onNavigate }: Props) {
+  const items: { key: SectionKey; icon: typeof HomeIcon }[] = [
+    ...NAV_ITEMS,
+    { key: 'settings', icon: GearIcon },
+  ]
+  const itemClass = (isActive: boolean) =>
+    `flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600 ${
+      isActive ? 'bg-brand-600 text-white' : 'text-stone-600 hover:bg-cream-50 hover:text-brand-700'
+    }`
+
+  return (
+    <nav
+      aria-label={t.nav.label}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] lg:hidden"
+    >
+      <div className="grid grid-cols-5 gap-1 px-2 py-1">
+        {items.map(({ key, icon: Icon }) => {
+          const isActive = active === key
+          const badge = key === 'orders' ? orderBadge : undefined
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onNavigate(key)}
+              aria-current={isActive ? 'page' : undefined}
+              title={t.nav[key]}
               className={itemClass(isActive)}
             >
               <span className="relative">
                 <Icon className="h-5 w-5" />
                 {badge !== undefined && badge > 0 && (
-                  <span className="absolute -top-1.5 -end-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#A01F13] px-1 text-[10px] font-bold tabular-nums text-white">
+                  <span className="absolute -top-1.5 -end-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold tabular-nums text-white">
                     {badge}
                   </span>
                 )}
@@ -205,15 +180,6 @@ export function BottomNav({ t, active, orderBadge, onNavigate, onOpenSettings }:
             </button>
           )
         })}
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          title={t.actions.settings}
-          className={itemClass(false)}
-        >
-          <GearIcon className="h-5 w-5" />
-          <span className="max-w-full break-words text-center text-xs font-bold leading-tight">{t.nav.settings}</span>
-        </button>
       </div>
     </nav>
   )
@@ -229,10 +195,8 @@ export function MobileHeader({
   onOpenNotifications,
 }: Props) {
   return (
-    <header className="mb-4 flex min-w-0 items-center gap-2 rounded-2xl border border-[#E9E1D7] bg-white p-3 lg:hidden">
-      <div aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#A01F13] text-[#E6BF78]">
-        <UtensilsIcon className="h-5 w-5" />
-      </div>
+    <header className="mb-4 flex min-w-0 items-center gap-2 rounded-2xl border border-line bg-white p-3 lg:hidden">
+      <BrandLogo size="sm" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-extrabold leading-tight text-stone-800" title={brandName}>{brandName}</p>
         <p className="mt-0.5 truncate text-xs text-stone-500" title={brandSub}>{brandSub}</p>
@@ -248,14 +212,10 @@ export function MobileHeader({
         onClick={onOpenNotifications}
         aria-label={t.actions.notifications}
         title={t.actions.notifications}
-        className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#E9E1D7] text-stone-600 transition-colors hover:bg-cream-50 hover:text-[#A01F13] motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A01F13]"
+        className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-line text-stone-600 transition-colors hover:bg-cream-50 hover:text-brand-700 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
       >
         <BellIcon className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -end-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#A01F13] px-1 text-[10px] font-bold tabular-nums text-white ring-2 ring-white">
-            {unreadCount}
-          </span>
-        )}
+        {unreadCount > 0 && <span className="absolute -top-1 -end-1 h-2.5 w-2.5 rounded-full bg-brand-600 ring-2 ring-white" />}
       </button>
     </header>
   )
