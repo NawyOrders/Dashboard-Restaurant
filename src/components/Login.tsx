@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { AuthError, login } from '../auth'
+import { AuthError, API_BASE_URL, login } from '../auth'
 import type { AuthErrorCode, Session } from '../auth'
 import { isMockRequested } from '../api'
 import type { MockRole } from '../mockAuth'
@@ -76,10 +76,18 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
     timeout: t.auth.timeout,
     service: t.auth.service,
     invalidResponse: t.auth.invalidResponse,
+    configuration: t.auth.configuration,
   }
+
+  // Without a tenant origin the form must not send credentials anywhere.
+  const configurationError = !API_BASE_URL
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (configurationError) {
+      setErrorCode('configuration')
+      return
+    }
     // A ref closes the gap before React renders the disabled controls.
     if (submittingRef.current) return
     setErrorCode(null)
@@ -201,6 +209,12 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
               </p>
             )}
 
+            {configurationError && (
+              <p role="alert" className="mb-5 rounded-xl border border-[#C2281A]/30 bg-[#C2281A]/5 px-4 py-3 text-sm font-medium leading-relaxed text-[#C2281A]">
+                {t.auth.configuration}
+              </p>
+            )}
+
             <form
               onSubmit={handleSubmit}
               noValidate
@@ -304,7 +318,7 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
 
               <button
                 type="submit"
-                disabled={pending}
+                disabled={pending || configurationError}
                 className={`mt-1 flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#C2281A] px-4 py-3 text-base font-bold text-white motion-safe:transition-colors hover:bg-[#D93B2B] disabled:cursor-wait disabled:opacity-75 ${focusClass}`}
               >
                 {pending && <span aria-hidden="true"><SpinnerIcon className="h-5 w-5 motion-reduce:animate-none" /></span>}

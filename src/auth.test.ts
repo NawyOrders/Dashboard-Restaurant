@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { API_BASE_URL, clearLegacySession, login, REQUEST_TIMEOUT_MS, revokeSession } from './auth'
+import {
+  API_BASE_URL,
+  API_BASE_URL_ERROR,
+  clearLegacySession,
+  login,
+  REQUEST_TIMEOUT_MS,
+  resolveApiOrigin,
+  revokeSession,
+} from './auth'
 import { staffLoginResponse } from './test/fixtures'
 
 const fetchMock = vi.fn<typeof fetch>()
@@ -31,6 +39,19 @@ describe('restaurant staff API adapter', () => {
   it.each([[400, 'invalidCredentials'], [401, 'invalidCredentials'], [422, 'invalidCredentials'], [403, 'forbidden'], [429, 'rateLimited'], [500, 'service'], [503, 'service']])('maps HTTP %s to a safe error', async (status, code) => {
     respond({ errors: { detail: 'Sensitive server error not for display' } }, status as number)
     await expect(login('staff@example.test', 'test')).rejects.toMatchObject({ code, message: code })
+  })
+
+  it('does not expose an unknown tenant response', async () => {
+    respond({
+      title: 'Tenant Not Found',
+      status: 404,
+      detail: "The tenant identified by subdomain 'tenant' was not found.",
+    }, 404)
+
+    await expect(login('staff@example.test', 'test')).rejects.toMatchObject({
+      code: 'service',
+      message: 'service',
+    })
   })
 
   it('does not call the server for missing credentials', async () => {
@@ -149,5 +170,72 @@ describe('restaurant staff API adapter', () => {
     expect(remove).toHaveBeenCalledTimes(1)
     remove.mockImplementation(() => { throw new DOMException('Blocked', 'SecurityError') })
     expect(clearLegacySession).not.toThrow()
+  })
+})
+
+describe('tenant API origin resolution', () => {
+  const slug = 'el-fahm-01a1c1ed11cf79ffbe51681899bb90fd'
+
+  it('derives the tenant API origin from the admin hostname', () => {
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com`)).toEqual({
+      ok: true,
+      origin: `https://${slug}.api.nawyorders.com`,
+    })
+  })
+
+  it('keeps the full slug, including its hash suffix, as one label', () => {
+    const result = resolveApiOrigin(`  ${slug.toUpperCase()}.ADMIN.NAWYORDERS.COM  `)
+    expect(result).toEqual({ ok: true, origin: `https://${slug}.api.nawyorders.com` })
+  })
+
+  it('ignores an explicit port', () => {
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com:5173`)).toEqual({
+      ok: true,
+      origin: `https://${slug}.api.nawyorders.com`,
+    })
+  })
+
+  it.each([
+    ['admin.nawyorders.com', 'missingTenant'],
+    ['localhost', 'missingTenant'],
+    ['localhost:5173', 'missingTenant'],
+    ['127.0.0.1', 'missingTenant'],
+    ['[::1]', 'missingTenant'],
+    ['app.vercel.app', 'missingTenant'],
+    ['nawyorders.com', 'missingTenant'],
+    ['evil-admin.nawyorders.com', 'missingTenant'],
+    [`${slug}.admin.nawyorders.com.evil.test`, 'missingTenant'],
+    ['a.b.admin.nawyorders.com', 'invalidTenant'],
+    ['.admin.nawyorders.com', 'invalidTenant'],
+    ['bad_slug.admin.nawyorders.com', 'invalidTenant'],
+  ])('refuses %s with %s instead of guessing a tenant', (hostname, reason) => {
+    expect(resolveApiOrigin(hostname)).toEqual({ ok: false, reason })
+  })
+
+  it('prefers a valid HTTPS override and normalizes it', () => {
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com`, '  HTTPS://Tenant.Test:8443/  ')).toEqual({
+      ok: true,
+      origin: 'https://tenant.test',
+    })
+  })
+
+  it('fails closed on an insecure or credentialed override', () => {
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com`, 'http://tenant.test')).toEqual({
+      ok: false,
+      reason: 'invalidOverride',
+    })
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com`, 'https://user:secret@tenant.test')).toEqual({
+      ok: false,
+      reason: 'invalidOverride',
+    })
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com`, 'not a url')).toEqual({
+      ok: false,
+      reason: 'invalidOverride',
+    })
+  })
+
+  it('uses the explicit override in the Vitest environment', () => {
+    expect(API_BASE_URL).toBe('https://tenant.test')
+    expect(API_BASE_URL_ERROR).toBeNull()
   })
 })

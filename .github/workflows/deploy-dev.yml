@@ -1,0 +1,95 @@
+name: Deploy Restaurant Dashboard (DEV)
+
+# Deploy branch is DEV (uppercase): GitHub branch filters are case-sensitive.
+on:
+  push:
+    branches:
+      - DEV
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-restaurant-dashboard-dev
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Typecheck, test and build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build dashboard
+        run: npm run build
+
+  deploy:
+    name: Deploy on DEV VPS
+    needs: verify
+    runs-on: ubuntu-latest
+    # workflow_dispatch can be started from any branch; only DEV may deploy.
+    if: github.ref == 'refs/heads/DEV'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Sync source to VPS
+        env:
+          SSHPASS: ${{ secrets.VPS_SSH_PASSWORD }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
+        run: |
+          tar \
+            --exclude='./.git' \
+            --exclude='./node_modules' \
+            --exclude='./dist' \
+            --exclude='./coverage' \
+            --exclude='./test-results' \
+            --exclude='./playwright-report' \
+            --exclude='./.env' \
+            --exclude='./.env.*' \
+            -czf - . | sshpass -e ssh -o StrictHostKeyChecking=no "$VPS_SSH_USER@$VPS_HOST" \
+              "mkdir -p /opt/nawyorders/restaurant-dashboard && tar -xzf - -C /opt/nawyorders/restaurant-dashboard"
+
+      - name: Build and deploy container
+        env:
+          SSHPASS: ${{ secrets.VPS_SSH_PASSWORD }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          sshpass -e ssh -o StrictHostKeyChecking=no "$VPS_SSH_USER@$VPS_HOST" \
+            "cd /opt/nawyorders/restaurant-dashboard && IMAGE_TAG='$IMAGE_TAG' bash deploy/restaurant-dashboard.sh"
+
+      - name: Enable Caddy route after health check
+        env:
+          SSHPASS: ${{ secrets.VPS_SSH_PASSWORD }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
+        run: |
+          sshpass -e ssh -o StrictHostKeyChecking=no "$VPS_SSH_USER@$VPS_HOST" \
+            "cd /opt/nawyorders/restaurant-dashboard && bash deploy/enable-caddy-route.sh"
