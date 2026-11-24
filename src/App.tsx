@@ -263,6 +263,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                       query={query}
                       onRetry={remote.reload}
                       onViewAll={() => navigateSection('orders')}
+                      onToast={showToast}
                     />
                   }
                 />

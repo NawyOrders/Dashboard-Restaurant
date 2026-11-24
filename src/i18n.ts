@@ -309,8 +309,8 @@ export const translations = {
       loadingPage: 'جارٍ تحميل الصفحة…',
     },
     home: {
-      values: { salesToday: '12,480', newOrders: '148', customers: '326', avgOrder: '84' },
-      deltas: { salesToday: '12.5%', newOrders: '8.2%', customers: '4.1%', avgOrder: '2.3%' },
+      values: { salesToday: '12,480', newOrders: '148', customers: '326', employees: '12', avgOrder: '84' },
+      deltas: { salesToday: '12.5%', newOrders: '8.2%', customers: '4.1%', employees: '1.2%', avgOrder: '2.3%' },
       latestOrders: 'آخر الطلبات',
       viewAll: 'عرض الكل',
     },
@@ -699,8 +699,8 @@ export const translations = {
       loadingPage: 'Loading page…',
     },
     home: {
-      values: { salesToday: '12,480', newOrders: '148', customers: '326', avgOrder: '84' },
-      deltas: { salesToday: '12.5%', newOrders: '8.2%', customers: '4.1%', avgOrder: '2.3%' },
+      values: { salesToday: '12,480', newOrders: '148', customers: '326', employees: '12', avgOrder: '84' },
+      deltas: { salesToday: '12.5%', newOrders: '8.2%', customers: '4.1%', employees: '1.2%', avgOrder: '2.3%' },
       latestOrders: 'Latest Orders',
       viewAll: 'View all',
     },
