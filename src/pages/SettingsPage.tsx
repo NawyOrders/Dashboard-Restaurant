@@ -1,19 +1,26 @@
 import { useState, type ReactNode } from 'react'
-import type { RestaurantSettings } from '../api/types'
-import type { Lang, T } from '../i18n'
+import type {
+  RestaurantNotificationSettings,
+  RestaurantPaymentSettings,
+  RestaurantSettings,
+  RestaurantWorkingHours,
+} from '../api/types'
+import type { T } from '../i18n'
 import { PageHeading } from '../components/PageHeading'
 import {
+  BanknoteIcon,
   CheckIcon,
   ClockIcon,
   CreditCardIcon,
   SpinnerIcon,
   StoreIcon,
   VolumeIcon,
+  WalletIcon,
 } from '../icons'
 
 export type SettingsPageProps = {
   t: T
-  lang: Lang
+  lang: string
   storageKey: string
   onToast: (message: string) => void
 }
@@ -54,6 +61,14 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
   )
   const [saving, setSaving] = useState(false)
 
+  const patch = (partial: Partial<RestaurantSettings>) => setSettings((current) => ({ ...current, ...partial }))
+  const patchNotifications = (partial: Partial<RestaurantNotificationSettings>) =>
+    setSettings((current) => ({ ...current, notifications: { ...current.notifications, ...partial } }))
+  const patchPayments = (partial: Partial<RestaurantPaymentSettings>) =>
+    setSettings((current) => ({ ...current, payments: { ...current.payments, ...partial } }))
+  const patchHours = (partial: Partial<RestaurantWorkingHours>) =>
+    setSettings((current) => ({ ...current, workingHours: { ...current.workingHours, ...partial } }))
+
   const handleSave = () => {
     setSaving(true)
     try {
@@ -86,7 +101,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid gap-4 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-4">
           <SettingsCard
             title={t.settingsPage.branch}
@@ -104,7 +119,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                   id="settings-name"
                   type="text"
                   value={settings.restaurantName}
-                  onChange={(event) => setSettings((current) => ({ ...current, restaurantName: event.target.value }))}
+                  onChange={(event) => patch({ restaurantName: event.target.value })}
                   className={INPUT}
                 />
               </Field>
@@ -114,7 +129,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                   type="tel"
                   dir="ltr"
                   value={settings.branchPhone}
-                  onChange={(event) => setSettings((current) => ({ ...current, branchPhone: event.target.value }))}
+                  onChange={(event) => patch({ branchPhone: event.target.value })}
                   className={`${INPUT} text-start tabular-nums`}
                 />
               </Field>
@@ -124,7 +139,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                     id="settings-address"
                     rows={2}
                     value={settings.address}
-                    onChange={(event) => setSettings((current) => ({ ...current, address: event.target.value }))}
+                    onChange={(event) => patch({ address: event.target.value })}
                     className={`${INPUT} min-h-20 resize-y py-2.5`}
                   />
                 </Field>
@@ -137,7 +152,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                     min={0}
                     step={1}
                     value={settings.deliveryFee}
-                    onChange={(event) => setSettings((current) => ({ ...current, deliveryFee: Number(event.target.value) || 0 }))}
+                    onChange={(event) => patch({ deliveryFee: Number(event.target.value) || 0 })}
                     className={`${INPUT} pe-14 tabular-nums`}
                   />
                   <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{currency}</span>
@@ -151,7 +166,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                     min={0}
                     step={1}
                     value={settings.minimumOrder}
-                    onChange={(event) => setSettings((current) => ({ ...current, minimumOrder: Number(event.target.value) || 0 }))}
+                    onChange={(event) => patch({ minimumOrder: Number(event.target.value) || 0 })}
                     className={`${INPUT} pe-14 tabular-nums`}
                   />
                   <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{currency}</span>
@@ -165,121 +180,12 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                     min={0}
                     step={1}
                     value={settings.prepTimeMinutes}
-                    onChange={(event) => setSettings((current) => ({ ...current, prepTimeMinutes: Number(event.target.value) || 0 }))}
+                    onChange={(event) => patch({ prepTimeMinutes: Number(event.target.value) || 0 })}
                     className={`${INPUT} pe-20 tabular-nums`}
                   />
                   <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{t.settingsPage.minutes}</span>
                 </div>
               </Field>
-            </div>
-          </SettingsCard>
-
-          <SettingsCard
-            title={t.settingsPage.kitchen}
-            subtitle={t.settingsPage.kitchenSub}
-            icon={<VolumeIcon className="h-5 w-5" />}
-          >
-            <div className="divide-y divide-line">
-              <ToggleRow
-                title={t.settingsPage.repeatSound}
-                hint={t.settingsPage.repeatSoundHint}
-                checked={settings.notifications.repeatSound}
-                onChange={() =>
-                  setSettings((current) => ({
-                    ...current,
-                    notifications: { ...current.notifications, repeatSound: !current.notifications.repeatSound },
-                  }))
-                }
-              />
-              <ToggleRow
-                title={t.settingsPage.autoPrint}
-                hint={t.settingsPage.autoPrintHint}
-                checked={settings.notifications.autoPrint}
-                onChange={() =>
-                  setSettings((current) => ({
-                    ...current,
-                    notifications: { ...current.notifications, autoPrint: !current.notifications.autoPrint },
-                  }))
-                }
-              />
-              <ToggleRow
-                title={t.settingsPage.notifyDispatch}
-                hint={t.settingsPage.notifyDispatchHint}
-                checked={settings.notifications.notifyOnDispatch}
-                onChange={() =>
-                  setSettings((current) => ({
-                    ...current,
-                    notifications: { ...current.notifications, notifyOnDispatch: !current.notifications.notifyOnDispatch },
-                  }))
-                }
-              />
-            </div>
-          </SettingsCard>
-
-          <SettingsCard
-            title={t.settingsPage.payments}
-            subtitle={t.settingsPage.paymentsSub}
-            icon={<CreditCardIcon className="h-5 w-5" />}
-          >
-            <div className="divide-y divide-line">
-              <ToggleRow
-                title={t.settingsPage.cash}
-                checked={settings.payments.cash}
-                onChange={() =>
-                  setSettings((current) => ({ ...current, payments: { ...current.payments, cash: !current.payments.cash } }))
-                }
-              />
-              <ToggleRow
-                title={t.settingsPage.instapay}
-                checked={settings.payments.instapay}
-                onChange={() =>
-                  setSettings((current) => ({ ...current, payments: { ...current.payments, instapay: !current.payments.instapay } }))
-                }
-              />
-              {settings.payments.instapay && (
-                <div className="py-3">
-                  <Field id="settings-instapay" label={t.settingsPage.instapayHandle}>
-                    <input
-                      id="settings-instapay"
-                      type="text"
-                      dir="ltr"
-                      value={settings.payments.instapayHandle}
-                      onChange={(event) =>
-                        setSettings((current) => ({
-                          ...current,
-                          payments: { ...current.payments, instapayHandle: event.target.value },
-                        }))
-                      }
-                      className={`${INPUT} text-start`}
-                    />
-                  </Field>
-                </div>
-              )}
-              <ToggleRow
-                title={t.settingsPage.wallets}
-                checked={settings.payments.wallets}
-                onChange={() =>
-                  setSettings((current) => ({ ...current, payments: { ...current.payments, wallets: !current.payments.wallets } }))
-                }
-              />
-              {settings.payments.wallets && (
-                <div className="py-3">
-                  <Field id="settings-wallets" label={t.settingsPage.walletProviders}>
-                    <input
-                      id="settings-wallets"
-                      type="text"
-                      value={settings.payments.walletProviders}
-                      onChange={(event) =>
-                        setSettings((current) => ({
-                          ...current,
-                          payments: { ...current.payments, walletProviders: event.target.value },
-                        }))
-                      }
-                      className={INPUT}
-                    />
-                  </Field>
-                </div>
-              )}
             </div>
           </SettingsCard>
 
@@ -292,12 +198,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
               <ToggleRow
                 title={t.settingsPage.autoClose}
                 checked={settings.workingHours.autoClose}
-                onChange={() =>
-                  setSettings((current) => ({
-                    ...current,
-                    workingHours: { ...current.workingHours, autoClose: !current.workingHours.autoClose },
-                  }))
-                }
+                onChange={() => patchHours({ autoClose: !settings.workingHours.autoClose })}
               />
               <div className="grid gap-4 pt-4 sm:grid-cols-2">
                 <p className="text-xs font-bold text-stone-600 sm:col-span-2">{t.settingsPage.weekdays}</p>
@@ -306,12 +207,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                     id="settings-weekdays-from"
                     type="text"
                     value={settings.workingHours.weekdaysFrom}
-                    onChange={(event) =>
-                      setSettings((current) => ({
-                        ...current,
-                        workingHours: { ...current.workingHours, weekdaysFrom: event.target.value },
-                      }))
-                    }
+                    onChange={(event) => patchHours({ weekdaysFrom: event.target.value })}
                     className={INPUT}
                   />
                 </Field>
@@ -320,12 +216,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                     id="settings-weekdays-to"
                     type="text"
                     value={settings.workingHours.weekdaysTo}
-                    onChange={(event) =>
-                      setSettings((current) => ({
-                        ...current,
-                        workingHours: { ...current.workingHours, weekdaysTo: event.target.value },
-                      }))
-                    }
+                    onChange={(event) => patchHours({ weekdaysTo: event.target.value })}
                     className={INPUT}
                   />
                 </Field>
@@ -335,12 +226,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                     id="settings-friday-from"
                     type="text"
                     value={settings.workingHours.fridayFrom}
-                    onChange={(event) =>
-                      setSettings((current) => ({
-                        ...current,
-                        workingHours: { ...current.workingHours, fridayFrom: event.target.value },
-                      }))
-                    }
+                    onChange={(event) => patchHours({ fridayFrom: event.target.value })}
                     className={INPUT}
                   />
                 </Field>
@@ -349,12 +235,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                     id="settings-friday-to"
                     type="text"
                     value={settings.workingHours.fridayTo}
-                    onChange={(event) =>
-                      setSettings((current) => ({
-                        ...current,
-                        workingHours: { ...current.workingHours, fridayTo: event.target.value },
-                      }))
-                    }
+                    onChange={(event) => patchHours({ fridayTo: event.target.value })}
                     className={INPUT}
                   />
                 </Field>
@@ -363,43 +244,91 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
           </SettingsCard>
         </div>
 
-        <aside className="dashboard-panel h-fit p-5 lg:sticky lg:top-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">
-              <StoreIcon className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-stone-500">{t.settingsPage.summary}</p>
-              <p className="truncate text-sm font-extrabold text-stone-800">{settings.restaurantName || t.settingsPage.defaults.restaurantName}</p>
-            </div>
-          </div>
-          <p className="mt-2 text-[11px] text-stone-500">{t.settingsPage.summaryHint}</p>
-
-          <dl className="mt-4 space-y-2.5 text-xs">
-            <SummaryRow label={t.settingsPage.branchPhone} value={settings.branchPhone} ltr />
-            <SummaryRow label={t.settingsPage.deliveryFee} value={`${settings.deliveryFee} ${currency}`} />
-            <SummaryRow label={t.settingsPage.prepTime} value={`${settings.prepTimeMinutes} ${t.settingsPage.minutes}`} />
-            <SummaryRow label={t.settingsPage.weekdays} value={`${settings.workingHours.weekdaysFrom} — ${settings.workingHours.weekdaysTo}`} />
-          </dl>
-
-          <div className="mt-4 rounded-xl bg-mint-100/60 p-3">
-            <p className="flex items-center gap-1.5 text-xs font-bold text-[#176B4B]">
-              <span className="h-2 w-2 rounded-full bg-mint-600" aria-hidden="true" />
-              {t.settingsPage.openNow}
-            </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-stone-600">{t.settingsPage.saveHint}</p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-sm font-bold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+        <div className="flex min-w-0 flex-col gap-4">
+          <SettingsCard
+            title={t.settingsPage.kitchen}
+            subtitle={t.settingsPage.kitchenSub}
+            icon={<VolumeIcon className="h-5 w-5" />}
           >
-            {saving ? <SpinnerIcon className="h-4 w-4 animate-spin" /> : <CheckIcon className="h-4 w-4" />}
-            {t.settingsPage.save}
-          </button>
-        </aside>
+            <div className="divide-y divide-line">
+              <ToggleRow
+                title={t.settingsPage.repeatSound}
+                hint={t.settingsPage.repeatSoundHint}
+                checked={settings.notifications.repeatSound}
+                onChange={() => patchNotifications({ repeatSound: !settings.notifications.repeatSound })}
+              />
+              <ToggleRow
+                title={t.settingsPage.autoPrint}
+                hint={t.settingsPage.autoPrintHint}
+                checked={settings.notifications.autoPrint}
+                onChange={() => patchNotifications({ autoPrint: !settings.notifications.autoPrint })}
+              />
+              <ToggleRow
+                title={t.settingsPage.notifyDispatch}
+                hint={t.settingsPage.notifyDispatchHint}
+                checked={settings.notifications.notifyOnDispatch}
+                onChange={() => patchNotifications({ notifyOnDispatch: !settings.notifications.notifyOnDispatch })}
+              />
+            </div>
+          </SettingsCard>
+
+          <SettingsCard
+            title={t.settingsPage.payments}
+            subtitle={t.settingsPage.paymentsSub}
+            icon={<CreditCardIcon className="h-5 w-5" />}
+          >
+            <div className="divide-y divide-line">
+              <ToggleRow
+                title={t.settingsPage.cash}
+                leading={<BanknoteIcon className="h-4 w-4" />}
+                leadingClass="bg-[#FBF1D8] text-[#806116]"
+                checked={settings.payments.cash}
+                onChange={() => patchPayments({ cash: !settings.payments.cash })}
+              />
+              <ToggleRow
+                title={t.settingsPage.instapay}
+                leading={<CreditCardIcon className="h-4 w-4" />}
+                leadingClass="bg-[#F3E8FF] text-[#7B2CBF]"
+                checked={settings.payments.instapay}
+                onChange={() => patchPayments({ instapay: !settings.payments.instapay })}
+              />
+              {settings.payments.instapay && (
+                <div className="py-3">
+                  <Field id="settings-instapay" label={t.settingsPage.instapayHandle}>
+                    <input
+                      id="settings-instapay"
+                      type="text"
+                      dir="ltr"
+                      value={settings.payments.instapayHandle}
+                      onChange={(event) => patchPayments({ instapayHandle: event.target.value })}
+                      className={`${INPUT} text-start`}
+                    />
+                  </Field>
+                </div>
+              )}
+              <ToggleRow
+                title={t.settingsPage.wallets}
+                leading={<WalletIcon className="h-4 w-4" />}
+                leadingClass="bg-[#FBF1D8] text-[#806116]"
+                checked={settings.payments.wallets}
+                onChange={() => patchPayments({ wallets: !settings.payments.wallets })}
+              />
+              {settings.payments.wallets && (
+                <div className="py-3">
+                  <Field id="settings-wallets" label={t.settingsPage.walletProviders}>
+                    <input
+                      id="settings-wallets"
+                      type="text"
+                      value={settings.payments.walletProviders}
+                      onChange={(event) => patchPayments({ walletProviders: event.target.value })}
+                      className={INPUT}
+                    />
+                  </Field>
+                </div>
+              )}
+            </div>
+          </SettingsCard>
+        </div>
       </div>
     </div>
   )
@@ -438,17 +367,26 @@ function Field({ id, label, children }: { id: string; label: string; children: R
   )
 }
 
-function ToggleRow({ title, hint, checked, onChange }: {
+function ToggleRow({ title, hint, leading, leadingClass, checked, onChange }: {
   title: string
   hint?: string
+  leading?: ReactNode
+  leadingClass?: string
   checked: boolean
   onChange: () => void
 }) {
   return (
     <div className="flex items-start justify-between gap-4 py-3">
-      <div className="min-w-0">
-        <p className="text-sm font-bold text-stone-800">{title}</p>
-        {hint && <p className="mt-0.5 text-xs leading-relaxed text-stone-500">{hint}</p>}
+      <div className="flex min-w-0 items-start gap-3">
+        {leading && (
+          <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${leadingClass ?? 'bg-cream-100 text-stone-600'}`}>
+            {leading}
+          </span>
+        )}
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-stone-800">{title}</p>
+          {hint && <p className="mt-0.5 text-xs leading-relaxed text-stone-500">{hint}</p>}
+        </div>
       </div>
       <button
         type="button"
@@ -460,17 +398,6 @@ function ToggleRow({ title, hint, checked, onChange }: {
       >
         <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? 'start-6' : 'start-1'}`} />
       </button>
-    </div>
-  )
-}
-
-function SummaryRow({ label, value, ltr }: { label: string; value: string; ltr?: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <dt className="text-stone-500">{label}</dt>
-      <dd className={`truncate text-end font-bold text-stone-700 ${ltr ? 'tabular-nums' : ''}`} dir={ltr ? 'ltr' : undefined}>
-        {value}
-      </dd>
     </div>
   )
 }
