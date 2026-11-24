@@ -34,7 +34,6 @@ const PRIMARY_BUTTON = 'inline-flex min-h-11 w-full items-center justify-center 
 const OUTLINE_BUTTON = 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-4 text-sm font-bold text-brand-600 transition-colors hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 const GOLD_BUTTON = 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#D99A2B] px-4 text-sm font-bold text-white transition-colors hover:bg-[#C0871F] disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-200'
 const MINT_BUTTON = 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-mint-600 px-4 text-sm font-bold text-white transition-colors hover:bg-[#178257] disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-100'
-const MUTED_BUTTON = 'inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-cream-100 px-4 text-sm font-bold text-stone-400'
 
 function PaymentIcon({ method, className }: { method: LiveOrderPayment; className?: string }) {
   if (method === 'cash') return <BanknoteIcon className={className} />
@@ -255,7 +254,7 @@ function DetailedOrderCard({ order, t, lang, isPending, onAccept, onReject, onRe
   )
 }
 
-function CompactOrderCard({ order, t, lang, isPending, onAdvance, onPreparing }: {
+function CompactOrderCard({ order, t, lang, isPending, onAdvance }: {
   order: LiveOrder
   t: T
   lang: Lang
