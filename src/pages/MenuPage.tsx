@@ -156,22 +156,22 @@ export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
                     type="button"
                     onClick={() => setSelected(category.id)}
                     aria-pressed={isActive}
-                    className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-start transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
+                    className={`flex w-full items-center gap-2.5 rounded-2xl border px-3 py-2.5 text-start transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
                       isActive
-                        ? 'border-brand-600 bg-brand-600 text-white shadow-sm'
+                        ? 'border-[#F27061] bg-[#FFF5F4] text-brand-700 shadow-sm'
                         : 'border-line bg-white text-stone-700 hover:border-gold-300 hover:bg-cream-50'
                     }`}
                   >
-                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${isActive ? 'bg-white/15 text-white' : 'bg-[#FBF1D8] text-[#806116]'}`}>
-                      <CategoryIcon categoryId={category.id} className="h-4 w-4" />
+                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${isActive ? 'bg-brand-600 text-white' : 'bg-[#FBF1D8] text-[#806116]'}`}>
+                      <CategoryIcon categoryId={category.id} className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-bold">{categoryName(category, lang)}</span>
-                      <span className={`mt-0.5 block text-[11px] font-semibold ${isActive ? 'text-white/80' : 'text-stone-500'}`}>
+                      <span className={`block truncate text-sm font-extrabold ${isActive ? 'text-brand-700' : 'text-stone-800'}`}>{categoryName(category, lang)}</span>
+                      <span className="mt-0.5 block text-[11px] font-semibold text-stone-500">
                         {category.count} {t.menuPage.item}
                       </span>
                     </span>
-                    <Chevron className={`h-4 w-4 shrink-0 ${isActive ? 'text-white/80' : 'text-stone-400'}`} />
+                    <Chevron className={`h-4 w-4 shrink-0 ${isActive ? 'text-brand-600' : 'text-stone-400'}`} />
                   </button>
                 </li>
               )

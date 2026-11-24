@@ -136,7 +136,11 @@ export function Topbar({
               <p className="truncate text-sm font-bold leading-tight text-stone-800"><bdi>{user.name}</bdi></p>
               <p className="truncate text-[11px] text-stone-500" title={roleLabel}><bdi>{roleLabel}</bdi></p>
             </div>
-            <div aria-hidden="true" className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-gold-500 text-sm font-black text-brand-700 ring-2 ring-white">
+            <div
+              role="img"
+              aria-label={`${user.name} — ${roleLabel}`}
+              className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-gold-500 text-sm font-black text-brand-700 ring-2 ring-white"
+            >
               {user.name.trim().charAt(0)}
               <span className="absolute -bottom-0.5 -end-0.5 h-3 w-3 rounded-full border-2 border-white bg-mint-600" />
             </div>

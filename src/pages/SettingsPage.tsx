@@ -113,27 +113,31 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
               </span>
             }
           >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field id="settings-name" label={t.settingsPage.restaurantName}>
-                <input
-                  id="settings-name"
-                  type="text"
-                  value={settings.restaurantName}
-                  onChange={(event) => patch({ restaurantName: event.target.value })}
-                  className={INPUT}
-                />
-              </Field>
-              <Field id="settings-phone" label={t.settingsPage.branchPhone}>
-                <input
-                  id="settings-phone"
-                  type="tel"
-                  dir="ltr"
-                  value={settings.branchPhone}
-                  onChange={(event) => patch({ branchPhone: event.target.value })}
-                  className={`${INPUT} text-start tabular-nums`}
-                />
-              </Field>
-              <div className="sm:col-span-2">
+            <div className="grid gap-4 sm:grid-cols-6">
+              <div className="sm:col-span-3">
+                <Field id="settings-name" label={t.settingsPage.restaurantName}>
+                  <input
+                    id="settings-name"
+                    type="text"
+                    value={settings.restaurantName}
+                    onChange={(event) => patch({ restaurantName: event.target.value })}
+                    className={INPUT}
+                  />
+                </Field>
+              </div>
+              <div className="sm:col-span-3">
+                <Field id="settings-phone" label={t.settingsPage.branchPhone}>
+                  <input
+                    id="settings-phone"
+                    type="tel"
+                    dir="ltr"
+                    value={settings.branchPhone}
+                    onChange={(event) => patch({ branchPhone: event.target.value })}
+                    className={`${INPUT} text-start tabular-nums`}
+                  />
+                </Field>
+              </div>
+              <div className="sm:col-span-6">
                 <Field id="settings-address" label={t.settingsPage.address}>
                   <textarea
                     id="settings-address"
@@ -144,48 +148,54 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
                   />
                 </Field>
               </div>
-              <Field id="settings-delivery" label={t.settingsPage.deliveryFee}>
-                <div className="relative">
-                  <input
-                    id="settings-delivery"
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={settings.deliveryFee}
-                    onChange={(event) => patch({ deliveryFee: Number(event.target.value) || 0 })}
-                    className={`${INPUT} pe-14 tabular-nums`}
-                  />
-                  <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{currency}</span>
-                </div>
-              </Field>
-              <Field id="settings-minimum" label={t.settingsPage.minimumOrder}>
-                <div className="relative">
-                  <input
-                    id="settings-minimum"
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={settings.minimumOrder}
-                    onChange={(event) => patch({ minimumOrder: Number(event.target.value) || 0 })}
-                    className={`${INPUT} pe-14 tabular-nums`}
-                  />
-                  <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{currency}</span>
-                </div>
-              </Field>
-              <Field id="settings-prep" label={t.settingsPage.prepTime}>
-                <div className="relative">
-                  <input
-                    id="settings-prep"
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={settings.prepTimeMinutes}
-                    onChange={(event) => patch({ prepTimeMinutes: Number(event.target.value) || 0 })}
-                    className={`${INPUT} pe-20 tabular-nums`}
-                  />
-                  <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{t.settingsPage.minutes}</span>
-                </div>
-              </Field>
+              <div className="sm:col-span-2">
+                <Field id="settings-delivery" label={t.settingsPage.deliveryFee}>
+                  <div className="relative">
+                    <input
+                      id="settings-delivery"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={settings.deliveryFee}
+                      onChange={(event) => patch({ deliveryFee: Number(event.target.value) || 0 })}
+                      className={`${INPUT} pe-14 tabular-nums`}
+                    />
+                    <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{currency}</span>
+                  </div>
+                </Field>
+              </div>
+              <div className="sm:col-span-2">
+                <Field id="settings-minimum" label={t.settingsPage.minimumOrder}>
+                  <div className="relative">
+                    <input
+                      id="settings-minimum"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={settings.minimumOrder}
+                      onChange={(event) => patch({ minimumOrder: Number(event.target.value) || 0 })}
+                      className={`${INPUT} pe-14 tabular-nums`}
+                    />
+                    <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{currency}</span>
+                  </div>
+                </Field>
+              </div>
+              <div className="sm:col-span-2">
+                <Field id="settings-prep" label={t.settingsPage.prepTime}>
+                  <div className="relative">
+                    <input
+                      id="settings-prep"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={settings.prepTimeMinutes}
+                      onChange={(event) => patch({ prepTimeMinutes: Number(event.target.value) || 0 })}
+                      className={`${INPUT} pe-20 tabular-nums`}
+                    />
+                    <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{t.settingsPage.minutes}</span>
+                  </div>
+                </Field>
+              </div>
             </div>
           </SettingsCard>
 

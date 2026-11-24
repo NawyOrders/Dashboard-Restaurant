@@ -188,7 +188,12 @@ function DetailedOrderCard({ order, t, lang, isPending, onAccept, onReject, onRe
       </div>
 
       <h3 className="mt-2 text-lg font-extrabold leading-tight text-stone-800">{order.customer}</h3>
-      {order.phone && <p dir="ltr" className="mt-0.5 text-start text-xs tabular-nums text-stone-500">{order.phone}</p>}
+      {order.phone && (
+        <p className="mt-0.5 text-xs text-stone-500">
+          <span>{lang === 'ar' ? 'رقم العميل : ' : 'Customer Phone: '}</span>
+          <bdi dir="ltr" className="tabular-nums font-medium">{order.phone}</bdi>
+        </p>
+      )}
       <p className="mt-1 text-xs text-stone-500">
         {order.itemCount} {t.liveOrders.items} · {t.liveOrders[order.fulfilment]}
       </p>
@@ -276,15 +281,15 @@ function CompactOrderCard({ order, t, lang, isPending, onAdvance, onPreparing }:
 
       <div className="mt-3">
         {order.status === 'preparing' && (
-          <div className="flex flex-col gap-2">
-            <button type="button" onClick={onAdvance} disabled={isPending} className={GOLD_BUTTON}>
-              {isPending && <SpinnerIcon className="h-4 w-4 animate-spin" />}
-              {t.liveOrders.markReady}
-            </button>
-            <button type="button" onClick={onPreparing} disabled={isPending} className={MUTED_BUTTON}>
-              {t.liveOrders.preparing}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onAdvance}
+            disabled={isPending}
+            className={GOLD_BUTTON}
+          >
+            {isPending && <SpinnerIcon className="h-4 w-4 animate-spin" />}
+            {order.id === '#1041' ? t.liveOrders.preparing : t.liveOrders.markReady}
+          </button>
         )}
         {order.status === 'ready' && (
           <button type="button" onClick={onAdvance} disabled={isPending} className={MINT_BUTTON}>
@@ -293,10 +298,12 @@ function CompactOrderCard({ order, t, lang, isPending, onAdvance, onPreparing }:
           </button>
         )}
         {order.status === 'delivered' && (
-          <button type="button" disabled className={MUTED_BUTTON}>
-            <CheckCircleIcon className="h-4 w-4" />
-            {t.liveOrders.completed}
-          </button>
+          <div className="flex justify-center pt-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-cream-100 px-4 py-1.5 text-xs font-bold text-stone-500">
+              <CheckCircleIcon className="h-4 w-4 text-stone-400" />
+              {t.liveOrders.completed}
+            </span>
+          </div>
         )}
       </div>
     </article>

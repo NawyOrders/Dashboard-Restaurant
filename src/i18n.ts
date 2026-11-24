@@ -187,9 +187,10 @@ export const translations = {
       dateUpdated: 'تم تحديث التاريخ',
     },
     stats: {
-      salesToday: 'إجمالي المبيعات',
+      salesToday: 'المبيعات اليوم',
       newOrders: 'الطلبات الجديدة',
-      employees: 'عدد الموظفين',
+      customers: 'العملاء',
+      employees: 'العملاء',
       avgOrder: 'متوسط قيمة الطلب',
     },
     chart: {
@@ -577,9 +578,10 @@ export const translations = {
       dateUpdated: 'Date updated',
     },
     stats: {
-      salesToday: 'Total Sales',
+      salesToday: 'Today’s Sales',
       newOrders: 'New Orders',
-      employees: 'Employees',
+      customers: 'Customers',
+      employees: 'Customers',
       avgOrder: 'Avg. Order Value',
     },
     chart: {
