@@ -340,6 +340,7 @@ export const translations = {
       transitionError: 'تعذّر تحديث الطلب. حاول مرة أخرى.',
       rejected: 'تم رفض الطلب',
       moved: 'تم تحديث حالة الطلب',
+      empty: 'لا توجد طلبات',
       itemsList: arLiveOrders,
     },
     menuPage: {
@@ -717,6 +718,7 @@ export const translations = {
       transitionError: 'Could not update the order. Please try again.',
       rejected: 'Order rejected',
       moved: 'Order status updated',
+      empty: 'No orders',
       itemsList: enLiveOrders,
     },
     menuPage: {
