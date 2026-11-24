@@ -12,6 +12,7 @@ The Restaurant Admin Dashboard provides a centralized interface for managing res
 - **TypeScript** — Type safety
 - **Vite** — Development server and build tool
 - **Tailwind CSS** — Utility-first styling and responsive design
+- **React Router** — Client-side routing for the five dashboard pages
 - **Cairo / Tajawal** — Arabic fonts (Google Fonts)
 
 ## Requirements
@@ -100,22 +101,22 @@ The El Fahm tenant currently rejects the sample credentials in `.env` with `401 
 
 ## Demo Environment
 
-The application currently uses **hard-coded demo data** rendered directly by the components for development and UI work.
+The application ships with **seeded demo data** for local development and UI work. Home renders sample data from `src/i18n.ts`; the routed pages read from the local preview adapter until their endpoints are confirmed.
 
-> **Note:** Only staff login and session revocation use the real API. Dashboard KPIs, charts, top items and settings remain sample data. Orders are sample data by default; append `?mock=1` to load them through the `Api` mock adapter and to reveal the development demo sign-in. A persistent banner explains the active data mode.
+> **Note:** Only staff login and session revocation use the real API. The Home KPIs, chart, and top items remain sample data. The Orders, Menu, Reports, and Settings pages use the local preview adapter until their endpoints are confirmed. Append `?mock=1` to load the orders feed through the `Api` mock adapter and to reveal the development demo sign-in. A persistent banner explains the active data mode.
 
 ### Data Integration Foundation
 
 `src/api/` defines a single `Api` interface plus two interchangeable adapters, both unit-tested with Vitest:
 
-- `httpApi.ts` — real tenant adapter for `GET /api/v1/admin/orders`, `POST /api/v1/admin/orders/{id}/transition-status`, and `GET /api/v1/Branding`. It sends the Bearer token, validates the `isSuccess`/`data` envelope, maps failures to safe error codes, and supports ETag/304 conditional branding requests.
-- `mockApi.ts` — seeded in-memory adapter with simulated latency and a failure mode.
+- `httpApi.ts` — real tenant adapter for `GET /api/v1/admin/orders`, `POST /api/v1/admin/orders/{id}/transition-status`, and `GET /api/v1/Branding`. Menu, reports, and settings methods are marked `// TODO: confirm endpoint with backend`. It sends the Bearer token, validates the `isSuccess`/`data` envelope, maps failures to safe error codes, and supports ETag/304 conditional branding requests.
+- `mockApi.ts` — seeded in-memory adapter with orders, menu, reports, settings, simulated latency, and a failure mode.
 - `?mock=1` selects the mock adapter; `?mockError=1` simulates backend failures for error-state testing.
 
-Orders are now wired to the `Api` interface through `useOrders` and the `?mock=1` mock adapter, including loading, error, and retry states. Still planned:
+Orders are wired to the `Api` interface through `useOrders` and the `?mock=1` mock adapter, including loading, error, and retry states. The Orders board calls `transitionOrderStatus`; Menu calls `listMenu` and `updateMenuItemAvailability`; Reports calls `getReportsSummary`; Settings persists locally until `updateRestaurantSettings` is confirmed. Still planned:
 
-- Wiring branding, KPIs, charts, and top items to the `Api` interface.
-- Sending status transitions through `POST /admin/orders/{id}/transition-status` (UI updates are local for now).
+- Confirm the menu, reports, and settings endpoints with the backend (marked TODO in `httpApi.ts`).
+- Wiring Home KPIs, charts, and top items to the `Api` interface.
 - TanStack Query for server-state management and caching.
 - ESLint and coverage thresholds (Vitest tests are implemented).
 
@@ -123,15 +124,17 @@ Orders are now wired to the `Api` interface through `useOrders` and the `?mock=1
 
 ```text
 src/
-├── components/          # UI components (Sidebar, Topbar, StatCard, TopItems,
-│                        # SalesChart, OrdersTable, Calendar, Modal, Dialogs, Login)
+├── components/          # Shared layout and Home UI components
+├── pages/               # Routed pages: Home, Orders, Menu, Reports, Settings
 ├── auth.ts              # Real tenant staff login/revocation HTTP adapter
 ├── api/                 # Typed Api interface + HTTP/mock data adapters
 ├── test/                # Test setup and synthetic API fixtures
 ├── calendar.ts          # Date grid, formatting, and storage helpers
 ├── icons.tsx            # SVG icon set used across the UI
 ├── i18n.ts              # Arabic/English translations, direction, and demo data
-├── App.tsx              # Page composition, selected date, and language state
+├── orders.ts            # Order formatting, status mapping, and filtering
+├── reports.ts           # UTF-8 CSV report builder
+├── App.tsx              # Router shell, auth gate, and dashboard layout
 ├── main.tsx             # React entry point
 └── index.css            # Tailwind layers and global styles
 ```
@@ -140,17 +143,22 @@ src/
 
 | Component | Purpose |
 |---|---|
-| `Sidebar` | Desktop sidebar: brand, open switch, navigation, settings |
-| `MobileHeader` | Mobile top card: avatar, notifications, open switch, brand |
+| `Sidebar` | Desktop sidebar: brand, open switch, navigation, settings card |
+| `MobileHeader` | Mobile top card: brand, open switch, notifications |
 | `BottomNav` | Mobile fixed bottom navigation (5 items) |
-| `Topbar` | Search, functional date picker, notifications, greeting, language toggle |
-| `StatCard` | KPI cards with delta badges (responsive column/row layout) |
-| `TopItems` | Horizontal bar list of best-selling items |
-| `SalesChart` | Responsive SVG area chart with week/month toggle, tap/hover values, RTL-aware ordering |
-| `OrdersTable` | Latest orders: desktop table, mobile two-column cards, live search results |
-| `CalendarDialog` | Localized month grid, RTL/LTR month navigation, today/selected states, saved selection |
-| `Modal` | Accessible dialog shell: focus trap, Escape/backdrop close, scroll lock, mobile bottom sheet |
-| `Dialogs` | Detail views for orders, all orders, metrics, top items, notifications, and settings |
+| `Topbar` | Greeting, search, date pill, notifications, language toggle, logout, avatar |
+| `StatCard` | Clickable KPI card with gradient icon tile and delta pill |
+| `TopItems` | Ranked best-seller bars |
+| `SalesChart` | Responsive SVG area chart with week/month toggle and active-point tooltip |
+| `OrdersTable` | Latest orders: desktop table, mobile cards, loading/error/empty states |
+| `PageHeading` | Page title, subtitle, and optional action |
+| `BrandLogo` | Placeholder brand mark used by the sidebar and mobile header |
+| `OrdersPage` | Live kanban with accept, reject, and status transitions |
+| `MenuPage` | Category cards, item grid, and optimistic availability toggles |
+| `ReportsPage` | Revenue hero, payment donut, peak-hours chart, best sellers, CSV export |
+| `SettingsPage` | Branch, working hours, kitchen, and payment settings with local persistence |
+
+Older dialog components remain in `components/` for future detail views but are not mounted by the router shell.
 
 ## Internationalization (RTL / LTR)
 
@@ -167,34 +175,36 @@ The dashboard supports desktop, tablet, and mobile layouts.
 
 | Screen Size | Layout |
 |---|---|
-| 1280px and above (xl) | Full sidebar + 4-column KPI grid |
-| 1024px – 1279px (lg) | Full sidebar, 2-column KPI grid |
-| Below 1024px | Mobile header card, 2-column KPI grid, reordered sections |
-| Below 768px (md) | Orders become cards; the chart scales to the screen width |
+| 1280px and above (xl) | Full sidebar, 4-column KPI grid, 3-column reports |
+| 1024px – 1279px (lg) | Full sidebar, 2-column KPI grid, 4-column orders board |
+| Below 1024px | Mobile header card, 2-column KPI grid, settings stack vertically |
+| Below 768px (md) | Orders table becomes cards; the orders board scrolls horizontally; menu items stay 2-up |
 
 ### Mobile Behavior
 
-- The desktop sidebar is replaced by a compact `MobileHeader` card and a fixed `BottomNav` with 5 icon-and-label items; the active item gets a top indicator, brand color, and a badge where relevant.
+- The desktop sidebar is replaced by a compact `MobileHeader` card and a fixed `BottomNav` with 5 icon-and-label items; the active item gets brand color and a badge where relevant.
 - Bottom navigation respects `env(safe-area-inset-bottom)` for phones with a home indicator.
 - KPI cards switch from row layout to a centered column layout (icon, label, value, delta) and remain 2-up down to 320px.
-- The greeting block, search field, and date pill stack on their own rows; the secondary search/date/bell controls are hidden to avoid duplicating the mobile header.
+- The greeting block, search field, and date pill stack on their own rows.
 - Section order adapts: the sales chart appears above top-selling items on mobile, while they sit side-by-side on desktop.
-- The orders table becomes tappable two-column cards with a divider, status badge, total, time, and a details affordance.
-- Detail dialogs open as bottom sheets on phones and centered dialogs on larger screens.
+- The orders table becomes tappable two-column cards; the live orders board becomes a horizontally scrollable column strip.
+- Menu categories become a horizontal card strip, and menu items stay 2-up on phones.
+- Reports and settings cards stack into a single column.
 
-### Interactions & Detail Views
+### Interactions
 
 Every control is functional and explains its outcome:
 
-- **Search** filters the orders list live; `Enter` jumps to the results. An empty state explains what to try next.
-- **Date pill / calendar** opens a localized month picker with previous/next navigation, highlights today and the selected day, and saves the choice to `localStorage`.
-- **Notification bell** opens recent alerts; items can be marked read individually or all at once (badge updates).
+- **Search** filters the latest orders list live; `Enter` jumps to the results. An empty state explains what to try next.
+- **Notification bell** shows a toast placeholder until the notifications endpoint is wired.
 - **Open/Closed switch** toggles order acceptance, updates the header summary, and shows a toast.
-- **KPI cards** open a metric detail sheet with today-vs-yesterday comparison and a shortcut to orders.
+- **KPI cards** show a summary toast with the selected metric.
 - **Chart week/month tabs** switch datasets; every point is focusable/tappable and shows its value.
-- **Order rows / View all** open full order details (items, payment, timeline) with status actions that update the row.
-- **Top items details button** opens per-item shares and sorting.
-- **Settings** edits restaurant name, phone, address, language, and open status; changes are saved to `localStorage`.
+- **Order rows / View all** navigate to the live orders board.
+- **Orders board** accepts or rejects new orders and moves them through preparing, ready, and delivered using `transitionOrderStatus`.
+- **Menu page** filters by category, shows availability badges, and toggles item availability optimistically through the `Api`.
+- **Reports page** switches between day/week/month, renders the payment donut and peak-hours chart, and exports a UTF-8 CSV.
+- **Settings page** edits branch details, working hours, kitchen preferences, and payment settings; changes persist to `localStorage`.
 
 ## Restaurant Data Isolation
 
@@ -212,16 +222,16 @@ Nawy Orders operates as a multi-tenant platform. Each restaurant must access onl
 
 ## Dashboard Data Integration
 
-Staff authentication is implemented in `src/auth.ts`. The orders feed is wired to the `Api` interface: `useOrders` calls `listOrders`, maps `AdminOrderListItem` rows, and renders loading, error, and retry states in `OrdersTable`. By default the dashboard still renders local sample data; `?mock=1` switches the orders feed to the seeded mock adapter and `?mockError=1` exercises the error state.
+Staff authentication is implemented in `src/auth.ts`. The Home orders feed is wired to the `Api` interface: `useOrders` calls `listOrders`, maps `AdminOrderListItem` rows, and renders loading, error, and retry states in `OrdersTable`. The routed pages also call the `Api` interface: Orders uses `transitionOrderStatus`, Menu uses `listMenu` and `updateMenuItemAvailability`, Reports uses `getReportsSummary`, and Settings persists locally until `updateRestaurantSettings` is confirmed.
 
 Remaining integration work:
 
-1. Wire branding (`getBranding`), KPIs, sales series, and top items to the `Api` interface.
-2. Route order status actions through `transitionOrderStatus` (UI transitions are local for now).
+1. Confirm the menu, reports, and settings endpoints with the backend (marked TODO in `httpApi.ts`).
+2. Wire branding (`getBranding`), Home KPIs, sales series, and top items to the `Api` interface.
 3. Make the HTTP adapter the default once the backend is available.
 4. Enforce restaurant-level authorization and tenant isolation on the backend for every request.
 
-Until each feed is wired, non-order data lives in `src/i18n.ts` and component props.
+Until each feed is wired, Home data lives in `src/i18n.ts` and component props.
 
 ## Roadmap
 
@@ -230,10 +240,14 @@ Until each feed is wired, non-order data lives in `src/i18n.ts` and component pr
 - [x] Real restaurant staff login and session revocation
 - [x] Vitest regression tests and Playwright responsive login tests
 - [x] Wire the orders feed to the `Api` interface (`?mock=1`) with loading/error/retry states
-- [ ] Wire branding, KPIs, charts, and top items to the `Api` interface
-- [ ] Send order status transitions through the API
+- [x] React Router for Home, Orders, Menu, Reports, and Settings pages
+- [x] Live orders kanban with status transitions
+- [x] Menu management with availability toggles
+- [x] Reports with range switching and CSV export
+- [x] Restaurant settings with local persistence
+- [ ] Confirm menu, reports, and settings endpoints with the backend
+- [ ] Wire branding, Home KPIs, charts, and top items to the `Api` interface
 - [ ] TanStack Query integration with cache invalidation
-- [ ] React Router for orders, menu, reports, and settings pages
 - [ ] ESLint and test coverage thresholds
 
 ## Platform Administration (Out of Scope)

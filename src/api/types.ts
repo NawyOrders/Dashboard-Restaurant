@@ -67,6 +67,96 @@ export type BrandingFetchResult =
   | { notModified: true; etag: string | null }
   | { notModified: false; branding: RestaurantBranding; etag: string | null }
 
+export type MenuItem = {
+  id: string
+  nameAr: string
+  nameEn: string
+  price: number
+  available: boolean
+  imageUrl: string | null
+  categoryId: string
+}
+
+export type MenuCategory = {
+  id: string
+  nameAr: string
+  nameEn: string
+  count: number
+  items: MenuItem[]
+}
+
+export type ReportRange = 'today' | 'week' | 'month'
+
+export type PaymentMethodKey = 'cash' | 'instapay' | 'wallet'
+
+export type PaymentBreakdown = {
+  key: PaymentMethodKey
+  percentage: number
+  count: number
+}
+
+export type PeakHourPoint = {
+  hour: number
+  orders: number
+}
+
+export type BestSeller = {
+  id: string
+  nameAr: string
+  nameEn: string
+  units: number
+  revenue: number
+  emoji: string
+}
+
+export type ReportsSummary = {
+  range: ReportRange
+  revenue: number
+  deltaPercent: number
+  orders: number
+  averageOrder: number
+  netProfit: number
+  dateFrom: string
+  dateTo: string
+  payments: PaymentBreakdown[]
+  peakHours: PeakHourPoint[]
+  bestSellers: BestSeller[]
+}
+
+export type RestaurantNotificationSettings = {
+  repeatSound: boolean
+  autoPrint: boolean
+  notifyOnDispatch: boolean
+}
+
+export type RestaurantPaymentSettings = {
+  cash: boolean
+  instapay: boolean
+  instapayHandle: string
+  wallets: boolean
+  walletProviders: string
+}
+
+export type RestaurantWorkingHours = {
+  autoClose: boolean
+  weekdaysFrom: string
+  weekdaysTo: string
+  fridayFrom: string
+  fridayTo: string
+}
+
+export type RestaurantSettings = {
+  restaurantName: string
+  branchPhone: string
+  address: string
+  deliveryFee: number
+  minimumOrder: number
+  prepTimeMinutes: number
+  notifications: RestaurantNotificationSettings
+  payments: RestaurantPaymentSettings
+  workingHours: RestaurantWorkingHours
+}
+
 export type ApiErrorCode =
   | 'unauthorized'
   | 'forbidden'

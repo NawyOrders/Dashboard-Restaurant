@@ -5,10 +5,19 @@ import {
   numberOrNull,
   stringOrNull,
   type AdminOrderListItem,
+  type BestSeller,
   type BrandingFetchResult,
   type ListOrdersQuery,
+  type MenuCategory,
+  type MenuItem,
   type PagedResult,
+  type PaymentBreakdown,
+  type PaymentMethodKey,
+  type PeakHourPoint,
+  type ReportRange,
+  type ReportsSummary,
   type RestaurantBranding,
+  type RestaurantSettings,
 } from './types'
 
 const DEFAULT_TIMEOUT_MS = 15_000
@@ -21,7 +30,7 @@ export type HttpApiOptions = {
 }
 
 type RequestOptions = {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH'
   query?: Record<string, string | number | undefined>
   body?: object
   etag?: string
@@ -131,6 +140,133 @@ function parseBranding(data: unknown): RestaurantBranding {
   }
 }
 
+function parseMenuItem(value: unknown): MenuItem {
+  if (!isRecord(value)) throw new ApiError('invalidResponse')
+  const id = stringOrNull(value.id)
+  const price = numberOrNull(value.price)
+  if (!id || price == null) throw new ApiError('invalidResponse')
+  return {
+    id,
+    nameAr: stringOrNull(value.nameAr) ?? '',
+    nameEn: stringOrNull(value.nameEn) ?? '',
+    price,
+    available: value.available === true,
+    imageUrl: stringOrNull(value.imageUrl),
+    categoryId: stringOrNull(value.categoryId) ?? '',
+  }
+}
+
+function parseMenu(data: unknown): MenuCategory[] {
+  if (!isRecord(data) || !Array.isArray(data.categories)) throw new ApiError('invalidResponse')
+  return data.categories.map((value) => {
+    if (!isRecord(value)) throw new ApiError('invalidResponse')
+    const id = stringOrNull(value.id)
+    if (!id) throw new ApiError('invalidResponse')
+    const items = Array.isArray(value.items) ? value.items.map(parseMenuItem) : []
+    return {
+      id,
+      nameAr: stringOrNull(value.nameAr) ?? '',
+      nameEn: stringOrNull(value.nameEn) ?? '',
+      count: numberOrNull(value.count) ?? items.length,
+      items,
+    }
+  })
+}
+
+const PAYMENT_KEYS: PaymentMethodKey[] = ['cash', 'instapay', 'wallet']
+
+function parsePayments(data: unknown): PaymentBreakdown[] {
+  if (!Array.isArray(data)) return []
+  return data.flatMap((value) => {
+    if (!isRecord(value)) return []
+    const key = stringOrNull(value.key)
+    if (!key || !PAYMENT_KEYS.includes(key as PaymentMethodKey)) return []
+    return [{
+      key: key as PaymentMethodKey,
+      percentage: numberOrNull(value.percentage) ?? 0,
+      count: numberOrNull(value.count) ?? 0,
+    }]
+  })
+}
+
+function parsePeakHours(data: unknown): PeakHourPoint[] {
+  if (!Array.isArray(data)) return []
+  return data.flatMap((value) => {
+    if (!isRecord(value)) return []
+    const hour = numberOrNull(value.hour)
+    const orders = numberOrNull(value.orders)
+    return hour == null || orders == null ? [] : [{ hour, orders }]
+  })
+}
+
+function parseBestSellers(data: unknown): BestSeller[] {
+  if (!Array.isArray(data)) return []
+  return data.flatMap((value) => {
+    if (!isRecord(value)) return []
+    const id = stringOrNull(value.id)
+    if (!id) return []
+    return [{
+      id,
+      nameAr: stringOrNull(value.nameAr) ?? '',
+      nameEn: stringOrNull(value.nameEn) ?? '',
+      units: numberOrNull(value.units) ?? 0,
+      revenue: numberOrNull(value.revenue) ?? 0,
+      emoji: stringOrNull(value.emoji) ?? '🍽️',
+    }]
+  })
+}
+
+function parseReports(data: unknown, range: ReportRange): ReportsSummary {
+  if (!isRecord(data)) throw new ApiError('invalidResponse')
+  return {
+    range,
+    revenue: numberOrNull(data.revenue) ?? 0,
+    deltaPercent: numberOrNull(data.deltaPercent) ?? 0,
+    orders: numberOrNull(data.orders) ?? 0,
+    averageOrder: numberOrNull(data.averageOrder) ?? 0,
+    netProfit: numberOrNull(data.netProfit) ?? 0,
+    dateFrom: stringOrNull(data.dateFrom) ?? '',
+    dateTo: stringOrNull(data.dateTo) ?? '',
+    payments: parsePayments(data.payments),
+    peakHours: parsePeakHours(data.peakHours),
+    bestSellers: parseBestSellers(data.bestSellers),
+  }
+}
+
+function parseSettings(data: unknown): RestaurantSettings {
+  if (!isRecord(data)) throw new ApiError('invalidResponse')
+  const notifications = isRecord(data.notifications) ? data.notifications : {}
+  const payments = isRecord(data.payments) ? data.payments : {}
+  const workingHours = isRecord(data.workingHours) ? data.workingHours : {}
+  return {
+    restaurantName: stringOrNull(data.restaurantName) ?? '',
+    branchPhone: stringOrNull(data.branchPhone) ?? '',
+    address: stringOrNull(data.address) ?? '',
+    deliveryFee: numberOrNull(data.deliveryFee) ?? 0,
+    minimumOrder: numberOrNull(data.minimumOrder) ?? 0,
+    prepTimeMinutes: numberOrNull(data.prepTimeMinutes) ?? 0,
+    notifications: {
+      repeatSound: notifications.repeatSound === true,
+      autoPrint: notifications.autoPrint === true,
+      notifyOnDispatch: notifications.notifyOnDispatch === true,
+    },
+    payments: {
+      cash: payments.cash === true,
+      instapay: payments.instapay === true,
+      instapayHandle: stringOrNull(payments.instapayHandle) ?? '',
+      wallets: payments.wallets === true,
+      walletProviders: stringOrNull(payments.walletProviders) ?? '',
+    },
+    workingHours: {
+      autoClose: workingHours.autoClose === true,
+      weekdaysFrom: stringOrNull(workingHours.weekdaysFrom) ?? '',
+      weekdaysTo: stringOrNull(workingHours.weekdaysTo) ?? '',
+      fridayFrom: stringOrNull(workingHours.fridayFrom) ?? '',
+      fridayTo: stringOrNull(workingHours.fridayTo) ?? '',
+    },
+  }
+}
+
 function readEnvelopeData(body: unknown): unknown {
   if (!isRecord(body) || body.isSuccess !== true || !isRecord(body.data)) {
     throw new ApiError('invalidResponse')
@@ -236,6 +372,47 @@ export function createHttpApi(options: HttpApiOptions): Api {
       }
       const branding = parseBranding(readEnvelopeData(response.body))
       return { notModified: false, branding, etag: response.etag ?? branding.eTag }
+    },
+
+    async listMenu(signal?: AbortSignal): Promise<MenuCategory[]> {
+      // TODO: confirm endpoint with backend
+      const response = await request('/api/v1/admin/menu', { signal })
+      return parseMenu(readEnvelopeData(response.body))
+    },
+
+    async updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void> {
+      if (!itemId.trim()) throw new ApiError('validation')
+      // TODO: confirm endpoint with backend
+      await request(`/api/v1/admin/menu/items/${encodeURIComponent(itemId)}/availability`, {
+        method: 'POST',
+        body: { available },
+        signal,
+      })
+    },
+
+    async getReportsSummary(range: ReportRange, signal?: AbortSignal): Promise<ReportsSummary> {
+      // TODO: confirm endpoint with backend
+      const response = await request('/api/v1/admin/reports/summary', {
+        query: { range },
+        signal,
+      })
+      return parseReports(readEnvelopeData(response.body), range)
+    },
+
+    async getRestaurantSettings(signal?: AbortSignal): Promise<RestaurantSettings> {
+      // TODO: confirm endpoint with backend
+      const response = await request('/api/v1/admin/settings', { signal })
+      return parseSettings(readEnvelopeData(response.body))
+    },
+
+    async updateRestaurantSettings(settings: RestaurantSettings, signal?: AbortSignal): Promise<void> {
+      if (!settings.restaurantName.trim()) throw new ApiError('validation')
+      // TODO: confirm endpoint with backend
+      await request('/api/v1/admin/settings', {
+        method: 'PUT',
+        body: settings,
+        signal,
+      })
     },
   }
 }

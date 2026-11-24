@@ -1,5 +1,29 @@
 export type OrderStatus = 'new' | 'preparing' | 'done'
 
+export type LiveOrderStatus = 'new' | 'preparing' | 'ready' | 'delivered'
+
+export type LiveOrderPayment = 'cash' | 'instapay' | 'wallet'
+
+export type LiveOrderLine = {
+  name: string
+  extras?: string
+  notes?: string
+}
+
+export type LiveOrder = {
+  id: string
+  customer: string
+  phone?: string
+  itemCount: number
+  fulfilment: 'delivery' | 'pickup'
+  minutes: number
+  total: number
+  status: LiveOrderStatus
+  payment: LiveOrderPayment
+  paymentConfirmed?: boolean
+  lines: LiveOrderLine[]
+}
+
 export type OrderRow = {
   id: string
   customer: string
@@ -12,7 +36,7 @@ export type OrderRow = {
 
 export type StatKey = 'salesToday' | 'newOrders' | 'employees' | 'avgOrder'
 
-export type SectionKey = 'home' | 'orders' | 'menu' | 'reports'
+export type SectionKey = 'home' | 'orders' | 'menu' | 'reports' | 'settings'
 
 export type Profile = {
   name?: string

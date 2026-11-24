@@ -1,8 +1,21 @@
 import type { AdminOrderListItem } from './api/types'
 import type { Lang } from './i18n'
-import type { OrderRow, OrderStatus } from './types'
+import type { LiveOrderStatus, OrderRow, OrderStatus } from './types'
 
 export const ORDER_STATUSES: OrderStatus[] = ['new', 'preparing', 'done']
+
+// Numeric codes sent to the transition endpoint for the live-orders board.
+export const LIVE_STATUS_CODE: Record<LiveOrderStatus, number> = {
+  new: 1,
+  preparing: 2,
+  ready: 3,
+  delivered: 4,
+}
+
+// Arabic UI keeps Latin digits to match the product design.
+export function numberLocale(lang: Lang): string {
+  return lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US'
+}
 
 // The OpenAPI document exposes order status only as int32; the numeric codes
 // follow the BRD state machine (Accepted → Preparing → Ready → OutForDelivery →
@@ -22,13 +35,12 @@ export function mapOrderStatus(code: number): OrderStatus {
 }
 
 export function formatOrderTotal(total: number, lang: Lang): string {
-  const locale = lang === 'ar' ? 'ar-EG' : 'en-US'
   const currency = lang === 'ar' ? 'ج.م' : 'EGP'
-  return `${currency} ${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(total)}`
+  return `${currency} ${new Intl.NumberFormat(numberLocale(lang), { maximumFractionDigits: 2 }).format(total)}`
 }
 
 export function formatNumber(value: number, lang: Lang, maximumFractionDigits = 0): string {
-  return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits }).format(value)
+  return new Intl.NumberFormat(numberLocale(lang), { maximumFractionDigits }).format(value)
 }
 
 export function orderTotalValue(row: OrderRow): number {
@@ -41,7 +53,7 @@ export function orderTotalValue(row: OrderRow): number {
 export function formatOrderTime(iso: string, lang: Lang): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return '—'
-  return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
+  return new Intl.DateTimeFormat(numberLocale(lang), {
     hour: 'numeric',
     minute: '2-digit',
   }).format(date)
