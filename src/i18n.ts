@@ -189,7 +189,7 @@ export const translations = {
     stats: {
       salesToday: 'المبيعات اليوم',
       newOrders: 'الطلبات الجديدة',
-      employees: 'العملاء',
+      employees: 'عدد الموظفين',
       avgOrder: 'متوسط قيمة الطلب',
     },
     chart: {
@@ -515,7 +515,7 @@ export const translations = {
       desc: {
         salesToday: 'إجمالي قيمة الطلبات المكتملة اليوم مقارنة بيوم أمس. يشمل الطلبات المدفوعة والمحصّلة.',
         newOrders: 'عدد الطلبات التي وصلت اليوم ولم تبدأ بعد. راجعها بسرعة لتقليل وقت الانتظار.',
-        employees: 'عدد العملاء الذين قاموا بالطلب اليوم. يساعدك على قياس الإقبال.',
+        employees: 'عدد الموظفين المسجلين في الفرع اليوم. يساعدك على متابعة تغطية الورديات.',
         avgOrder: 'متوسط قيمة الطلب الواحد اليوم. راقب هذا الرقم لقياس تأثير العروض والأسعار.',
       },
     },
@@ -579,7 +579,7 @@ export const translations = {
     stats: {
       salesToday: 'Today’s Sales',
       newOrders: 'New Orders',
-      employees: 'Customers',
+      employees: 'Employees',
       avgOrder: 'Avg. Order Value',
     },
     chart: {
@@ -904,7 +904,7 @@ export const translations = {
       desc: {
         salesToday: 'Total value of completed orders today compared with yesterday. Includes paid and collected orders.',
         newOrders: 'Orders received today that have not started yet. Review them quickly to reduce wait time.',
-        employees: 'Customers who placed an order today. Use it to measure footfall.',
+        employees: 'Staff members active in this branch today. Use it to track shift coverage.',
         avgOrder: 'Average value per order today. Track it to measure the impact of offers and pricing.',
       },
     },
