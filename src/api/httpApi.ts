@@ -21,6 +21,20 @@ import {
   type PaymentMethodName,
   type UpdatePaymentMethodInput,
 } from './types'
+import {
+  parseOffer,
+  parseOfferImageUploadUrl,
+  validateCreateOffer,
+  validateOfferImageRequest,
+  validateOfferListQuery,
+  validateUpdateOffer,
+  type CreateOfferInput,
+  type ListOffersQuery,
+  type OfferImageUploadRequest,
+  type OfferStatusInput,
+  type UpdateOfferInput,
+} from './offers'
+import { parsePaged, requireId, validatePaging } from './shared'
 import { parsePaymentMethod, validatePaymentMethodUpdate } from './paymentMethods'
 
 const DEFAULT_TIMEOUT_MS = 15_000
@@ -33,7 +47,7 @@ export type HttpApiOptions = {
 }
 
 type RequestOptions = {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   query?: Record<string, string | number | undefined>
   body?: object
   etag?: string
@@ -426,6 +440,52 @@ export function createHttpApi(options: HttpApiOptions): Api {
         signal,
       })
       return parsePaymentMethod(readEnvelopeData(response.body))
+    },
+
+    // Offers (reference section 14). offers.view reads, offers.manage writes.
+    // POST /api/v1/admin/offers/image-upload-url returns a presigned PUT URL.
+    async createOfferImageUploadUrl(input: OfferImageUploadRequest, signal?: AbortSignal) {
+      validateOfferImageRequest(input)
+      const response = await request('/api/v1/admin/offers/image-upload-url', { method: 'POST', body: input, signal })
+      return parseOfferImageUploadUrl(readEnvelopeData(response.body))
+    },
+
+    async createOffer(input: CreateOfferInput, signal?: AbortSignal) {
+      validateCreateOffer(input)
+      const response = await request('/api/v1/admin/offers', { method: 'POST', body: input, signal })
+      return parseOffer(readEnvelopeData(response.body))
+    },
+
+    async listOffers(query: ListOffersQuery = {}, signal?: AbortSignal) {
+      validateOfferListQuery(query)
+      validatePaging(query.pageNumber, query.pageSize)
+      const response = await request('/api/v1/admin/offers', {
+        query: { kind: query.kind, status: query.status, pageNumber: query.pageNumber, pageSize: query.pageSize },
+        signal,
+      })
+      return parsePaged(readEnvelopeData(response.body), parseOffer)
+    },
+
+    async getOffer(id: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/admin/offers/${requireId(id)}`, { signal })
+      return parseOffer(readEnvelopeData(response.body))
+    },
+
+    async updateOffer(id: string, input: UpdateOfferInput, signal?: AbortSignal) {
+      requireId(id)
+      validateUpdateOffer(input)
+      const response = await request(`/api/v1/admin/offers/${id}`, { method: 'PUT', body: input, signal })
+      return parseOffer(readEnvelopeData(response.body))
+    },
+
+    async setOfferStatus(id: string, input: OfferStatusInput, signal?: AbortSignal) {
+      requireId(id)
+      const response = await request(`/api/v1/admin/offers/${id}/status`, { method: 'PATCH', body: input, signal })
+      return parseOffer(readEnvelopeData(response.body))
+    },
+
+    async deleteOffer(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/admin/offers/${requireId(id)}`, { method: 'DELETE', signal })
     },
 
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
