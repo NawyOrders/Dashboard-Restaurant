@@ -24,6 +24,8 @@ export type LiveOrder = {
   status: LiveOrderStatus
   payment: LiveOrderPayment
   paymentConfirmed?: boolean
+  // PaymentStatus code: 0 CashDue, 1 AwaitingProof, 2 ProofSubmitted, 3 Confirmed, 4 ProofRejected.
+  paymentStatus?: number
   lines: LiveOrderLine[]
 }
 

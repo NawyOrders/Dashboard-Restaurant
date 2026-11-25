@@ -55,6 +55,8 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
   const canReject = can(permissions, PERMISSIONS.ordersReject)
   const canUpdateStatus = can(permissions, PERMISSIONS.ordersStatusUpdate)
   const canViewReceipt = can(permissions, PERMISSIONS.paymentsView)
+  const canConfirmProof = can(permissions, PERMISSIONS.paymentsProofConfirm)
+  const canRejectProof = can(permissions, PERMISSIONS.paymentsProofReject)
   const orderPlaced = useOrdersHub(ordersHub)
   const announceOrderPlaced = useCallback(
     (payload: OrderPlacedNotificationPayload) => {
@@ -65,6 +67,7 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
   const { state, orders: remoteOrders, reload } = useLiveOrders(api, lang, orderPlaced, announceOrderPlaced)
   const [overrides, setOverrides] = useState<Record<string, number>>({})
   const [rejected, setRejected] = useState<string[]>([])
+  const [paymentOverrides, setPaymentOverrides] = useState<Record<string, number>>({})
   const [pending, setPending] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
 
@@ -74,9 +77,11 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
       remoteOrders.flatMap((order) => {
         const statusCode = overrides[order.id] ?? order.statusCode ?? 0
         const status = mapLiveOrderStatus(statusCode)
-        return status && !rejected.includes(order.id) ? [{ ...order, statusCode, status }] : []
+        if (!status || rejected.includes(order.id)) return []
+        const paymentStatus = paymentOverrides[order.id] ?? order.paymentStatus
+        return [{ ...order, statusCode, status, paymentStatus, paymentConfirmed: paymentStatus === 3 }]
       }),
-    [remoteOrders, overrides, rejected],
+    [remoteOrders, overrides, rejected, paymentOverrides],
   )
 
   const grouped = useMemo(() => {
@@ -120,6 +125,26 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
       () => api.rejectOrder(order.orderId ?? order.id, reason),
       () => setRejected((current) => [...current, order.id]),
       t.liveOrders.rejected,
+    )
+  }
+
+  const confirmProof = (order: LiveOrder) =>
+    run(
+      order,
+      () => api.confirmPayment(order.orderId ?? order.id),
+      () => setPaymentOverrides((current) => ({ ...current, [order.id]: 3 })),
+      t.liveOrders.paymentConfirmedToast,
+    )
+
+  const rejectProof = (order: LiveOrder) => {
+    // The API requires a non-empty reason (max 1000 characters).
+    const reason = window.prompt(t.liveOrders.proofReasonPrompt)?.trim()
+    if (!reason) return
+    void run(
+      order,
+      () => api.rejectPaymentProof(order.orderId ?? order.id, reason),
+      () => setPaymentOverrides((current) => ({ ...current, [order.id]: 4 })),
+      t.liveOrders.proofRejectedToast,
     )
   }
 
@@ -200,6 +225,10 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
                       canAccept={canAccept}
                       canReject={canReject}
                       canViewReceipt={canViewReceipt}
+                      canConfirmProof={canConfirmProof}
+                      canRejectProof={canRejectProof}
+                      onConfirmProof={() => void confirmProof(order)}
+                      onRejectProof={() => rejectProof(order)}
                       onAccept={() => void accept(order)}
                       onReject={() => reject(order)}
                       onReceipt={() => onToast(t.liveOrders.receiptHint)}
@@ -231,7 +260,7 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
   )
 }
 
-function DetailedOrderCard({ order, t, lang, isPending, canAccept, canReject, canViewReceipt, onAccept, onReject, onReceipt }: {
+function DetailedOrderCard({ order, t, lang, isPending, canAccept, canReject, canViewReceipt, canConfirmProof, canRejectProof, onConfirmProof, onRejectProof, onAccept, onReject, onReceipt }: {
   order: LiveOrder
   t: T
   lang: Lang
@@ -239,6 +268,10 @@ function DetailedOrderCard({ order, t, lang, isPending, canAccept, canReject, ca
   canAccept: boolean
   canReject: boolean
   canViewReceipt: boolean
+  canConfirmProof: boolean
+  canRejectProof: boolean
+  onConfirmProof: () => void
+  onRejectProof: () => void
   onAccept: () => void
   onReject: () => void
   onReceipt: () => void
@@ -303,6 +336,25 @@ function DetailedOrderCard({ order, t, lang, isPending, canAccept, canReject, ca
                 </button>
               )}
             </span>
+          </div>
+        )}
+        {order.paymentStatus === 2 && order.payment !== 'cash' && (
+          <div className="mt-2">
+            <p className="text-[11px] text-stone-600">{t.liveOrders.proofSubmitted}</p>
+            {(canConfirmProof || canRejectProof) && (
+              <div className="mt-2 flex flex-col gap-2">
+                {canConfirmProof && (
+                  <button type="button" onClick={onConfirmProof} disabled={isPending} className={MINT_BUTTON}>
+                    {t.liveOrders.confirmPayment}
+                  </button>
+                )}
+                {canRejectProof && (
+                  <button type="button" onClick={onRejectProof} disabled={isPending} className={OUTLINE_BUTTON}>
+                    {t.liveOrders.rejectProof}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
