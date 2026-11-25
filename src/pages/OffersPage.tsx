@@ -190,7 +190,7 @@ export default function OffersPage({ t, lang, api, permissions, uploadsEnabled, 
           {offers.map((offer) => (
             <li key={offer.id} className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-card">
               <div className="relative aspect-[16/9] bg-[#FBF1D8]">
-                {offer.imageUrl && <img src={offer.imageUrl} alt="" className="h-full w-full object-cover" />}
+                {uploadsEnabled && offer.imageUrl && <img src={offer.imageUrl} alt="" className="h-full w-full object-cover" />}
                 <span className="absolute start-3 top-3"><Pill tone={TONES[offer.status]}>{o.statuses[offer.status]}</Pill></span>
               </div>
               <div className="flex flex-1 flex-col p-4">
@@ -433,4 +433,4 @@ function OfferForm({ t, lang, api, offer, menuItems, uploadsEnabled, onClose, on
       </form>
     </Modal>
   )
-      }
+}
