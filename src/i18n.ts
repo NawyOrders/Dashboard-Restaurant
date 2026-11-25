@@ -462,6 +462,7 @@ export const translations = {
     logout: 'تسجيل الخروج',
     actions: {
       close: 'إغلاق',
+      menu: 'القائمة الرئيسية',
       save: 'حفظ',
       cancel: 'إلغاء',
       viewDetails: 'عرض التفاصيل',
@@ -854,6 +855,7 @@ export const translations = {
     logout: 'Sign out',
     actions: {
       close: 'Close',
+      menu: 'Open menu',
       save: 'Save',
       cancel: 'Cancel',
       viewDetails: 'View details',
