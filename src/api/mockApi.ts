@@ -4,6 +4,7 @@ import {
   type AdminOrderDetails,
   type AdminOrderListItem,
   type BestSeller,
+  type BranchDetails,
   type BrandingFetchResult,
   type ListOrdersQuery,
   type MenuCategory,
@@ -428,9 +429,22 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       }))
     },
 
-    async updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void> {
+    async listBranches(signal?: AbortSignal): Promise<BranchDetails[]> {
       await guard(signal)
-      if (!itemId.trim()) throw new ApiError('validation')
+      return [{
+        id: '00000000-0000-4000-8000-0000000000bb',
+        nameAr: 'فرع المعادي',
+        nameEn: 'Maadi Branch',
+        address: '15 Street 9, Maadi, Cairo',
+        isActive: true,
+        isPrimary: true,
+        sortOrder: 0,
+      }]
+    },
+
+    async updateMenuItemAvailability(itemId: string, branchId: string, available: boolean, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      if (!itemId.trim() || !branchId.trim()) throw new ApiError('validation')
       for (const category of menu) {
         const target = category.items.find((entry) => entry.id === itemId)
         if (target) {

@@ -9,10 +9,12 @@ import {
   stringOrNull,
   type AdminOrderListItem,
   type BestSeller,
+  type BranchDetails,
   type BrandingFetchResult,
   type ListOrdersQuery,
   type MenuCategory,
   type MenuItem,
+  type MenuItemBranchAvailability,
   type PagedResult,
   type PaymentBreakdown,
   type PaymentMethodKey,
@@ -214,37 +216,53 @@ function parseBranding(data: unknown): RestaurantBranding {
   }
 }
 
-function parseMenuItem(value: unknown): MenuItem {
-  if (!isRecord(value)) throw new ApiError('invalidResponse')
+function parseBranch(value: unknown): BranchDetails | null {
+  if (!isRecord(value)) return null
   const id = stringOrNull(value.id)
-  const price = numberOrNull(value.price)
-  if (!id || price == null) throw new ApiError('invalidResponse')
+  if (!id) return null
   return {
     id,
     nameAr: stringOrNull(value.nameAr) ?? '',
     nameEn: stringOrNull(value.nameEn) ?? '',
-    price,
-    available: value.available === true,
-    imageUrl: stringOrNull(value.imageUrl),
-    categoryId: stringOrNull(value.categoryId) ?? '',
+    address: stringOrNull(value.address) ?? '',
+    isActive: value.isActive === true,
+    isPrimary: value.isPrimary === true,
+    sortOrder: numberOrNull(value.sortOrder) ?? 0,
   }
 }
 
-function parseMenu(data: unknown): MenuCategory[] {
-  if (!isRecord(data) || !Array.isArray(data.categories)) throw new ApiError('invalidResponse')
-  return data.categories.map((value) => {
-    if (!isRecord(value)) throw new ApiError('invalidResponse')
-    const id = stringOrNull(value.id)
-    if (!id) throw new ApiError('invalidResponse')
-    const items = Array.isArray(value.items) ? value.items.map(parseMenuItem) : []
-    return {
-      id,
-      nameAr: stringOrNull(value.nameAr) ?? '',
-      nameEn: stringOrNull(value.nameEn) ?? '',
-      count: numberOrNull(value.count) ?? items.length,
-      items,
-    }
+function parseBranches(data: unknown): BranchDetails[] {
+  // The admin branches endpoint returns a paged envelope.
+  if (!isRecord(data) || !Array.isArray(data.items)) throw new ApiError('invalidResponse')
+  return data.items.flatMap((value) => {
+    const branch = parseBranch(value)
+    return branch ? [branch] : []
   })
+}
+
+function parsePublicMenuItem(value: unknown): MenuItem | null {
+  if (!isRecord(value)) return null
+  const id = stringOrNull(value.id)
+  if (!id) return null
+  // Public shape: price may arrive as basePrice (managed shape) or price.
+  const price = numberOrNull(value.basePrice) ?? numberOrNull(value.price)
+  const branchAvailabilities: MenuItemBranchAvailability[] = Array.isArray(value.branchAvailabilities)
+    ? value.branchAvailabilities.flatMap((entry) => {
+        if (!isRecord(entry)) return []
+        const branchId = stringOrNull(entry.branchId)
+        return branchId ? [{ branchId, isAvailable: entry.isAvailable === true }] : []
+      })
+    : []
+  return {
+    id,
+    nameAr: stringOrNull(value.nameAr) ?? '',
+    nameEn: stringOrNull(value.nameEn) ?? '',
+    price: price ?? 0,
+    available: true,
+    imageUrl: stringOrNull(value.imageUrl),
+    categoryId: stringOrNull(value.categoryId) ?? '',
+    branchAvailabilities,
+  }
 }
 
 const PAYMENT_KEYS: PaymentMethodKey[] = ['cash', 'instapay', 'wallet']
@@ -481,18 +499,47 @@ export function createHttpApi(options: HttpApiOptions): Api {
       return { notModified: false, branding, etag: response.etag ?? branding.eTag }
     },
 
+    // Dashboard menu reads use the public endpoints: categories for the list,
+    // items grouped client-side. Items hidden from customers (isVisibleToCustomers
+    // false) are simply not returned by the public read.
     async listMenu(signal?: AbortSignal): Promise<MenuCategory[]> {
-      // TODO: confirm endpoint with backend
-      const response = await request('/api/v1/admin/menu', { signal })
-      return parseMenu(readEnvelopeData(response.body))
+      const [categoriesResponse, itemsResponse] = await Promise.all([
+        request('/api/v1/menu/categories', { signal }),
+        request('/api/v1/menu/items', { signal }),
+      ])
+      const rawCategories = readEnvelopeData(categoriesResponse.body)
+      if (!Array.isArray(rawCategories)) throw new ApiError('invalidResponse')
+      const rawItems = readEnvelopeData(itemsResponse.body)
+      const items = (Array.isArray(rawItems) ? rawItems : []).flatMap((value) => {
+        const item = parsePublicMenuItem(value)
+        return item ? [item] : []
+      })
+      return rawCategories.flatMap((value) => {
+        if (!isRecord(value)) return []
+        const id = stringOrNull(value.id)
+        if (!id) return []
+        const categoryItems = items.filter((item) => item.categoryId === id)
+        return [{
+          id,
+          nameAr: stringOrNull(value.nameAr) ?? '',
+          nameEn: stringOrNull(value.nameEn) ?? '',
+          count: numberOrNull(value.itemCount) ?? categoryItems.length,
+          items: categoryItems,
+        }]
+      })
     },
 
-    async updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void> {
-      if (!itemId.trim()) throw new ApiError('validation')
-      // TODO: confirm endpoint with backend
-      await request(`/api/v1/admin/menu/items/${encodeURIComponent(itemId)}/availability`, {
-        method: 'POST',
-        body: { available },
+    async listBranches(signal?: AbortSignal): Promise<BranchDetails[]> {
+      const response = await request('/api/v1/admin/branches', { signal })
+      return parseBranches(readEnvelopeData(response.body))
+    },
+
+    // Availability is per branch: PATCH .../items/{itemId}/branches/{branchId}/availability.
+    async updateMenuItemAvailability(itemId: string, branchId: string, available: boolean, signal?: AbortSignal): Promise<void> {
+      if (!itemId.trim() || !branchId.trim()) throw new ApiError('validation')
+      await request(`/api/v1/admin/menu/items/${encodeURIComponent(itemId)}/branches/${encodeURIComponent(branchId)}/availability`, {
+        method: 'PATCH',
+        body: { isAvailable: available },
         signal,
       })
     },

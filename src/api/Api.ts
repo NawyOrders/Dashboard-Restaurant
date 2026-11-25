@@ -1,5 +1,6 @@
 import type {
   AdminOrderDetails,
+  BranchDetails,
   AdminOrderListItem,
   BrandingFetchResult,
   ListOrdersQuery,
@@ -23,7 +24,8 @@ export interface Api {
   rejectOrder(id: string, rejectionReason: string, signal?: AbortSignal): Promise<void>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
   listMenu(signal?: AbortSignal): Promise<MenuCategory[]>
-  updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void>
+  listBranches(signal?: AbortSignal): Promise<BranchDetails[]>
+  updateMenuItemAvailability(itemId: string, branchId: string, available: boolean, signal?: AbortSignal): Promise<void>
   getReportsSummary(range: ReportRange, signal?: AbortSignal): Promise<ReportsSummary>
   getRestaurantSettings(signal?: AbortSignal): Promise<RestaurantSettings>
   updateRestaurantSettings(settings: RestaurantSettings, signal?: AbortSignal): Promise<void>

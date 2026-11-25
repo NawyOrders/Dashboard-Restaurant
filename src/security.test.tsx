@@ -174,6 +174,7 @@ describe('markup injection resistance', () => {
     ]
     const api = {
       listMenu: vi.fn(async () => categories),
+      listBranches: vi.fn(async () => []),
       updateMenuItemAvailability: vi.fn(async () => {}),
     } as unknown as Api
 
