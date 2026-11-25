@@ -9,7 +9,7 @@ import { useOrders } from './useOrders'
 import { Login } from './components/Login'
 import type { SectionKey } from './types'
 import { filterOrders } from './orders'
-import { BottomNav, MobileHeader, Sidebar } from './components/Sidebar'
+import { MobileDrawer, MobileHeader, Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
 import { CheckIcon, CloseIcon, InfoIcon, SpinnerIcon } from './icons'
 
@@ -173,6 +173,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [navigate])
 
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+
   const toggleOpen = () => {
     const next = !isOpen
     setIsOpen(next)
@@ -197,7 +200,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           onNavigate={navigateSection}
         />
 
-        <main id="dashboard-content" tabIndex={-1} className="dashboard-main min-w-0 flex-1 px-4 pt-4 pb-28 outline-none sm:px-6 sm:pt-6 lg:px-7 lg:pb-10 xl:px-8">
+        <main id="dashboard-content" tabIndex={-1} className="dashboard-main min-w-0 flex-1 px-4 pt-4 pb-10 outline-none sm:px-6 sm:pt-6 lg:px-7 lg:pb-10 xl:px-8">
           <MobileHeader
             t={t}
             active={section}
@@ -209,6 +212,8 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             onToggleOpen={toggleOpen}
             onNavigate={navigateSection}
             onOpenNotifications={() => showToast(t.notifications.subtitle)}
+            menuOpen={drawerOpen}
+            onOpenMenu={() => setDrawerOpen((previous) => !previous)}
           />
 
           <Topbar
@@ -278,7 +283,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
         </main>
       </div>
 
-      <BottomNav
+      <MobileDrawer
+        open={drawerOpen}
+        onClose={closeDrawer}
         t={t}
         active={section}
         isOpen={isOpen}
@@ -291,7 +298,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
       />
 
       {toast && (
-        <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 lg:bottom-6">
+        <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4">
           <div key={toast.id} className="flex animate-toast-in items-center gap-2 rounded-full bg-stone-800 px-4 py-2.5 text-sm font-bold text-white shadow-soft">
             <CheckIcon className="h-4 w-4 text-mint-100" />
             {toast.message}
