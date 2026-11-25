@@ -80,6 +80,14 @@ import {
   type OfferStatusInput,
   type UpdateOfferInput,
 } from './offers'
+import {
+  parseAddOn,
+  validateCreateAddOn,
+  validateUpdateAddOn,
+  type CreateAddOnInput,
+  type ListAddOnsQuery,
+  type UpdateAddOnInput,
+} from './addOns'
 import { parsePaged, requireId, validatePaging } from './shared'
 import { parsePaymentMethod, validatePaymentMethodUpdate } from './paymentMethods'
 
@@ -563,6 +571,38 @@ export function createHttpApi(options: HttpApiOptions): Api {
 
     async deleteMenuItem(id: string, signal?: AbortSignal) {
       await request(`/api/v1/admin/menu/items/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Admin menu add-ons (reference section 13), all menu.edit.
+    async listAddOns(query: ListAddOnsQuery = {}, signal?: AbortSignal) {
+      validatePaging(query.pageNumber, query.pageSize)
+      const response = await request('/api/v1/admin/menu/addons', {
+        query: {
+          isActive: query.isActive === undefined ? undefined : String(query.isActive),
+          pageNumber: query.pageNumber,
+          pageSize: query.pageSize,
+        },
+        signal,
+      })
+      return parsePaged(readEnvelopeData(response.body), parseAddOn)
+    },
+
+    async createAddOn(itemId: string, input: CreateAddOnInput, signal?: AbortSignal) {
+      validateCreateAddOn(input)
+      const response = await request(`/api/v1/admin/menu/items/${requireId(itemId)}/addons`, { method: 'POST', body: input, signal })
+      return parseAddOn(readEnvelopeData(response.body))
+    },
+
+    async updateAddOn(itemId: string, addOnId: string, input: UpdateAddOnInput, signal?: AbortSignal) {
+      requireId(itemId)
+      requireId(addOnId)
+      validateUpdateAddOn(input)
+      const response = await request(`/api/v1/admin/menu/items/${itemId}/addons/${addOnId}`, { method: 'PATCH', body: input, signal })
+      return parseAddOn(readEnvelopeData(response.body))
+    },
+
+    async deleteAddOn(itemId: string, addOnId: string, signal?: AbortSignal) {
+      await request(`/api/v1/admin/menu/items/${requireId(itemId)}/addons/${requireId(addOnId)}`, { method: 'DELETE', signal })
     },
 
     // Menu categories (reference section 11). Writes need menu.edit and share
