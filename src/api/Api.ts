@@ -1,4 +1,11 @@
 import type {
+  BranchDetails,
+  CreateBranchInput,
+  DeliverySettings,
+  ListBranchesQuery,
+  UpdateBranchInput,
+} from './branches'
+import type {
   CreateOfferInput,
   ListOffersQuery,
   OfferImageUploadRequest,
@@ -45,6 +52,12 @@ export interface Api {
   updateOffer(id: string, input: UpdateOfferInput, signal?: AbortSignal): Promise<PromotionalOffer>
   setOfferStatus(id: string, input: OfferStatusInput, signal?: AbortSignal): Promise<PromotionalOffer>
   deleteOffer(id: string, signal?: AbortSignal): Promise<void>
+  listBranches(query?: ListBranchesQuery, signal?: AbortSignal): Promise<PagedResult<BranchDetails>>
+  getBranch(id: string, signal?: AbortSignal): Promise<BranchDetails>
+  createBranch(input: CreateBranchInput, signal?: AbortSignal): Promise<BranchDetails>
+  updateBranch(id: string, input: UpdateBranchInput, signal?: AbortSignal): Promise<BranchDetails>
+  getDeliverySettings(signal?: AbortSignal): Promise<DeliverySettings>
+  updateDeliverySettings(input: DeliverySettings, signal?: AbortSignal): Promise<DeliverySettings>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
   listMenu(signal?: AbortSignal): Promise<MenuCategory[]>
   updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void>
