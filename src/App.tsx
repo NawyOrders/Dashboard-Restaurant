@@ -10,6 +10,7 @@ import { createApi, isMockErrorRequested, isMockRequested } from './api'
 import type { OrdersHubConfig } from './realtime/ordersHub'
 import { useOrders } from './useOrders'
 import { Login } from './components/Login'
+import { SetPassword, SET_PASSWORD_PATH } from './components/SetPassword'
 import type { SectionKey } from './types'
 import { filterOrders } from './orders'
 import { BottomNav, MobileHeader, Sidebar } from './components/Sidebar'
@@ -103,6 +104,12 @@ export default function App() {
     <BrowserRouter>
       {session ? (
         <Dashboard key={`${session.apiOrigin}:${session.user.id}`} session={session} lang={lang} setLang={setLang} onLogout={handleLogout} />
+      ) : typeof window !== 'undefined' && window.location.pathname === SET_PASSWORD_PATH ? (
+        <SetPassword
+          lang={lang}
+          onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')}
+          onDone={() => window.location.assign('/')}
+        />
       ) : (
         <Login t={t} langToggle={t.nav.langToggle} onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')} onSuccess={handleSuccess} initialNotice={notice ? t.auth[notice] : undefined} />
       )}
