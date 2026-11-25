@@ -11,7 +11,10 @@ export type LiveOrderLine = {
 }
 
 export type LiveOrder = {
+  // Display id shown on the card; orderId is the backend id used by the API.
   id: string
+  orderId?: string
+  statusCode?: number
   customer: string
   phone?: string
   itemCount: number

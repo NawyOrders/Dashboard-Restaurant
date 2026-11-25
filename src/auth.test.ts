@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   API_BASE_URL,
+  refreshSession,
   API_BASE_URL_ERROR,
   clearLegacySession,
   login,
@@ -8,7 +9,7 @@ import {
   resolveApiOrigin,
   revokeSession,
 } from './auth'
-import { staffLoginResponse } from './test/fixtures'
+import { staffLoginResponse, staffRefreshResponse } from './test/fixtures'
 
 const fetchMock = vi.fn<typeof fetch>()
 function respond(body: unknown, status = 200) {
@@ -237,5 +238,52 @@ describe('tenant API origin resolution', () => {
   it('uses the explicit override in the Vitest environment', () => {
     expect(API_BASE_URL).toBe('https://tenant.test')
     expect(API_BASE_URL_ERROR).toBeNull()
+  })
+})
+
+describe('session refresh', () => {
+  const session = {
+    apiOrigin: API_BASE_URL,
+    user: { id: '1', name: 'n', email: 'e', roles: [], permissions: [] },
+    accessToken: 'old-access',
+    refreshToken: 'old-refresh',
+    expiresAt: Date.now() - 1,
+  }
+
+  it('sends the current refresh token and returns the rotated pair', async () => {
+    respond(staffRefreshResponse())
+    const result = await refreshSession(session)
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe(`${API_BASE_URL}/api/v1/auth/refresh`)
+    expect(JSON.parse(init!.body as string)).toEqual({ refreshToken: 'old-refresh' })
+    expect(result).toMatchObject({
+      accessToken: 'test-access-token-rotated',
+      refreshToken: 'test-refresh-token-rotated',
+    })
+  })
+
+  it('shares one in-flight request so the single-use token is never sent twice', async () => {
+    respond(staffRefreshResponse())
+    const [first, second] = await Promise.all([refreshSession(session), refreshSession(session)])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(second).toBe(first)
+  })
+
+  it.each([[401, 'forbidden'], [403, 'forbidden'], [429, 'rateLimited'], [500, 'service'], [503, 'service']])('maps refresh HTTP %s to a safe error', async (status, code) => {
+    respond({ errors: { detail: 'Sensitive server error not for display' } }, status as number)
+    await expect(refreshSession(session)).rejects.toMatchObject({ code, message: code })
+  })
+
+  it('does not call the server when the session has no refresh token', async () => {
+    await expect(refreshSession({ ...session, refreshToken: null })).rejects.toMatchObject({ code: 'configuration' })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects when the server omits the rotated refresh token', async () => {
+    const body = staffRefreshResponse()
+    // @ts-expect-error verifies runtime validation of the contract
+    delete body.data.refreshToken
+    respond(body)
+    await expect(refreshSession(session)).rejects.toMatchObject({ code: 'invalidResponse' })
   })
 })

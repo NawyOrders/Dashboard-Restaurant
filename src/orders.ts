@@ -1,15 +1,34 @@
 import type { AdminOrderListItem } from './api/types'
 import type { Lang } from './i18n'
-import type { LiveOrderStatus, OrderRow, OrderStatus } from './types'
+import type { LiveOrder, LiveOrderStatus, OrderRow, OrderStatus } from './types'
 
 export const ORDER_STATUSES: OrderStatus[] = ['new', 'preparing', 'done']
 
-// Numeric codes sent to the transition endpoint for the live-orders board.
-export const LIVE_STATUS_CODE: Record<LiveOrderStatus, number> = {
-  new: 1,
-  preparing: 2,
-  ready: 3,
-  delivered: 4,
+// OrderStatus codes from the API reference: 0=New, 1=Accepted, 2=Rejected,
+// 3=Preparing, 4=Ready, 5=OutForDelivery, 6=Completed, 7=CancelledByRestaurant,
+// 8=Closed. Accept/reject have their own endpoints; transition-status only
+// advances 3/4/5 (delivery) / 6 (pickup) / 8, so board columns map like this.
+export const LIVE_STATUS_BY_CODE: Record<number, LiveOrderStatus> = {
+  0: 'new',
+  1: 'preparing',
+  3: 'preparing',
+  4: 'ready',
+  5: 'delivered',
+  6: 'delivered',
+}
+
+// Rejected (2), cancelled (7) and closed (8) orders leave the board.
+export function mapLiveOrderStatus(code: number): LiveOrderStatus | null {
+  return LIVE_STATUS_BY_CODE[code] ?? null
+}
+
+// Next transition-status target: Accepted -> Preparing -> Ready ->
+// OutForDelivery (delivery) or Completed (pickup). Anything else is invalid.
+export function transitionCodeFor(currentCode: number, fulfilment: 'delivery' | 'pickup'): number | null {
+  if (currentCode === 1) return 3
+  if (currentCode === 3) return 4
+  if (currentCode === 4) return fulfilment === 'pickup' ? 6 : 5
+  return null
 }
 
 // Arabic UI keeps Latin digits to match the product design.
@@ -17,17 +36,19 @@ export function numberLocale(lang: Lang): string {
   return lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US'
 }
 
-// The OpenAPI document exposes order status only as int32; the numeric codes
-// follow the BRD state machine (Accepted → Preparing → Ready → OutForDelivery →
-// Completed → Closed). Adjust this single map when the backend publishes an
-// explicit enum.
+// OrderStatus codes from the API reference: 0=New, 1=Accepted, 2=Rejected,
+// 3=Preparing, 4=Ready, 5=OutForDelivery, 6=Completed, 7=CancelledByRestaurant,
+// 8=Closed. The table view groups them into new / preparing / done.
 export const ORDER_STATUS_BY_CODE: Record<number, OrderStatus> = {
-  1: 'new',
-  2: 'preparing',
-  3: 'done',
+  0: 'new',
+  1: 'preparing',
+  2: 'done',
+  3: 'preparing',
   4: 'done',
   5: 'done',
   6: 'done',
+  7: 'done',
+  8: 'done',
 }
 
 export function mapOrderStatus(code: number): OrderStatus {
@@ -75,6 +96,27 @@ export function mapAdminOrder(item: AdminOrderListItem, lang: Lang): OrderRow {
 
 export function mapAdminOrders(items: AdminOrderListItem[], lang: Lang): OrderRow[] {
   return items.map((item) => mapAdminOrder(item, lang))
+}
+
+// The admin list endpoint does not return line items or the customer phone, so
+// board cards show item counts/lines once the order-detail endpoint is wired.
+export function mapLiveOrder(item: AdminOrderListItem, lang: Lang): LiveOrder {
+  const created = Date.parse(item.createdAtUtc)
+  const minutes = Number.isFinite(created) ? Math.max(0, Math.round((Date.now() - created) / 60_000)) : 0
+  return {
+    id: item.orderNumber ? `#${item.orderNumber}` : `#${item.orderId.slice(0, 8)}`,
+    orderId: item.orderId,
+    statusCode: item.status,
+    customer: item.customerName?.trim() || (lang === 'ar' ? 'عميل' : 'Customer'),
+    itemCount: 0,
+    fulfilment: item.fulfilmentType === 1 ? 'pickup' : 'delivery',
+    minutes,
+    total: item.total,
+    status: mapLiveOrderStatus(item.status) ?? 'delivered',
+    payment: item.paymentMethod === 0 ? 'cash' : item.paymentMethod === 2 ? 'wallet' : 'instapay',
+    paymentConfirmed: item.paymentStatus === 3,
+    lines: [],
+  }
 }
 
 export function statusOf(row: OrderRow, statuses: Record<string, OrderStatus>): OrderStatus {
