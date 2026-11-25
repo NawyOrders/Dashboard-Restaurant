@@ -51,6 +51,22 @@ export type ManageCopy = {
     maxRadiusHint: string
     saveDelivery: string
   }
+  payments: {
+    title: string
+    subtitle: string
+    methods: Record<string, string>
+    enabled: string
+    needsProof: string
+    proofLocked: string
+    cashLocked: string
+    nameAr: string
+    nameEn: string
+    account: string
+    instructionsAr: string
+    instructionsEn: string
+    invalid: string
+    save: string
+  }
   offers: {
     title: string
     subtitle: string
@@ -135,6 +151,22 @@ const ar: ManageCopy = {
     maxRadiusHint: 'اتركه فارغاً لعدم وضع حد',
     saveDelivery: 'حفظ رسوم التوصيل',
   },
+  payments: {
+    title: 'وسائل الدفع',
+    subtitle: 'فعّل وسائل الدفع واضبط الحساب والتعليمات للعميل',
+    methods: { Cash: 'الدفع عند الاستلام', InstaPay: 'إنستا باي', MobileWallet: 'المحفظة الإلكترونية' },
+    enabled: 'مفعلة',
+    needsProof: 'تتطلب إثبات الدفع',
+    proofLocked: 'الدفع الإلكتروني يتطلب إثباتاً دائماً',
+    cashLocked: 'الدفع النقدي مفعل دائماً ولا يتطلب حساباً',
+    nameAr: 'الاسم بالعربية',
+    nameEn: 'الاسم بالإنجليزية',
+    account: 'رقم الحساب أو المحفظة',
+    instructionsAr: 'تعليمات العميل بالعربية',
+    instructionsEn: 'تعليمات العميل بالإنجليزية',
+    invalid: 'تحقق من الحقول: الأسماء مطلوبة والتعليمات حتى 500 حرف.',
+    save: 'حفظ الوسيلة',
+  },
   offers: {
     title: 'العروض',
     subtitle: 'عروض الأصناف والكومبو',
@@ -218,6 +250,22 @@ const en: ManageCopy = {
     maxRadius: 'Max delivery radius (km)',
     maxRadiusHint: 'Leave empty for no limit',
     saveDelivery: 'Save delivery fees',
+  },
+  payments: {
+    title: 'Payment methods',
+    subtitle: 'Turn payment methods on and set the account and customer instructions',
+    methods: { Cash: 'Cash on delivery', InstaPay: 'InstaPay', MobileWallet: 'Mobile wallet' },
+    enabled: 'Enabled',
+    needsProof: 'Requires payment proof',
+    proofLocked: 'Electronic payments always require proof',
+    cashLocked: 'Cash is always on and needs no account',
+    nameAr: 'Name (Arabic)',
+    nameEn: 'Name (English)',
+    account: 'Account or wallet number',
+    instructionsAr: 'Customer instructions (Arabic)',
+    instructionsEn: 'Customer instructions (English)',
+    invalid: 'Check the fields: names are required and instructions are up to 500 characters.',
+    save: 'Save method',
   },
   offers: {
     title: 'Offers',
