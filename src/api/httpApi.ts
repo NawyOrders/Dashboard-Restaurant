@@ -22,6 +22,15 @@ import {
   type UpdatePaymentMethodInput,
 } from './types'
 import {
+  parseManagedMenuItem,
+  parseMenuItemImageUploadUrl,
+  validateMenuItemImageRequest,
+  validateMenuItemInput,
+  type CreateMenuItemInput,
+  type MenuItemImageUploadRequest,
+  type UpdateMenuItemInput,
+} from './menuItems'
+import {
   parseCategorySummary,
   parseManagedCategory,
   validateCreateCategory,
@@ -523,6 +532,37 @@ export function createHttpApi(options: HttpApiOptions): Api {
 
     async deleteOffer(id: string, signal?: AbortSignal) {
       await request(`/api/v1/admin/offers/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Admin menu items and images (reference section 12), all menu.edit.
+    // Upload the bytes to uploadUrl with a plain PUT (no Authorization header),
+    // then pass objectKey as imageKey on create or update.
+    async createMenuItemImageUploadUrl(input: MenuItemImageUploadRequest, signal?: AbortSignal) {
+      validateMenuItemImageRequest(input)
+      const response = await request('/api/v1/admin/menu/items/image-upload-url', { method: 'POST', body: input, signal })
+      return parseMenuItemImageUploadUrl(readEnvelopeData(response.body))
+    },
+
+    async createMenuItem(input: CreateMenuItemInput, signal?: AbortSignal) {
+      validateMenuItemInput(input)
+      const response = await request('/api/v1/admin/menu/items', { method: 'POST', body: input, signal })
+      return parseManagedMenuItem(readEnvelopeData(response.body))
+    },
+
+    async updateMenuItem(id: string, input: UpdateMenuItemInput, signal?: AbortSignal) {
+      requireId(id)
+      validateMenuItemInput(input)
+      const response = await request(`/api/v1/admin/menu/items/${id}`, { method: 'PUT', body: input, signal })
+      return parseManagedMenuItem(readEnvelopeData(response.body))
+    },
+
+    async removeMenuItemImage(id: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/admin/menu/items/${requireId(id)}/image`, { method: 'DELETE', signal })
+      return parseManagedMenuItem(readEnvelopeData(response.body))
+    },
+
+    async deleteMenuItem(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/admin/menu/items/${requireId(id)}`, { method: 'DELETE', signal })
     },
 
     // Menu categories (reference section 11). Writes need menu.edit and share
