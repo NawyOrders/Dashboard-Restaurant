@@ -491,7 +491,8 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       descriptionAr: input.descriptionAr ?? null,
       descriptionEn: input.descriptionEn ?? null,
       imageKey,
-      imageUrl: imageKey ? `https://cdn.example.test/${imageKey}` : null,
+      // The preview has no CDN; screens show a placeholder instead of a dead URL.
+      imageUrl: null,
       imageSource: keepImage ? previous.imageSource : (input.imageSource ?? 'ManualUpload'),
       originalPrice,
       offerPrice: input.offerPrice,
@@ -1240,4 +1241,4 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       settings = cloneSettings(next)
     },
   }
-        }
+                                                                   }
