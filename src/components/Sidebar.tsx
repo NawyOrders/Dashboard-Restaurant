@@ -1,9 +1,11 @@
+import { useEffect } from 'react'
 import type { T } from '../i18n'
 import type { SectionKey } from '../types'
 import {
   BellIcon,
   ChartIcon,
   ClipboardIcon,
+  DotsIcon,
   GearIcon,
   HomeIcon,
   UtensilsIcon,
@@ -70,7 +72,7 @@ function OpenSwitch({ t, isOpen, onToggle }: { t: T; isOpen: boolean; onToggle: 
   )
 }
 
-export function Sidebar({
+function SidebarBody({
   t,
   active,
   isOpen,
@@ -79,14 +81,15 @@ export function Sidebar({
   orderBadge,
   onToggleOpen,
   onNavigate,
-}: Props) {
+  onClose,
+}: Props & { onClose?: () => void }) {
   const itemClass = (isActive: boolean) =>
     `flex min-h-12 w-full items-center gap-3 rounded-full px-4 py-3 text-sm font-bold transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${
       isActive ? 'bg-brand-600 text-white shadow-card' : 'text-stone-600 hover:bg-cream-50 hover:text-brand-700'
     }`
 
   return (
-    <aside className="sticky top-0 hidden h-[100dvh] w-[260px] shrink-0 flex-col gap-5 overflow-y-auto border-e border-line bg-white p-5 lg:flex">
+    <>
       <div className="flex items-center gap-3">
         <BrandLogo />
         <div className="min-w-0">
@@ -108,7 +111,7 @@ export function Sidebar({
             <button
               key={key}
               type="button"
-              onClick={() => onNavigate(key)}
+              onClick={() => { onNavigate(key); onClose?.() }}
               aria-current={isActive ? 'page' : undefined}
               title={t.nav[key]}
               className={itemClass(isActive)}
@@ -123,7 +126,7 @@ export function Sidebar({
 
       <button
         type="button"
-        onClick={() => onNavigate('settings')}
+        onClick={() => { onNavigate('settings'); onClose?.() }}
         aria-current={active === 'settings' ? 'page' : undefined}
         title={t.nav.settings}
         className={`mt-auto flex w-full items-center gap-3 rounded-2xl border p-3 text-start transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${
@@ -140,52 +143,62 @@ export function Sidebar({
           <span className={`mt-0.5 block text-xs ${active === 'settings' ? 'text-white/80' : 'text-stone-500'}`}>{t.nav.settingsSub}</span>
         </span>
       </button>
+    </>
+  )
+}
+
+export function Sidebar(props: Props) {
+  return (
+    <aside className="sticky top-0 hidden h-[100dvh] w-[260px] shrink-0 flex-col gap-5 overflow-y-auto border-e border-line bg-white p-5 lg:flex">
+      <SidebarBody {...props} />
     </aside>
   )
 }
 
-export function BottomNav({ t, active, orderBadge, onNavigate }: Props) {
-  const items: { key: SectionKey; icon: typeof HomeIcon }[] = [
-    ...NAV_ITEMS,
-    { key: 'settings', icon: GearIcon },
-  ]
-  const itemClass = (isActive: boolean) =>
-    `flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600 ${
-      isActive ? 'bg-brand-600 text-white' : 'text-stone-600 hover:bg-cream-50 hover:text-brand-700'
-    }`
+export function MobileDrawer({ open, onClose, ...props }: Props & { open: boolean; onClose: () => void }) {
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previous
+    }
+  }, [open, onClose])
 
+  if (!open) return null
   return (
-    <nav
-      aria-label={t.nav.label}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] lg:hidden"
-    >
-      <div className="grid grid-cols-5 gap-1 px-2 py-1">
-        {items.map(({ key, icon: Icon }) => {
-          const isActive = active === key
-          const badge = key === 'orders' ? orderBadge : undefined
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onNavigate(key)}
-              aria-current={isActive ? 'page' : undefined}
-              title={t.nav[key]}
-              className={itemClass(isActive)}
-            >
-              <span className="relative">
-                <Icon className="h-5 w-5" />
-                {badge !== undefined && badge > 0 && (
-                  <span className="absolute -top-1.5 -end-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold tabular-nums text-white">
-                    {badge}
-                  </span>
-                )}
-              </span>
-              <span className="max-w-full break-words text-center text-xs font-bold leading-tight">{t.nav[key]}</span>
-            </button>
-          )
-        })}
-      </div>
-    </nav>
+    <div className="fixed inset-0 z-50 lg:hidden">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={props.t.actions.close}
+        onClick={onClose}
+        className="absolute inset-0 h-full w-full cursor-default bg-stone-900/40"
+      />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={props.t.nav.label}
+        className="absolute inset-y-0 start-0 flex w-[280px] max-w-[85vw] animate-drawer-in flex-col gap-5 overflow-y-auto border-e border-line bg-white p-4 shadow-soft motion-reduce:animate-none"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={props.t.actions.menu}
+          aria-expanded="true"
+          title={props.t.actions.menu}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-line bg-cream-50 text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+        >
+          <DotsIcon className="h-5 w-5" />
+        </button>
+        <SidebarBody {...props} onClose={onClose} />
+      </aside>
+    </div>
   )
 }
 
@@ -197,9 +210,22 @@ export function MobileHeader({
   unreadCount,
   onToggleOpen,
   onOpenNotifications,
-}: Props) {
+  onOpenMenu,
+  menuOpen,
+}: Props & { onOpenMenu: () => void; menuOpen: boolean }) {
   return (
     <header className="mb-4 flex min-w-0 items-center gap-2 rounded-2xl border border-line bg-white p-3 lg:hidden">
+      <button
+        type="button"
+        onClick={onOpenMenu}
+        aria-label={t.actions.menu}
+        aria-expanded={menuOpen}
+        aria-haspopup="dialog"
+        title={t.actions.menu}
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-line text-stone-600 transition-colors hover:bg-cream-50 hover:text-brand-700 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+      >
+        <DotsIcon className="h-5 w-5" />
+      </button>
       <BrandLogo size="sm" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-extrabold leading-tight text-stone-800" title={brandName}>{brandName}</p>

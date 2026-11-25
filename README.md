@@ -47,7 +47,8 @@ The application will be available at:
 
 ### 4. Configure environment variables
 
-Copy `.env.example` to `.env` and fill in valid El Fahm tenant credentials:
+Copy `.env.example` to `.env` if you need to point local development at a
+specific tenant API:
 
 ```bash
 cp .env.example .env
@@ -55,11 +56,20 @@ cp .env.example .env
 
 | Variable | Purpose |
 |---|---|
-| `VITE_API_BASE_URL` | Tenant API origin (HTTPS only, no embedded credentials) |
+| `VITE_API_BASE_URL` | Optional tenant API origin override (HTTPS only, no embedded credentials). Leave empty in production. |
 | `VITE_LOGIN_OWNER_EMAIL` | Owner account prefilled on the login form |
 | `VITE_LOGIN_MANAGER_EMAIL` | Branch manager account |
 | `VITE_LOGIN_STAFF_EMAIL` | Staff account |
 | `VITE_LOGIN_PASSWORD` | Password for the prefilled development accounts |
+
+In production the tenant API origin is **derived from the request hostname**:
+`{slug}.admin.nawyorders.com` calls `https://{slug}.api.nawyorders.com`. The
+`{slug}` is the full backend tenant slug, including its hash suffix (for example
+`el-fahm-01a1c1ed11cf79ffbe51681899bb90fd`). One built image therefore serves
+every restaurant. `VITE_API_BASE_URL` is only an override for local development,
+Vitest and Playwright; when it is unset on `localhost`, `127.0.0.1`,
+`admin.nawyorders.com` or a `*.vercel.app` host, the login screen shows a
+configuration error instead of contacting another restaurant's API.
 
 `.env` is gitignored and never committed. Vite loads `.env` in every mode. Do not add `.env.development.local`, because it would override `.env` during development.
 
@@ -79,7 +89,7 @@ Browser tests use installed Google Chrome and start an isolated Vite server on p
 
 ## Restaurant Staff Login
 
-Login connects to the [Nawy Orders Tenant API documentation](https://el-fahm-01a1c1ed11cf79ffbe51681899bb90fd.api.nawyorders.com/swagger/index.html). The server origin comes from `VITE_API_BASE_URL` in `.env` (falling back to the El Fahm URL) and is exposed as `API_BASE_URL` in `src/auth.ts`.
+Login connects to the [Nawy Orders Tenant API documentation](https://el-fahm-01a1c1ed11cf79ffbe51681899bb90fd.api.nawyorders.com/swagger/index.html). In production the server origin is derived from the admin hostname: `{slug}.admin.nawyorders.com` → `https://{slug}.api.nawyorders.com`, where `{slug}` is the full backend tenant slug including its hash suffix. `VITE_API_BASE_URL` is an explicit override for local development, Vitest and Playwright, and `resolveApiOrigin()` in `src/auth.ts` fails closed when neither the hostname nor the override identifies a tenant.
 
 - `POST /api/v1/auth/login` sends `{ email, password }` over HTTPS. Enter your existing restaurant credentials. Development builds also expose an explicit demo sign-in behind `?mock=1` (see below).
 - The adapter validates the documented `isSuccess`/`data` response envelope. Identity, roles, permissions and token expiry come from the server, not a local account list.

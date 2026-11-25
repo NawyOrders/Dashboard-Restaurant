@@ -3,24 +3,82 @@
 // Access and refresh tokens live in React memory only, not browser storage.
 // Authorization and tenant isolation MUST be enforced by the API on every request.
 
-const DEFAULT_API_BASE_URL = 'https://el-fahm-01a1c1ed11cf79ffbe51681899bb90fd.api.nawyorders.com'
+// One image serves every restaurant. The admin hostname carries the full tenant
+// slug ({slug}.admin.nawyorders.com), so the tenant API origin is derived from
+// the request host instead of being baked in at build time.
+const ADMIN_HOST_SUFFIX = '.admin.nawyorders.com'
+const API_HOST_SUFFIX = '.api.nawyorders.com'
 
-function resolveApiBaseUrl(): string {
-  const configured = typeof import.meta.env.VITE_API_BASE_URL === 'string'
-    ? import.meta.env.VITE_API_BASE_URL.trim()
-    : ''
-  if (!configured) return DEFAULT_API_BASE_URL
+export type ApiOriginFailure = 'missingTenant' | 'invalidTenant' | 'invalidOverride'
+
+export type ApiOriginResolution =
+  | { ok: true; origin: string }
+  | { ok: false; reason: ApiOriginFailure }
+
+function stripPort(hostname: string): string {
+  return hostname.trim().toLowerCase().replace(/:\d+$/, '').replace(/\.+$/, '')
+}
+
+function normalizeApiOrigin(configured: string): string | null {
   try {
-    const url = new URL(configured)
+    const url = new URL(configured.trim())
     // Accept only HTTPS origins without embedded credentials.
-    if (url.protocol !== 'https:' || url.username || url.password) return DEFAULT_API_BASE_URL
-    return configured.replace(/\/+$/, '')
+    if (url.protocol !== 'https:' || url.username || url.password) return null
+    url.port = ''
+    return url.origin.replace(/\/+$/, '')
   } catch {
-    return DEFAULT_API_BASE_URL
+    return null
   }
 }
 
-export const API_BASE_URL = resolveApiBaseUrl()
+function tenantSlugFromHostname(hostname: string): string | null {
+  const host = stripPort(hostname)
+  if (!host.endsWith(ADMIN_HOST_SUFFIX)) return null
+  const slug = host.slice(0, -ADMIN_HOST_SUFFIX.length)
+  // Exactly one DNS label: the full tenant slug, including its hash suffix.
+  if (!slug || slug.includes('.')) return null
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug)) return null
+  return slug
+}
+
+// Precedence: explicit VITE_API_BASE_URL override (local dev, Vitest, Playwright)
+// then hostname derivation, then a hard failure. There is deliberately no
+// fallback tenant: calling another restaurant's API is never an acceptable
+// default.
+export function resolveApiOrigin(hostname: string, configured?: string | null): ApiOriginResolution {
+  const override = (configured ?? '').trim()
+  if (override) {
+    const origin = normalizeApiOrigin(override)
+    return origin ? { ok: true, origin } : { ok: false, reason: 'invalidOverride' }
+  }
+
+  const host = stripPort(hostname)
+  if (host.endsWith(ADMIN_HOST_SUFFIX)) {
+    const slug = tenantSlugFromHostname(host)
+    return slug
+      ? { ok: true, origin: `https://${slug}${API_HOST_SUFFIX}` }
+      : { ok: false, reason: 'invalidTenant' }
+  }
+
+  // admin.nawyorders.com, localhost, 127.0.0.1, raw IPs and *.vercel.app all
+  // reach this branch. None of them identifies a tenant.
+  return { ok: false, reason: 'missingTenant' }
+}
+
+const configuredApiBaseUrl = typeof import.meta.env.VITE_API_BASE_URL === 'string'
+  ? import.meta.env.VITE_API_BASE_URL
+  : ''
+const apiOriginResolution = resolveApiOrigin(
+  typeof window === 'undefined' ? '' : window.location.hostname,
+  configuredApiBaseUrl,
+)
+
+// Empty when the host cannot identify a tenant and no override is configured.
+// login() refuses to run in that state and the login screen explains why.
+export const API_BASE_URL = apiOriginResolution.ok ? apiOriginResolution.origin : ''
+export const API_BASE_URL_ERROR: ApiOriginFailure | null = apiOriginResolution.ok
+  ? null
+  : apiOriginResolution.reason
 export const REQUEST_TIMEOUT_MS = 15_000
 
 export interface AuthUser {
@@ -47,6 +105,7 @@ export type AuthErrorCode =
   | 'timeout'
   | 'service'
   | 'invalidResponse'
+  | 'configuration'
 
 export class AuthError extends Error {
   constructor(public readonly code: AuthErrorCode) {
@@ -70,7 +129,7 @@ function stringArray(value: unknown): string[] {
 }
 
 async function request(
-  path: '/api/v1/auth/login' | '/api/v1/auth/revoke',
+  path: '/api/v1/auth/login' | '/api/v1/auth/revoke' | '/api/v1/auth/refresh',
   body: object,
   signal?: AbortSignal,
   accessToken?: string,
@@ -122,6 +181,7 @@ async function request(
 }
 
 export async function login(email: string, password: string, signal?: AbortSignal): Promise<Session> {
+  if (!API_BASE_URL) throw new AuthError('configuration')
   const normalizedEmail = email.trim()
   if (!normalizedEmail || !password) throw new AuthError('invalidCredentials')
 
@@ -164,8 +224,56 @@ export async function login(email: string, password: string, signal?: AbortSigna
   }
 }
 
+export interface RefreshResult {
+  accessToken: string
+  refreshToken: string
+  expiresAt: number
+}
+
+// The server rotates the refresh token on every refresh and revokes the whole
+// family when a token is reused, so concurrent refreshes of the same session
+// must share one in-flight request instead of racing the rotation.
+let refreshFlight: Promise<RefreshResult> | null = null
+
+export function refreshSession(session: Session, signal?: AbortSignal): Promise<RefreshResult> {
+  if (!API_BASE_URL || !session.refreshToken || session.apiOrigin !== API_BASE_URL) {
+    return Promise.reject(new AuthError('configuration'))
+  }
+  if (!refreshFlight) {
+    refreshFlight = request('/api/v1/auth/refresh', { refreshToken: session.refreshToken }, signal)
+      .then(parseRefresh)
+      .finally(() => { refreshFlight = null })
+  }
+  return refreshFlight
+}
+
+function parseRefresh(response: { status: number; ok: boolean; body: unknown }): RefreshResult {
+  if (response.status === 401 || response.status === 403) throw new AuthError('forbidden')
+  if (response.status === 429) throw new AuthError('rateLimited')
+  if (!response.ok) throw new AuthError('service')
+  const envelope = response.body
+  if (!isRecord(envelope) || envelope.isSuccess !== true || !isRecord(envelope.data)) {
+    throw new AuthError('invalidResponse')
+  }
+  const data = envelope.data
+  const expiresAt = typeof data.expiresAtUtc === 'string' ? Date.parse(data.expiresAtUtc) : NaN
+  if (
+    !nonEmptyString(data.accessToken) || /[\r\n]/.test(data.accessToken) ||
+    typeof data.tokenType !== 'string' || data.tokenType.toLowerCase() !== 'bearer' ||
+    !Number.isFinite(expiresAt) || expiresAt <= Date.now() ||
+    typeof data.expiresIn !== 'number' || !Number.isFinite(data.expiresIn) || data.expiresIn <= 0 ||
+    !nonEmptyString(data.refreshToken) || /[\r\n]/.test(data.refreshToken)
+  ) {
+    throw new AuthError('invalidResponse')
+  }
+  return {
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+    expiresAt: Math.min(expiresAt, Date.now() + data.expiresIn * 1000),
+  }
+}
+
 // Sign-out always clears the local session in App, even if revocation is offline.
-// No automatic refresh: after expiry/reload the user signs in again.
 export async function revokeSession(session: Session): Promise<boolean> {
   if (!session.refreshToken) return true
   if (session.apiOrigin !== API_BASE_URL) return false

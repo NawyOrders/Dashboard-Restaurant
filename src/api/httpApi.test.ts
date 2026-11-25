@@ -56,6 +56,65 @@ beforeEach(() => {
 })
 
 describe('HTTP API adapter', () => {
+  it('fetches order details from the admin endpoint', async () => {
+    respond({
+      statusCode: 200,
+      isSuccess: true,
+      data: {
+        ...orderItem,
+        contactPhone: '+201001234567',
+        subTotal: 127.71,
+        items: [{
+          orderItemId: 'i1',
+          menuItemId: 'm1',
+          itemSizeId: null,
+          itemName: 'Classic Smash Burger',
+          sizeName: 'Double',
+          unitPrice: 63.85,
+          quantity: 2,
+          lineTotal: 127.71,
+        }],
+        payment: null,
+      },
+    })
+    const details = await api().getOrderDetails(orderItem.orderId)
+    const [url] = fetchMock.mock.calls[0]
+    expect(url).toBe(`https://api.test/api/v1/admin/orders/${orderItem.orderId}`)
+    expect(details.contactPhone).toBe('+201001234567')
+    expect(details.items).toHaveLength(1)
+    expect(details.items[0].quantity).toBe(2)
+  })
+
+  it('returns the receipt as raw HTML without JSON unwrapping', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('<!DOCTYPE html><html><body>Receipt</body></html>', { status: 200 }))
+    const html = await api().getOrderReceiptHtml(orderItem.orderId)
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe(`https://api.test/api/v1/admin/orders/${orderItem.orderId}/receipt?format=html`)
+    expect(headerOf(init, 'Authorization')).toBe('Bearer server-token')
+    expect(html).toContain('Receipt')
+  })
+
+  it('posts accept and reject to the review routes without the admin prefix', async () => {
+    respond({ statusCode: 200, isSuccess: true, data: null })
+    await api().acceptOrder(orderItem.orderId)
+    const [acceptUrl, acceptInit] = fetchMock.mock.calls[0]
+    expect(acceptUrl).toBe(`https://api.test/api/v1/orders/${orderItem.orderId}/accept`)
+    expect(acceptInit?.method).toBe('POST')
+    expect(acceptInit?.body).toBeUndefined()
+
+    respond({ statusCode: 200, isSuccess: true, data: null })
+    await api().rejectOrder(orderItem.orderId, ' لا يتوفر الصنف ')
+    const [rejectUrl, rejectInit] = fetchMock.mock.calls[1]
+    expect(rejectUrl).toBe(`https://api.test/api/v1/orders/${orderItem.orderId}/reject`)
+    expect(JSON.parse(rejectInit?.body as string)).toEqual({ rejectionReason: 'لا يتوفر الصنف' })
+  })
+
+  it('validates reject input before calling the server', async () => {
+    await expect(api().rejectOrder('', 'reason')).rejects.toMatchObject({ code: 'validation' })
+    await expect(api().rejectOrder('id', '  ')).rejects.toMatchObject({ code: 'validation' })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('builds the admin orders query, sends the bearer token and parses the envelope', async () => {
     respond(paged())
     const result = await api().listOrders({ status: 2, pageNumber: 1, pageSize: 10 })

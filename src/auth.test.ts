@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { API_BASE_URL, clearLegacySession, login, REQUEST_TIMEOUT_MS, revokeSession } from './auth'
-import { staffLoginResponse } from './test/fixtures'
+import {
+  API_BASE_URL,
+  refreshSession,
+  API_BASE_URL_ERROR,
+  clearLegacySession,
+  login,
+  REQUEST_TIMEOUT_MS,
+  resolveApiOrigin,
+  revokeSession,
+} from './auth'
+import { staffLoginResponse, staffRefreshResponse } from './test/fixtures'
 
 const fetchMock = vi.fn<typeof fetch>()
 function respond(body: unknown, status = 200) {
@@ -31,6 +40,19 @@ describe('restaurant staff API adapter', () => {
   it.each([[400, 'invalidCredentials'], [401, 'invalidCredentials'], [422, 'invalidCredentials'], [403, 'forbidden'], [429, 'rateLimited'], [500, 'service'], [503, 'service']])('maps HTTP %s to a safe error', async (status, code) => {
     respond({ errors: { detail: 'Sensitive server error not for display' } }, status as number)
     await expect(login('staff@example.test', 'test')).rejects.toMatchObject({ code, message: code })
+  })
+
+  it('does not expose an unknown tenant response', async () => {
+    respond({
+      title: 'Tenant Not Found',
+      status: 404,
+      detail: "The tenant identified by subdomain 'tenant' was not found.",
+    }, 404)
+
+    await expect(login('staff@example.test', 'test')).rejects.toMatchObject({
+      code: 'service',
+      message: 'service',
+    })
   })
 
   it('does not call the server for missing credentials', async () => {
@@ -149,5 +171,119 @@ describe('restaurant staff API adapter', () => {
     expect(remove).toHaveBeenCalledTimes(1)
     remove.mockImplementation(() => { throw new DOMException('Blocked', 'SecurityError') })
     expect(clearLegacySession).not.toThrow()
+  })
+})
+
+describe('tenant API origin resolution', () => {
+  const slug = 'el-fahm-01a1c1ed11cf79ffbe51681899bb90fd'
+
+  it('derives the tenant API origin from the admin hostname', () => {
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com`)).toEqual({
+      ok: true,
+      origin: `https://${slug}.api.nawyorders.com`,
+    })
+  })
+
+  it('keeps the full slug, including its hash suffix, as one label', () => {
+    const result = resolveApiOrigin(`  ${slug.toUpperCase()}.ADMIN.NAWYORDERS.COM  `)
+    expect(result).toEqual({ ok: true, origin: `https://${slug}.api.nawyorders.com` })
+  })
+
+  it('ignores an explicit port', () => {
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com:5173`)).toEqual({
+      ok: true,
+      origin: `https://${slug}.api.nawyorders.com`,
+    })
+  })
+
+  it.each([
+    ['admin.nawyorders.com', 'missingTenant'],
+    ['localhost', 'missingTenant'],
+    ['localhost:5173', 'missingTenant'],
+    ['127.0.0.1', 'missingTenant'],
+    ['[::1]', 'missingTenant'],
+    ['app.vercel.app', 'missingTenant'],
+    ['nawyorders.com', 'missingTenant'],
+    ['evil-admin.nawyorders.com', 'missingTenant'],
+    [`${slug}.admin.nawyorders.com.evil.test`, 'missingTenant'],
+    ['a.b.admin.nawyorders.com', 'invalidTenant'],
+    ['.admin.nawyorders.com', 'invalidTenant'],
+    ['bad_slug.admin.nawyorders.com', 'invalidTenant'],
+  ])('refuses %s with %s instead of guessing a tenant', (hostname, reason) => {
+    expect(resolveApiOrigin(hostname)).toEqual({ ok: false, reason })
+  })
+
+  it('prefers a valid HTTPS override and normalizes it', () => {
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com`, '  HTTPS://Tenant.Test:8443/  ')).toEqual({
+      ok: true,
+      origin: 'https://tenant.test',
+    })
+  })
+
+  it('fails closed on an insecure or credentialed override', () => {
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com`, 'http://tenant.test')).toEqual({
+      ok: false,
+      reason: 'invalidOverride',
+    })
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com`, 'https://user:secret@tenant.test')).toEqual({
+      ok: false,
+      reason: 'invalidOverride',
+    })
+    expect(resolveApiOrigin(`${slug}.admin.nawyorders.com`, 'not a url')).toEqual({
+      ok: false,
+      reason: 'invalidOverride',
+    })
+  })
+
+  it('uses the explicit override in the Vitest environment', () => {
+    expect(API_BASE_URL).toBe('https://tenant.test')
+    expect(API_BASE_URL_ERROR).toBeNull()
+  })
+})
+
+describe('session refresh', () => {
+  const session = {
+    apiOrigin: API_BASE_URL,
+    user: { id: '1', name: 'n', email: 'e', roles: [], permissions: [] },
+    accessToken: 'old-access',
+    refreshToken: 'old-refresh',
+    expiresAt: Date.now() - 1,
+  }
+
+  it('sends the current refresh token and returns the rotated pair', async () => {
+    respond(staffRefreshResponse())
+    const result = await refreshSession(session)
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe(`${API_BASE_URL}/api/v1/auth/refresh`)
+    expect(JSON.parse(init!.body as string)).toEqual({ refreshToken: 'old-refresh' })
+    expect(result).toMatchObject({
+      accessToken: 'test-access-token-rotated',
+      refreshToken: 'test-refresh-token-rotated',
+    })
+  })
+
+  it('shares one in-flight request so the single-use token is never sent twice', async () => {
+    respond(staffRefreshResponse())
+    const [first, second] = await Promise.all([refreshSession(session), refreshSession(session)])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(second).toBe(first)
+  })
+
+  it.each([[401, 'forbidden'], [403, 'forbidden'], [429, 'rateLimited'], [500, 'service'], [503, 'service']])('maps refresh HTTP %s to a safe error', async (status, code) => {
+    respond({ errors: { detail: 'Sensitive server error not for display' } }, status as number)
+    await expect(refreshSession(session)).rejects.toMatchObject({ code, message: code })
+  })
+
+  it('does not call the server when the session has no refresh token', async () => {
+    await expect(refreshSession({ ...session, refreshToken: null })).rejects.toMatchObject({ code: 'configuration' })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects when the server omits the rotated refresh token', async () => {
+    const body = staffRefreshResponse()
+    // @ts-expect-error verifies runtime validation of the contract
+    delete body.data.refreshToken
+    respond(body)
+    await expect(refreshSession(session)).rejects.toMatchObject({ code: 'invalidResponse' })
   })
 })
