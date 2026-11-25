@@ -1241,4 +1241,4 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       settings = cloneSettings(next)
     },
   }
-                                                                   }
+}
