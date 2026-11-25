@@ -22,6 +22,25 @@ import {
   type UpdatePaymentMethodInput,
 } from './types'
 import {
+  parseManagedMenuItem,
+  parseMenuItemImageUploadUrl,
+  validateMenuItemImageRequest,
+  validateMenuItemInput,
+  type CreateMenuItemInput,
+  type MenuItemImageUploadRequest,
+  type UpdateMenuItemInput,
+} from './menuItems'
+import {
+  parseCategorySummary,
+  parseManagedCategory,
+  validateCreateCategory,
+  validateReorder,
+  validateUpdateCategory,
+  type CreateCategoryInput,
+  type ReorderCategoriesInput,
+  type UpdateCategoryInput,
+} from './categories'
+import {
   parsePermission,
   parseRole,
   validateCreateRole,
@@ -513,6 +532,72 @@ export function createHttpApi(options: HttpApiOptions): Api {
 
     async deleteOffer(id: string, signal?: AbortSignal) {
       await request(`/api/v1/admin/offers/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Admin menu items and images (reference section 12), all menu.edit.
+    // Upload the bytes to uploadUrl with a plain PUT (no Authorization header),
+    // then pass objectKey as imageKey on create or update.
+    async createMenuItemImageUploadUrl(input: MenuItemImageUploadRequest, signal?: AbortSignal) {
+      validateMenuItemImageRequest(input)
+      const response = await request('/api/v1/admin/menu/items/image-upload-url', { method: 'POST', body: input, signal })
+      return parseMenuItemImageUploadUrl(readEnvelopeData(response.body))
+    },
+
+    async createMenuItem(input: CreateMenuItemInput, signal?: AbortSignal) {
+      validateMenuItemInput(input)
+      const response = await request('/api/v1/admin/menu/items', { method: 'POST', body: input, signal })
+      return parseManagedMenuItem(readEnvelopeData(response.body))
+    },
+
+    async updateMenuItem(id: string, input: UpdateMenuItemInput, signal?: AbortSignal) {
+      requireId(id)
+      validateMenuItemInput(input)
+      const response = await request(`/api/v1/admin/menu/items/${id}`, { method: 'PUT', body: input, signal })
+      return parseManagedMenuItem(readEnvelopeData(response.body))
+    },
+
+    async removeMenuItemImage(id: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/admin/menu/items/${requireId(id)}/image`, { method: 'DELETE', signal })
+      return parseManagedMenuItem(readEnvelopeData(response.body))
+    },
+
+    async deleteMenuItem(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/admin/menu/items/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Menu categories (reference section 11). Writes need menu.edit and share
+    // the /api/v1/menu/categories path with the public reads.
+    async listRootCategories(signal?: AbortSignal) {
+      const response = await request('/api/v1/menu/categories', { signal })
+      return readEnvelopeList(response.body).map(parseCategorySummary)
+    },
+
+    async listSubcategories(categoryId: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/menu/categories/${requireId(categoryId)}/subcategories`, { signal })
+      return readEnvelopeList(response.body).map(parseCategorySummary)
+    },
+
+    async createCategory(input: CreateCategoryInput, signal?: AbortSignal) {
+      validateCreateCategory(input)
+      const response = await request('/api/v1/menu/categories', { method: 'POST', body: input, signal })
+      return parseManagedCategory(readEnvelopeData(response.body))
+    },
+
+    async updateCategory(id: string, input: UpdateCategoryInput, signal?: AbortSignal) {
+      requireId(id)
+      validateUpdateCategory(input)
+      const response = await request(`/api/v1/menu/categories/${id}`, { method: 'PUT', body: input, signal })
+      return parseManagedCategory(readEnvelopeData(response.body))
+    },
+
+    // PUT /api/v1/menu/categories/reorder must list every active category at that level once.
+    async reorderCategories(input: ReorderCategoriesInput, signal?: AbortSignal) {
+      validateReorder(input)
+      await request('/api/v1/menu/categories/reorder', { method: 'PUT', body: input, signal })
+    },
+
+    async deleteCategory(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/menu/categories/${requireId(id)}`, { method: 'DELETE', signal })
     },
 
     // Roles and permissions (reference section 18): Owner / RestaurantOwner only.
