@@ -432,4 +432,4 @@ function CompactOrderCard({ order, t, lang, isPending, canAdvance, onAdvance }: 
       </div>
     </article>
   )
-  }
+}
