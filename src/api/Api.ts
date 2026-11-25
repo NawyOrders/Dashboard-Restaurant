@@ -1,11 +1,4 @@
 import type {
-  CreateMenuItemInput,
-  ManagedMenuItem,
-  MenuItemImageUploadRequest,
-  MenuItemImageUploadUrl,
-  UpdateMenuItemInput,
-} from './menuItems'
-import type {
   CategorySummary,
   CreateCategoryInput,
   ManagedCategory,
@@ -72,11 +65,6 @@ export interface Api {
   getBranch(id: string, signal?: AbortSignal): Promise<BranchDetails>
   createBranch(input: CreateBranchInput, signal?: AbortSignal): Promise<BranchDetails>
   updateBranch(id: string, input: UpdateBranchInput, signal?: AbortSignal): Promise<BranchDetails>
-  createMenuItemImageUploadUrl(input: MenuItemImageUploadRequest, signal?: AbortSignal): Promise<MenuItemImageUploadUrl>
-  createMenuItem(input: CreateMenuItemInput, signal?: AbortSignal): Promise<ManagedMenuItem>
-  updateMenuItem(id: string, input: UpdateMenuItemInput, signal?: AbortSignal): Promise<ManagedMenuItem>
-  removeMenuItemImage(id: string, signal?: AbortSignal): Promise<ManagedMenuItem>
-  deleteMenuItem(id: string, signal?: AbortSignal): Promise<void>
   listRootCategories(signal?: AbortSignal): Promise<CategorySummary[]>
   listSubcategories(categoryId: string, signal?: AbortSignal): Promise<CategorySummary[]>
   createCategory(input: CreateCategoryInput, signal?: AbortSignal): Promise<ManagedCategory>
