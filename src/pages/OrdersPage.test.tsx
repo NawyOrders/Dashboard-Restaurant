@@ -3,15 +3,19 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockApi } from '../api/mockApi'
 import { translations } from '../i18n'
+import { createMockSession } from '../mockAuth'
 import OrdersPage from './OrdersPage'
 
 const t = translations.ar
+// The board's action buttons are RBAC-gated; these tests exercise them as
+// order staff, who hold accept/reject/status-update by default.
+const ORDER_STAFF_PERMISSIONS = createMockSession('Staff').user.permissions
 
 function setup() {
   const api = createMockApi({ latencyMs: 0 })
   const onToast = vi.fn()
   const user = userEvent.setup()
-  render(<OrdersPage t={t} lang="ar" api={api} onToast={onToast} />)
+  render(<OrdersPage t={t} lang="ar" api={api} permissions={ORDER_STAFF_PERMISSIONS} onToast={onToast} />)
   return { api, onToast, user }
 }
 
