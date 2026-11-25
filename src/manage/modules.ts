@@ -35,4 +35,10 @@ export const MANAGE_MODULES: ManageModule[] = [
     subtitle: (lang) => manageCopy[lang].staff.subtitle,
     permissions: [PERMISSIONS.staffView, PERMISSIONS.staffManage],
   },
+  {
+    path: '/manage/roles',
+    title: (lang) => manageCopy[lang].roles.title,
+    subtitle: (lang) => manageCopy[lang].roles.subtitle,
+    permissions: [PERMISSIONS.staffManage],
+  },
 ]
