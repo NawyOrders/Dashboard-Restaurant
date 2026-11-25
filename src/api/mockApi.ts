@@ -14,8 +14,9 @@ import {
   type RestaurantSettings,
 } from './types'
 
-// Numeric status values are backend-defined; the OpenAPI document exposes them
-// only as int32. The mock uses the BRD state-machine order as a stable stand-in.
+// OrderStatus codes from the API reference: 0=New, 1=Accepted, 2=Rejected,
+// 3=Preparing, 4=Ready, 5=OutForDelivery, 6=Completed, 7=CancelledByRestaurant,
+// 8=Closed. The mock covers every board column.
 const MOCK_BRANDING: RestaurantBranding = {
   tenantId: '00000000-0000-4000-8000-0000000000aa',
   nameAr: 'كرم الشام',
@@ -37,8 +38,8 @@ const MOCK_BRANDING: RestaurantBranding = {
 }
 
 const MOCK_ORDERS: AdminOrderListItem[] = [
-  order('00000000-0000-4000-8000-000000000101', 'ORD-2841', 'منى عبد الله', 148.5, 1, '2026-11-11T09:12:00Z'),
-  order('00000000-0000-4000-8000-000000000102', 'ORD-2840', 'Ahmed Hassan', 92, 2, '2026-11-11T09:04:00Z'),
+  order('00000000-0000-4000-8000-000000000101', 'ORD-2841', 'منى عبد الله', 148.5, 0, '2026-11-11T09:12:00Z'),
+  order('00000000-0000-4000-8000-000000000102', 'ORD-2840', 'Ahmed Hassan', 92, 1, '2026-11-11T09:04:00Z'),
   order('00000000-0000-4000-8000-000000000103', 'ORD-2839', 'سارة محمود', 214.25, 1, '2026-11-11T08:57:00Z'),
   order('00000000-0000-4000-8000-000000000104', 'ORD-2838', 'Youssef Ali', 64, 3, '2026-11-11T08:41:00Z'),
   order('00000000-0000-4000-8000-000000000105', 'ORD-2837', 'نور خالد', 310.75, 5, '2026-11-11T08:20:00Z'),
@@ -336,6 +337,22 @@ export function createMockApi(options: MockApiOptions = {}): Api {
         return
       }
       throw new ApiError('notFound')
+    },
+
+    async acceptOrder(id: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      if (!id.trim()) throw new ApiError('validation')
+      const target = orders.find((item) => item.orderId === id)
+      if (!target || target.status !== 0) throw new ApiError(target ? 'validation' : 'notFound')
+      target.status = 1
+    },
+
+    async rejectOrder(id: string, rejectionReason: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      if (!id.trim() || !rejectionReason.trim()) throw new ApiError('validation')
+      const target = orders.find((item) => item.orderId === id)
+      if (!target || target.status !== 0) throw new ApiError(target ? 'validation' : 'notFound')
+      target.status = 2
     },
 
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {

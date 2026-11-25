@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import type { Api } from '../api'
 import type { Lang, T } from '../i18n'
 import type { LiveOrder, LiveOrderPayment, LiveOrderStatus } from '../types'
-import { LIVE_STATUS_CODE, formatOrderTotal } from '../orders'
+import { formatOrderTotal, mapLiveOrderStatus, transitionCodeFor } from '../orders'
+import { useLiveOrders } from '../useOrders'
 import {
   BanknoteIcon,
   BellIcon,
@@ -42,17 +43,21 @@ function PaymentIcon({ method, className }: { method: LiveOrderPayment; classNam
 }
 
 export default function OrdersPage({ t, lang, api, onToast }: OrdersPageProps) {
-  const [overrides, setOverrides] = useState<Record<string, LiveOrderStatus>>({})
+  const { state, orders: remoteOrders, reload } = useLiveOrders(api, lang)
+  const [overrides, setOverrides] = useState<Record<string, number>>({})
   const [rejected, setRejected] = useState<string[]>([])
   const [pending, setPending] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
 
+  // Rejected (2), cancelled (7) and closed (8) orders leave the board.
   const orders = useMemo(
     () =>
-      t.liveOrders.itemsList
-        .filter((order) => !rejected.includes(order.id))
-        .map((order) => ({ ...order, status: overrides[order.id] ?? order.status })),
-    [t, overrides, rejected],
+      remoteOrders.flatMap((order) => {
+        const statusCode = overrides[order.id] ?? order.statusCode ?? 0
+        const status = mapLiveOrderStatus(statusCode)
+        return status && !rejected.includes(order.id) ? [{ ...order, statusCode, status }] : []
+      }),
+    [remoteOrders, overrides, rejected],
   )
 
   const grouped = useMemo(() => {
@@ -61,13 +66,13 @@ export default function OrdersPage({ t, lang, api, onToast }: OrdersPageProps) {
     return groups
   }, [orders])
 
-  const transition = async (order: LiveOrder, next: LiveOrderStatus) => {
+  const run = async (order: LiveOrder, action: () => Promise<void>, apply: () => void, toast: string) => {
     setError(null)
     setPending((current) => ({ ...current, [order.id]: true }))
     try {
-      await api.transitionOrderStatus(order.id, LIVE_STATUS_CODE[next])
-      setOverrides((current) => ({ ...current, [order.id]: next }))
-      onToast(t.liveOrders.moved)
+      await action()
+      apply()
+      onToast(toast)
     } catch {
       setError(t.liveOrders.transitionError)
     } finally {
@@ -79,9 +84,35 @@ export default function OrdersPage({ t, lang, api, onToast }: OrdersPageProps) {
     }
   }
 
+  const accept = (order: LiveOrder) =>
+    run(
+      order,
+      () => api.acceptOrder(order.orderId ?? order.id),
+      () => setOverrides((current) => ({ ...current, [order.id]: 1 })),
+      t.liveOrders.moved,
+    )
+
   const reject = (order: LiveOrder) => {
-    setRejected((current) => [...current, order.id])
-    onToast(t.liveOrders.rejected)
+    // The API requires a non-empty rejection reason.
+    const reason = window.prompt(t.liveOrders.rejectReasonPrompt)?.trim()
+    if (!reason) return
+    void run(
+      order,
+      () => api.rejectOrder(order.orderId ?? order.id, reason),
+      () => setRejected((current) => [...current, order.id]),
+      t.liveOrders.rejected,
+    )
+  }
+
+  const advance = (order: LiveOrder) => {
+    const next = transitionCodeFor(overrides[order.id] ?? order.statusCode ?? 0, order.fulfilment)
+    if (next == null) return
+    void run(
+      order,
+      () => api.transitionOrderStatus(order.orderId ?? order.id, next),
+      () => setOverrides((current) => ({ ...current, [order.id]: next })),
+      t.liveOrders.moved,
+    )
   }
 
   return (
@@ -102,6 +133,15 @@ export default function OrdersPage({ t, lang, api, onToast }: OrdersPageProps) {
           {orders.length} {t.liveOrders.items}
         </span>
       </div>
+
+      {state === 'error' && (
+        <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700">
+          <span>{t.liveOrders.loadError}</span>
+          <button type="button" onClick={reload} className="rounded-lg px-3 py-2 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200">
+            {t.actions.retry}
+          </button>
+        </div>
+      )}
 
       {error && (
         <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700">
@@ -138,7 +178,7 @@ export default function OrdersPage({ t, lang, api, onToast }: OrdersPageProps) {
                       t={t}
                       lang={lang}
                       isPending={Boolean(pending[order.id])}
-                      onAccept={() => void transition(order, 'preparing')}
+                      onAccept={() => void accept(order)}
                       onReject={() => reject(order)}
                       onReceipt={() => onToast(t.liveOrders.receiptHint)}
                     />
@@ -149,7 +189,7 @@ export default function OrdersPage({ t, lang, api, onToast }: OrdersPageProps) {
                       t={t}
                       lang={lang}
                       isPending={Boolean(pending[order.id])}
-                      onAdvance={() => void transition(order, status === 'preparing' ? 'ready' : 'delivered')}
+                      onAdvance={() => void advance(order)}
                       onPreparing={() => onToast(t.liveOrders.preparing)}
                     />
                   ),
@@ -287,7 +327,7 @@ function CompactOrderCard({ order, t, lang, isPending, onAdvance }: {
             className={GOLD_BUTTON}
           >
             {isPending && <SpinnerIcon className="h-4 w-4 animate-spin" />}
-            {order.id === '#1041' ? t.liveOrders.preparing : t.liveOrders.markReady}
+            {order.statusCode === 1 ? t.liveOrders.preparing : t.liveOrders.markReady}
           </button>
         )}
         {order.status === 'ready' && (

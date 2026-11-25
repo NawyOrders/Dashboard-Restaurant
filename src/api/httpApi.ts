@@ -365,6 +365,21 @@ export function createHttpApi(options: HttpApiOptions): Api {
       })
     },
 
+    // Order review actions live under /api/v1/orders (no /admin prefix).
+    async acceptOrder(id: string, signal?: AbortSignal) {
+      if (!id.trim()) throw new ApiError('validation')
+      await request(`/api/v1/orders/${encodeURIComponent(id)}/accept`, { method: 'POST', signal })
+    },
+
+    async rejectOrder(id: string, rejectionReason: string, signal?: AbortSignal) {
+      if (!id.trim() || !rejectionReason.trim()) throw new ApiError('validation')
+      await request(`/api/v1/orders/${encodeURIComponent(id)}/reject`, {
+        method: 'POST',
+        body: { rejectionReason: rejectionReason.trim() },
+        signal,
+      })
+    },
+
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
       const response = await request('/api/v1/Branding', { etag, signal })
       if (response.status === 304) {
