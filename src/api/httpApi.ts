@@ -22,6 +22,17 @@ import {
   type UpdatePaymentMethodInput,
 } from './types'
 import {
+  parseBranch,
+  parseDeliverySettings,
+  validateCreateBranch,
+  validateDeliverySettings,
+  validateUpdateBranch,
+  type CreateBranchInput,
+  type DeliverySettings,
+  type ListBranchesQuery,
+  type UpdateBranchInput,
+} from './branches'
+import {
   parseOffer,
   parseOfferImageUploadUrl,
   validateCreateOffer,
@@ -488,6 +499,47 @@ export function createHttpApi(options: HttpApiOptions): Api {
       await request(`/api/v1/admin/offers/${requireId(id)}`, { method: 'DELETE', signal })
     },
 
+    // Branches and delivery settings (reference section 15).
+    // branches.view reads, branches.manage writes.
+    async listBranches(query: ListBranchesQuery = {}, signal?: AbortSignal) {
+      validatePaging(query.pageNumber, query.pageSize)
+      const response = await request('/api/v1/admin/branches', {
+        query: { pageNumber: query.pageNumber, pageSize: query.pageSize },
+        signal,
+      })
+      return parsePaged(readEnvelopeData(response.body), parseBranch)
+    },
+
+    async getBranch(id: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/admin/branches/${requireId(id)}`, { signal })
+      return parseBranch(readEnvelopeData(response.body))
+    },
+
+    async createBranch(input: CreateBranchInput, signal?: AbortSignal) {
+      validateCreateBranch(input)
+      const response = await request('/api/v1/admin/branches', { method: 'POST', body: input, signal })
+      return parseBranch(readEnvelopeData(response.body))
+    },
+
+    async updateBranch(id: string, input: UpdateBranchInput, signal?: AbortSignal) {
+      requireId(id)
+      validateUpdateBranch(input)
+      const response = await request(`/api/v1/admin/branches/${id}`, { method: 'PATCH', body: input, signal })
+      return parseBranch(readEnvelopeData(response.body))
+    },
+
+    // GET/PUT /api/v1/admin/delivery-settings: view needs branches.view, PUT needs branches.manage.
+    async getDeliverySettings(signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/delivery-settings', { signal })
+      return parseDeliverySettings(readEnvelopeData(response.body))
+    },
+
+    async updateDeliverySettings(input: DeliverySettings, signal?: AbortSignal) {
+      validateDeliverySettings(input)
+      const response = await request('/api/v1/admin/delivery-settings', { method: 'PUT', body: input, signal })
+      return parseDeliverySettings(readEnvelopeData(response.body))
+    },
+
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
       const response = await request('/api/v1/Branding', { etag, signal })
       if (response.status === 304) {
@@ -538,4 +590,4 @@ export function createHttpApi(options: HttpApiOptions): Api {
       })
     },
   }
-}
+                      }
