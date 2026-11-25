@@ -24,6 +24,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const ManagePage = lazy(() => import('./pages/ManagePage'))
 const OffersPage = lazy(() => import('./pages/OffersPage'))
 const BranchesPage = lazy(() => import('./pages/BranchesPage'))
+const PaymentsPage = lazy(() => import('./pages/PaymentsPage'))
 
 const PATH_BY_SECTION: Record<SectionKey, string> = {
   home: '/',
@@ -302,6 +303,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                 <Route path="/manage" element={<ManagePage lang={lang} dir={t.dir} permissions={session.user.permissions} />} />
                 <Route path="/manage/offers" element={<OffersPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} uploadsEnabled={Boolean(remoteApi)} onToast={showToast} />} />
                 <Route path="/manage/branches" element={<BranchesPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
+                <Route path="/manage/payments" element={<PaymentsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
@@ -331,4 +333,4 @@ function Dashboard({ session, lang, setLang, onLogout }: {
       )}
     </div>
   )
-              }
+    }
