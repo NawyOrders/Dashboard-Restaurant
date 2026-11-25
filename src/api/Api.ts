@@ -1,4 +1,13 @@
 import type {
+  CreateOfferInput,
+  ListOffersQuery,
+  OfferImageUploadRequest,
+  OfferImageUploadUrl,
+  OfferStatusInput,
+  PromotionalOffer,
+  UpdateOfferInput,
+} from './offers'
+import type {
   AdminOrderListItem,
   PaymentMethodName,
   RestaurantPaymentMethodConfig,
@@ -29,6 +38,13 @@ export interface Api {
     input: UpdatePaymentMethodInput,
     signal?: AbortSignal,
   ): Promise<RestaurantPaymentMethodConfig>
+  createOfferImageUploadUrl(input: OfferImageUploadRequest, signal?: AbortSignal): Promise<OfferImageUploadUrl>
+  createOffer(input: CreateOfferInput, signal?: AbortSignal): Promise<PromotionalOffer>
+  listOffers(query?: ListOffersQuery, signal?: AbortSignal): Promise<PagedResult<PromotionalOffer>>
+  getOffer(id: string, signal?: AbortSignal): Promise<PromotionalOffer>
+  updateOffer(id: string, input: UpdateOfferInput, signal?: AbortSignal): Promise<PromotionalOffer>
+  setOfferStatus(id: string, input: OfferStatusInput, signal?: AbortSignal): Promise<PromotionalOffer>
+  deleteOffer(id: string, signal?: AbortSignal): Promise<void>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
   listMenu(signal?: AbortSignal): Promise<MenuCategory[]>
   updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void>
