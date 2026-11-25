@@ -1,3 +1,10 @@
+import type {
+  CategorySummary,
+  CreateCategoryInput,
+  ManagedCategory,
+  ReorderCategoriesInput,
+  UpdateCategoryInput,
+} from './categories'
 import type { CreateRoleInput, PermissionInfo, RoleSummary, UpdateRoleInput } from './roles'
 import type { InviteStaffInput, ListStaffQuery, StaffUser } from './staff'
 import type {
@@ -58,6 +65,12 @@ export interface Api {
   getBranch(id: string, signal?: AbortSignal): Promise<BranchDetails>
   createBranch(input: CreateBranchInput, signal?: AbortSignal): Promise<BranchDetails>
   updateBranch(id: string, input: UpdateBranchInput, signal?: AbortSignal): Promise<BranchDetails>
+  listRootCategories(signal?: AbortSignal): Promise<CategorySummary[]>
+  listSubcategories(categoryId: string, signal?: AbortSignal): Promise<CategorySummary[]>
+  createCategory(input: CreateCategoryInput, signal?: AbortSignal): Promise<ManagedCategory>
+  updateCategory(id: string, input: UpdateCategoryInput, signal?: AbortSignal): Promise<ManagedCategory>
+  reorderCategories(input: ReorderCategoriesInput, signal?: AbortSignal): Promise<void>
+  deleteCategory(id: string, signal?: AbortSignal): Promise<void>
   listPermissions(signal?: AbortSignal): Promise<PermissionInfo[]>
   listRoles(signal?: AbortSignal): Promise<RoleSummary[]>
   getRole(id: string, signal?: AbortSignal): Promise<RoleSummary>
