@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { Api } from '../api'
 import type { Lang, T } from '../i18n'
 import type { LiveOrder, LiveOrderPayment, LiveOrderStatus } from '../types'
 import { formatOrderTotal, mapLiveOrderStatus, transitionCodeFor } from '../orders'
+import { useOrdersHub, type OrdersHubConfig, type OrderPlacedNotificationPayload } from '../realtime/ordersHub'
 import { useLiveOrders } from '../useOrders'
 import {
   BanknoteIcon,
@@ -20,6 +21,8 @@ export type OrdersPageProps = {
   lang: Lang
   api: Api
   onToast: (message: string) => void
+  // SignalR hub settings for live "OrderPlaced" events; null in mock mode.
+  ordersHub?: OrdersHubConfig | null
 }
 
 const COLUMNS: LiveOrderStatus[] = ['new', 'preparing', 'ready', 'delivered']
@@ -42,8 +45,15 @@ function PaymentIcon({ method, className }: { method: LiveOrderPayment; classNam
   return <WalletIcon className={className} />
 }
 
-export default function OrdersPage({ t, lang, api, onToast }: OrdersPageProps) {
-  const { state, orders: remoteOrders, reload } = useLiveOrders(api, lang)
+export default function OrdersPage({ t, lang, api, onToast, ordersHub = null }: OrdersPageProps) {
+  const orderPlaced = useOrdersHub(ordersHub)
+  const announceOrderPlaced = useCallback(
+    (payload: OrderPlacedNotificationPayload) => {
+      onToast(`${t.liveOrders.newOrder} · ${payload.orderNumber}`)
+    },
+    [onToast, t],
+  )
+  const { state, orders: remoteOrders, reload } = useLiveOrders(api, lang, orderPlaced, announceOrderPlaced)
   const [overrides, setOverrides] = useState<Record<string, number>>({})
   const [rejected, setRejected] = useState<string[]>([])
   const [pending, setPending] = useState<Record<string, boolean>>({})
