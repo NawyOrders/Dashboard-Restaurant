@@ -18,6 +18,8 @@ export interface Api {
   transitionOrderStatus(id: string, targetStatus: number, signal?: AbortSignal): Promise<void>
   acceptOrder(id: string, signal?: AbortSignal): Promise<void>
   rejectOrder(id: string, rejectionReason: string, signal?: AbortSignal): Promise<void>
+  confirmPayment(id: string, signal?: AbortSignal): Promise<void>
+  rejectPaymentProof(id: string, rejectionReason: string, signal?: AbortSignal): Promise<void>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
   listMenu(signal?: AbortSignal): Promise<MenuCategory[]>
   updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void>
