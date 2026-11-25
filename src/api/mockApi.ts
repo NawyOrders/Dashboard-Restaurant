@@ -17,6 +17,17 @@ import {
   type UpdatePaymentMethodInput,
 } from './types'
 import {
+  DAYS_OF_WEEK,
+  validateCreateBranch,
+  validateDeliverySettings,
+  validateUpdateBranch,
+  type BranchDetails,
+  type CreateBranchInput,
+  type DeliverySettings,
+  type ListBranchesQuery,
+  type UpdateBranchInput,
+} from './branches'
+import {
   validateCreateOffer,
   validateOfferImageRequest,
   validateOfferListQuery,
@@ -314,6 +325,30 @@ export function createMockApi(options: MockApiOptions = {}): Api {
     month: cloneReport(MOCK_REPORTS.month),
   }
   let settings = cloneSettings(MOCK_SETTINGS)
+  let branches: BranchDetails[] = [
+    {
+      id: '00000000-0000-7000-8000-0000000000b1',
+      nameAr: 'الفرع الرئيسي',
+      nameEn: 'Main Branch',
+      address: '15 Street 9, Maadi, Cairo',
+      latitude: 29.9602,
+      longitude: 31.2569,
+      phone: '+20223581234',
+      status: 'Open',
+      isActive: true,
+      isPrimary: true,
+      sortOrder: 0,
+      workingHours: DAYS_OF_WEEK.map((dayOfWeek) => ({
+        dayOfWeek,
+        isClosed: false,
+        openTime: '10:00:00',
+        closeTime: '02:00:00',
+        closesNextDay: true,
+      })),
+    },
+  ]
+  let branchSeq = 1
+  let deliverySettings: DeliverySettings = { baseDeliveryFee: 20, deliveryFeePerKm: 4.5, maxDeliveryRadiusKm: 15 }
   let offers: PromotionalOffer[] = []
   let offerSeq = 0
   let paymentMethods = MOCK_PAYMENT_METHODS.map((item) => ({ ...item }))
@@ -567,6 +602,90 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       await guard(signal)
       findOffer(id)
       offers = offers.filter((offer) => offer.id !== id)
+    },
+
+    async listBranches(query: ListBranchesQuery = {}, signal?: AbortSignal): Promise<PagedResult<BranchDetails>> {
+      await guard(signal)
+      validatePaging(query.pageNumber, query.pageSize)
+      const page = query.pageNumber ?? 1
+      const pageSize = query.pageSize ?? 20
+      const sorted = [...branches].sort((a, b) => a.sortOrder - b.sortOrder)
+      const totalPages = Math.ceil(sorted.length / pageSize)
+      return {
+        items: structuredClone(sorted.slice((page - 1) * pageSize, page * pageSize)),
+        totalCount: sorted.length,
+        page,
+        pageSize,
+        totalPages,
+        hasPreviousPage: page > 1,
+        hasNextPage: page < totalPages,
+      }
+    },
+
+    async getBranch(id: string, signal?: AbortSignal): Promise<BranchDetails> {
+      await guard(signal)
+      requireId(id)
+      const branch = branches.find((item) => item.id === id)
+      if (!branch) throw new ApiError('notFound')
+      return structuredClone(branch)
+    },
+
+    async createBranch(input: CreateBranchInput, signal?: AbortSignal): Promise<BranchDetails> {
+      await guard(signal)
+      validateCreateBranch(input)
+      branchSeq += 1
+      const created: BranchDetails = {
+        id: `00000000-0000-7000-8000-b${String(branchSeq).padStart(11, '0')}`,
+        nameAr: input.nameAr,
+        nameEn: input.nameEn,
+        address: input.address,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        phone: input.phone ?? null,
+        status: input.status ?? 'Open',
+        isActive: input.isActive ?? true,
+        isPrimary: input.isPrimary ?? false,
+        sortOrder: input.sortOrder ?? 0,
+        workingHours: structuredClone(input.workingHours),
+      }
+      branches = [...branches, created]
+      return structuredClone(created)
+    },
+
+    async updateBranch(id: string, input: UpdateBranchInput, signal?: AbortSignal): Promise<BranchDetails> {
+      await guard(signal)
+      requireId(id)
+      validateUpdateBranch(input)
+      const current = branches.find((item) => item.id === id)
+      if (!current) throw new ApiError('notFound')
+      const next: BranchDetails = { ...current, workingHours: structuredClone(current.workingHours) }
+      if (input.nameAr != null) next.nameAr = input.nameAr
+      if (input.nameEn != null) next.nameEn = input.nameEn
+      if (input.address != null) next.address = input.address
+      if (input.latitude !== undefined) next.latitude = input.latitude
+      if (input.longitude !== undefined) next.longitude = input.longitude
+      if (input.phone !== undefined) next.phone = input.phone
+      if (input.status != null) next.status = input.status
+      if (input.isActive != null) next.isActive = input.isActive
+      if (input.isPrimary != null) next.isPrimary = input.isPrimary
+      if (input.sortOrder != null) next.sortOrder = input.sortOrder
+      for (const hour of input.workingHours ?? []) {
+        next.workingHours = next.workingHours.map((existing) => (existing.dayOfWeek === hour.dayOfWeek ? { ...hour } : existing))
+      }
+      branches = branches.map((item) => (item.id === id ? next : item))
+      return structuredClone(next)
+    },
+
+    async getDeliverySettings(signal?: AbortSignal): Promise<DeliverySettings> {
+      await guard(signal)
+      return { ...deliverySettings }
+    },
+
+    async updateDeliverySettings(input: DeliverySettings, signal?: AbortSignal): Promise<DeliverySettings> {
+      await guard(signal)
+      validateDeliverySettings(input)
+      deliverySettings = { ...input }
+      return { ...deliverySettings }
     },
 
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
