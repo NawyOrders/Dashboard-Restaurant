@@ -67,6 +67,24 @@ export type ManageCopy = {
     invalid: string
     save: string
   }
+  staff: {
+    title: string
+    subtitle: string
+    invite: string
+    empty: string
+    fullName: string
+    email: string
+    phone: string
+    role: string
+    branches: string
+    statuses: Record<string, string>
+    resend: string
+    resent: string
+    invited: string
+    changeRole: string
+    invalid: string
+    owner: string
+  }
   offers: {
     title: string
     subtitle: string
@@ -167,6 +185,24 @@ const ar: ManageCopy = {
     invalid: 'تحقق من الحقول: الأسماء مطلوبة والتعليمات حتى 500 حرف.',
     save: 'حفظ الوسيلة',
   },
+  staff: {
+    title: 'الموظفون',
+    subtitle: 'ادعُ الموظفين وغيّر أدوارهم',
+    invite: 'دعوة موظف',
+    empty: 'لا يوجد موظفون بعد.',
+    fullName: 'الاسم الكامل',
+    email: 'البريد الإلكتروني',
+    phone: 'الهاتف',
+    role: 'الدور',
+    branches: 'الفروع',
+    statuses: { Active: 'نشط', Inactive: 'غير نشط', PendingInvitation: 'في انتظار التفعيل' },
+    resend: 'إعادة إرسال الدعوة',
+    resent: 'تمت إعادة إرسال الدعوة',
+    invited: 'تم إرسال الدعوة',
+    changeRole: 'تغيير الدور',
+    invalid: 'تحقق من الحقول: الاسم والبريد صحيحان واختر الدور وفرعاً واحداً على الأقل.',
+    owner: 'المالك',
+  },
   offers: {
     title: 'العروض',
     subtitle: 'عروض الأصناف والكومبو',
@@ -266,6 +302,24 @@ const en: ManageCopy = {
     instructionsEn: 'Customer instructions (English)',
     invalid: 'Check the fields: names are required and instructions are up to 500 characters.',
     save: 'Save method',
+  },
+  staff: {
+    title: 'Staff',
+    subtitle: 'Invite staff and change their roles',
+    invite: 'Invite staff',
+    empty: 'No staff yet.',
+    fullName: 'Full name',
+    email: 'Email',
+    phone: 'Phone',
+    role: 'Role',
+    branches: 'Branches',
+    statuses: { Active: 'Active', Inactive: 'Inactive', PendingInvitation: 'Pending activation' },
+    resend: 'Resend invitation',
+    resent: 'Invitation resent',
+    invited: 'Invitation sent',
+    changeRole: 'Change role',
+    invalid: 'Check the fields: valid name and email, pick a role and at least one branch.',
+    owner: 'Owner',
   },
   offers: {
     title: 'Offers',
