@@ -103,6 +103,33 @@ export type ManageCopy = {
     invalid: string
     hasChildren: string
   }
+  items: {
+    title: string
+    subtitle: string
+    add: string
+    edit: string
+    empty: string
+    noCategories: string
+    category: string
+    nameAr: string
+    nameEn: string
+    descAr: string
+    descEn: string
+    price: string
+    visible: string
+    image: string
+    removeImage: string
+    sizes: string
+    addSize: string
+    sizeNameAr: string
+    sizeNameEn: string
+    sizeDefault: string
+    sizesNote: string
+    descNote: string
+    invalid: string
+    uploadError: string
+    hidden: string
+  }
   roles: {
     title: string
     subtitle: string
@@ -254,6 +281,33 @@ const ar: ManageCopy = {
     invalid: 'الاسم بالعربية والإنجليزية مطلوب (حتى 200 حرف).',
     hasChildren: 'احذف الأقسام الفرعية أولاً.',
   },
+  items: {
+    title: 'أصناف القائمة',
+    subtitle: 'أضف أصناف القائمة وعدّل بياناتها وأسعارها',
+    add: 'إضافة صنف',
+    edit: 'تعديل الصنف',
+    empty: 'لا توجد أصناف بعد.',
+    noCategories: 'أضف قسماً أولاً من شاشة أقسام القائمة.',
+    category: 'القسم',
+    nameAr: 'الاسم بالعربية',
+    nameEn: 'الاسم بالإنجليزية',
+    descAr: 'الوصف بالعربية',
+    descEn: 'الوصف بالإنجليزية',
+    price: 'السعر الأساسي',
+    visible: 'ظاهر للعملاء',
+    image: 'صورة الصنف',
+    removeImage: 'حذف الصورة',
+    sizes: 'الأحجام',
+    addSize: 'إضافة حجم',
+    sizeNameAr: 'اسم الحجم بالعربية',
+    sizeNameEn: 'اسم الحجم بالإنجليزية',
+    sizeDefault: 'افتراضي',
+    sizesNote: 'الأحجام الحالية تبقى كما هي عند التعديل.',
+    descNote: 'الخادم لا يرسل الوصف مع القائمة، لذلك الحفظ يستبدل الوصف بما تكتبه هنا.',
+    invalid: 'اختر القسم، واكتب الاسمين بالعربية والإنجليزية وسعراً صحيحاً، وأحجاماً صحيحة بدون تكرار.',
+    uploadError: 'تعذّر رفع الصورة. استخدم JPEG أو PNG أو WebP.',
+    hidden: 'مخفي',
+  },
   roles: {
     title: 'الأدوار والصلاحيات',
     subtitle: 'أنشئ أدواراً مخصصة وحدد صلاحيات كل دور (للمالك فقط)',
@@ -404,6 +458,33 @@ const en: ManageCopy = {
     inactive: 'Inactive',
     invalid: 'Arabic and English names are required (up to 200 characters).',
     hasChildren: 'Delete its subcategories first.',
+  },
+  items: {
+    title: 'Menu items',
+    subtitle: 'Add menu items and edit their details and prices',
+    add: 'Add item',
+    edit: 'Edit item',
+    empty: 'No items yet.',
+    noCategories: 'Add a category first from the Menu categories screen.',
+    category: 'Category',
+    nameAr: 'Arabic name',
+    nameEn: 'English name',
+    descAr: 'Arabic description',
+    descEn: 'English description',
+    price: 'Base price',
+    visible: 'Visible to customers',
+    image: 'Item image',
+    removeImage: 'Remove image',
+    sizes: 'Sizes',
+    addSize: 'Add size',
+    sizeNameAr: 'Size name (Arabic)',
+    sizeNameEn: 'Size name (English)',
+    sizeDefault: 'Default',
+    sizesNote: 'Existing sizes stay as they are when you edit.',
+    descNote: 'The server does not send descriptions with the menu list, so saving replaces them with what you type here.',
+    invalid: 'Pick a category, write both names and a valid price, and use valid sizes without duplicates.',
+    uploadError: 'Could not upload the image. Use JPEG, PNG or WebP.',
+    hidden: 'Hidden',
   },
   roles: {
     title: 'Roles and permissions',
