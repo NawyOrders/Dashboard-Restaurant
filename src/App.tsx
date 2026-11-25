@@ -10,6 +10,7 @@ import { createApi, isMockErrorRequested, isMockRequested } from './api'
 import type { OrdersHubConfig } from './realtime/ordersHub'
 import { useOrders } from './useOrders'
 import { Login } from './components/Login'
+import { SetPassword, SET_PASSWORD_PATH } from './components/SetPassword'
 import type { SectionKey } from './types'
 import { filterOrders } from './orders'
 import { BottomNav, MobileHeader, Sidebar } from './components/Sidebar'
@@ -27,6 +28,7 @@ const BranchesPage = lazy(() => import('./pages/BranchesPage'))
 const PaymentsPage = lazy(() => import('./pages/PaymentsPage'))
 const StaffPage = lazy(() => import('./pages/StaffPage'))
 const RolesPage = lazy(() => import('./pages/RolesPage'))
+const CategoriesPage = lazy(() => import('./pages/CategoriesPage'))
 
 const PATH_BY_SECTION: Record<SectionKey, string> = {
   home: '/',
@@ -103,6 +105,12 @@ export default function App() {
     <BrowserRouter>
       {session ? (
         <Dashboard key={`${session.apiOrigin}:${session.user.id}`} session={session} lang={lang} setLang={setLang} onLogout={handleLogout} />
+      ) : typeof window !== 'undefined' && window.location.pathname === SET_PASSWORD_PATH ? (
+        <SetPassword
+          lang={lang}
+          onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')}
+          onDone={() => window.location.assign('/')}
+        />
       ) : (
         <Login t={t} langToggle={t.nav.langToggle} onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')} onSuccess={handleSuccess} initialNotice={notice ? t.auth[notice] : undefined} />
       )}
@@ -308,6 +316,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                 <Route path="/manage/payments" element={<PaymentsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="/manage/staff" element={<StaffPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="/manage/roles" element={<RolesPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
+                <Route path="/manage/categories" element={<CategoriesPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

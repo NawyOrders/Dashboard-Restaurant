@@ -85,6 +85,24 @@ export type ManageCopy = {
     invalid: string
     owner: string
   }
+  categories: {
+    title: string
+    subtitle: string
+    add: string
+    addSub: string
+    edit: string
+    empty: string
+    nameAr: string
+    nameEn: string
+    items: string
+    subcategories: string
+    noSubs: string
+    moveUp: string
+    moveDown: string
+    inactive: string
+    invalid: string
+    hasChildren: string
+  }
   roles: {
     title: string
     subtitle: string
@@ -218,6 +236,24 @@ const ar: ManageCopy = {
     invalid: 'تحقق من الحقول: الاسم والبريد صحيحان واختر الدور وفرعاً واحداً على الأقل.',
     owner: 'المالك',
   },
+  categories: {
+    title: 'أقسام القائمة',
+    subtitle: 'أنشئ أقسام القائمة وأقسامها الفرعية ورتّبها',
+    add: 'إضافة قسم',
+    addSub: 'إضافة قسم فرعي',
+    edit: 'تعديل القسم',
+    empty: 'لا توجد أقسام بعد. أضف أول قسم.',
+    nameAr: 'الاسم بالعربية',
+    nameEn: 'الاسم بالإنجليزية',
+    items: 'صنف',
+    subcategories: 'الأقسام الفرعية',
+    noSubs: 'لا توجد أقسام فرعية',
+    moveUp: 'تحريك لأعلى',
+    moveDown: 'تحريك لأسفل',
+    inactive: 'غير نشط',
+    invalid: 'الاسم بالعربية والإنجليزية مطلوب (حتى 200 حرف).',
+    hasChildren: 'احذف الأقسام الفرعية أولاً.',
+  },
   roles: {
     title: 'الأدوار والصلاحيات',
     subtitle: 'أنشئ أدواراً مخصصة وحدد صلاحيات كل دور (للمالك فقط)',
@@ -350,6 +386,24 @@ const en: ManageCopy = {
     changeRole: 'Change role',
     invalid: 'Check the fields: valid name and email, pick a role and at least one branch.',
     owner: 'Owner',
+  },
+  categories: {
+    title: 'Menu categories',
+    subtitle: 'Create menu categories and subcategories and put them in order',
+    add: 'Add category',
+    addSub: 'Add subcategory',
+    edit: 'Edit category',
+    empty: 'No categories yet. Add the first one.',
+    nameAr: 'Arabic name',
+    nameEn: 'English name',
+    items: 'items',
+    subcategories: 'Subcategories',
+    noSubs: 'No subcategories',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    inactive: 'Inactive',
+    invalid: 'Arabic and English names are required (up to 200 characters).',
+    hasChildren: 'Delete its subcategories first.',
   },
   roles: {
     title: 'Roles and permissions',
