@@ -7,6 +7,7 @@ import type {
 } from '../api/types'
 import type { T } from '../i18n'
 import { PageHeading } from '../components/PageHeading'
+import { manageCopy } from '../manage/text'
 import {
   BanknoteIcon,
   CheckIcon,
@@ -23,6 +24,8 @@ export type SettingsPageProps = {
   lang: string
   storageKey: string
   onToast: (message: string) => void
+  // Opens the management hub (offers and the other admin modules).
+  onOpenManage?: () => void
 }
 
 const INPUT = 'min-h-11 w-full rounded-xl border border-line bg-white px-3 text-sm text-stone-800 placeholder:text-stone-400 focus:border-brand-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
@@ -55,7 +58,7 @@ function readSettings(storageKey: string, fallback: RestaurantSettings): Restaur
   }
 }
 
-export default function SettingsPage({ t, storageKey, onToast }: SettingsPageProps) {
+export default function SettingsPage({ t, lang, storageKey, onToast, onOpenManage }: SettingsPageProps) {
   const [settings, setSettings] = useState<RestaurantSettings>(() =>
     readSettings(storageKey, t.settingsPage.defaults),
   )
@@ -89,6 +92,16 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
         title={t.settingsPage.title}
         subtitle={t.settingsPage.subtitle}
         action={
+          <>
+            {onOpenManage && (
+              <button
+                type="button"
+                onClick={onOpenManage}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 text-sm font-bold text-stone-700 transition-colors hover:bg-cream-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+              >
+                {manageCopy[lang === 'ar' ? 'ar' : 'en'].hubTitle}
+              </button>
+            )}
           <button
             type="button"
             onClick={handleSave}
@@ -98,6 +111,7 @@ export default function SettingsPage({ t, storageKey, onToast }: SettingsPagePro
             {saving ? <SpinnerIcon className="h-4 w-4 animate-spin" /> : <CheckIcon className="h-4 w-4" />}
             {t.settingsPage.save}
           </button>
+          </>
         }
       />
 

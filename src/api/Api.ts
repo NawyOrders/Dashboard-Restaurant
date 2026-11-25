@@ -1,3 +1,4 @@
+import type { AddOn, CreateAddOnInput, ListAddOnsQuery, UpdateAddOnInput } from './addOns'
 import type {
   CreateMenuItemInput,
   ManagedMenuItem,
@@ -77,6 +78,10 @@ export interface Api {
   updateMenuItem(id: string, input: UpdateMenuItemInput, signal?: AbortSignal): Promise<ManagedMenuItem>
   removeMenuItemImage(id: string, signal?: AbortSignal): Promise<ManagedMenuItem>
   deleteMenuItem(id: string, signal?: AbortSignal): Promise<void>
+  listAddOns(query?: ListAddOnsQuery, signal?: AbortSignal): Promise<PagedResult<AddOn>>
+  createAddOn(itemId: string, input: CreateAddOnInput, signal?: AbortSignal): Promise<AddOn>
+  updateAddOn(itemId: string, addOnId: string, input: UpdateAddOnInput, signal?: AbortSignal): Promise<AddOn>
+  deleteAddOn(itemId: string, addOnId: string, signal?: AbortSignal): Promise<void>
   listRootCategories(signal?: AbortSignal): Promise<CategorySummary[]>
   listSubcategories(categoryId: string, signal?: AbortSignal): Promise<CategorySummary[]>
   createCategory(input: CreateCategoryInput, signal?: AbortSignal): Promise<ManagedCategory>
