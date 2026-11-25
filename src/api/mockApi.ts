@@ -16,6 +16,20 @@ import {
   type RestaurantPaymentMethodConfig,
   type UpdatePaymentMethodInput,
 } from './types'
+import {
+  validateCreateOffer,
+  validateOfferImageRequest,
+  validateOfferListQuery,
+  validateUpdateOffer,
+  type CreateOfferInput,
+  type ListOffersQuery,
+  type OfferImageUploadRequest,
+  type OfferImageUploadUrl,
+  type OfferStatusInput,
+  type PromotionalOffer,
+  type UpdateOfferInput,
+} from './offers'
+import { requireId, validatePaging } from './shared'
 import { validatePaymentMethodUpdate } from './paymentMethods'
 
 const MOCK_PAYMENT_METHODS: RestaurantPaymentMethodConfig[] = [
@@ -300,12 +314,77 @@ export function createMockApi(options: MockApiOptions = {}): Api {
     month: cloneReport(MOCK_REPORTS.month),
   }
   let settings = cloneSettings(MOCK_SETTINGS)
+  let offers: PromotionalOffer[] = []
+  let offerSeq = 0
   let paymentMethods = MOCK_PAYMENT_METHODS.map((item) => ({ ...item }))
 
   async function guard(signal?: AbortSignal): Promise<void> {
     await wait(latencyMs, signal)
     if (fail) throw new ApiError('service')
   }
+
+  // The real server prices items from the menu; the mock uses a flat unit price.
+  const MOCK_UNIT_PRICE = 100
+
+  function offerStatus(offer: Pick<PromotionalOffer, 'isActive' | 'startsAtUtc' | 'endsAtUtc'>): PromotionalOffer['status'] {
+    if (!offer.isActive) return 'Inactive'
+    const now = Date.now()
+    if (Date.parse(offer.endsAtUtc) <= now) return 'Expired'
+    if (Date.parse(offer.startsAtUtc) > now) return 'Scheduled'
+    return 'Active'
+  }
+
+  function buildOffer(id: string, input: CreateOfferInput | UpdateOfferInput, previous?: PromotionalOffer): PromotionalOffer {
+    const items = input.items.map((item, index) => ({
+      id: `${id}-item-${index + 1}`,
+      menuItemId: item.menuItemId,
+      menuItemNameAr: '',
+      menuItemNameEn: '',
+      itemSizeId: item.itemSizeId ?? null,
+      itemSizeNameAr: null,
+      itemSizeNameEn: null,
+      quantity: item.quantity,
+      unitPriceSnapshot: MOCK_UNIT_PRICE,
+    }))
+    const originalPrice = items.reduce((sum, item) => sum + item.unitPriceSnapshot * item.quantity, 0)
+    if (input.offerPrice >= originalPrice) throw new ApiError('validation')
+    const saved = originalPrice - input.offerPrice
+    const keepImage = input.imageKey == null && previous
+    const imageKey = keepImage ? previous.imageKey : (input.imageKey ?? '')
+    const next: PromotionalOffer = {
+      id,
+      kind: input.kind,
+      status: 'Inactive',
+      titleAr: input.titleAr,
+      titleEn: input.titleEn,
+      descriptionAr: input.descriptionAr ?? null,
+      descriptionEn: input.descriptionEn ?? null,
+      imageKey,
+      imageUrl: imageKey ? `https://cdn.example.test/${imageKey}` : null,
+      imageSource: keepImage ? previous.imageSource : (input.imageSource ?? 'ManualUpload'),
+      originalPrice,
+      offerPrice: input.offerPrice,
+      savedAmount: saved,
+      discountPercentage: Math.round((saved / originalPrice) * 1000) / 10,
+      startsAtUtc: input.startsAtUtc,
+      endsAtUtc: input.endsAtUtc,
+      isActive: input.isActive,
+      branchIds: input.branchIds ?? null,
+      items,
+      createdAtUtc: previous?.createdAtUtc ?? new Date().toISOString(),
+      modifiedAtUtc: previous ? new Date().toISOString() : null,
+    }
+    next.status = offerStatus(next)
+    return next
+  }
+
+  function findOffer(id: string): PromotionalOffer {
+    requireId(id)
+    const offer = offers.find((item) => item.id === id)
+    if (!offer) throw new ApiError('notFound')
+    return offer
+  }
+
 
   return {
     async listOrders(query: ListOrdersQuery = {}, signal?: AbortSignal): Promise<PagedResult<AdminOrderListItem>> {
@@ -414,6 +493,80 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       if (method !== 'Cash' && next.isEnabled && !next.accountIdentifier) throw new ApiError('validation')
       paymentMethods = paymentMethods.map((item) => (item.paymentMethod === method ? next : item))
       return { ...next }
+    },
+
+    async createOfferImageUploadUrl(input: OfferImageUploadRequest, signal?: AbortSignal): Promise<OfferImageUploadUrl> {
+      await guard(signal)
+      validateOfferImageRequest(input)
+      const extension = input.contentType.split('/')[1]
+      const objectKey = `tenants/mock/offers/manual/${Date.now()}.${extension}`
+      return {
+        objectKey,
+        uploadUrl: `https://uploads.example.test/${objectKey}`,
+        expiresAtUtc: new Date(Date.now() + 15 * 60_000).toISOString(),
+        contentType: input.contentType,
+        maximumSizeBytes: 5_242_880,
+      }
+    },
+
+    async createOffer(input: CreateOfferInput, signal?: AbortSignal): Promise<PromotionalOffer> {
+      await guard(signal)
+      validateCreateOffer(input)
+      offerSeq += 1
+      const created = buildOffer(`00000000-0000-7000-8000-${String(offerSeq).padStart(12, '0')}`, input)
+      offers = [created, ...offers]
+      return structuredClone(created)
+    },
+
+    async listOffers(query: ListOffersQuery = {}, signal?: AbortSignal): Promise<PagedResult<PromotionalOffer>> {
+      await guard(signal)
+      validateOfferListQuery(query)
+      validatePaging(query.pageNumber, query.pageSize)
+      const page = query.pageNumber ?? 1
+      const pageSize = query.pageSize ?? 20
+      const filtered = offers
+        .map((offer) => ({ ...offer, status: offerStatus(offer) }))
+        .filter((offer) => (!query.kind || offer.kind === query.kind) && (!query.status || offer.status === query.status))
+      const totalPages = Math.ceil(filtered.length / pageSize)
+      return {
+        items: structuredClone(filtered.slice((page - 1) * pageSize, page * pageSize)),
+        totalCount: filtered.length,
+        page,
+        pageSize,
+        totalPages,
+        hasPreviousPage: page > 1,
+        hasNextPage: page < totalPages,
+      }
+    },
+
+    async getOffer(id: string, signal?: AbortSignal): Promise<PromotionalOffer> {
+      await guard(signal)
+      const offer = findOffer(id)
+      return structuredClone({ ...offer, status: offerStatus(offer) })
+    },
+
+    async updateOffer(id: string, input: UpdateOfferInput, signal?: AbortSignal): Promise<PromotionalOffer> {
+      await guard(signal)
+      const previous = findOffer(id)
+      validateUpdateOffer(input)
+      const next = buildOffer(id, input, previous)
+      offers = offers.map((offer) => (offer.id === id ? next : offer))
+      return structuredClone(next)
+    },
+
+    async setOfferStatus(id: string, input: OfferStatusInput, signal?: AbortSignal): Promise<PromotionalOffer> {
+      await guard(signal)
+      const previous = findOffer(id)
+      const next = { ...previous, isActive: input.isActive, modifiedAtUtc: new Date().toISOString() }
+      next.status = offerStatus(next)
+      offers = offers.map((offer) => (offer.id === id ? next : offer))
+      return structuredClone(next)
+    },
+
+    async deleteOffer(id: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      findOffer(id)
+      offers = offers.filter((offer) => offer.id !== id)
     },
 
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
