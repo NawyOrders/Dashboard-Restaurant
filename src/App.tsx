@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from
 import type { Lang } from './i18n'
 import { translations } from './i18n'
 import type { Session } from './auth'
-import { API_BASE_URL, clearLegacySession, revokeSession } from './auth'
+import { API_BASE_URL, clearLegacySession, refreshSession, revokeSession } from './auth'
 import { createApi, isMockErrorRequested, isMockRequested } from './api'
 import { useOrders } from './useOrders'
 import { Login } from './components/Login'
@@ -54,14 +54,28 @@ export default function App() {
   useEffect(() => {
     if (!session) return
     let timer: ReturnType<typeof setTimeout>
+    const version = sessionVersion.current
+    const signOutExpired = () => {
+      if (sessionVersion.current !== version) return
+      sessionVersion.current += 1
+      setSession(null)
+      setNotice('sessionExpired')
+      void revokeSession(session)
+    }
     const checkExpiry = () => {
       clearTimeout(timer)
       const remaining = session.expiresAt - Date.now()
       if (remaining <= 0) {
-        sessionVersion.current += 1
-        setSession(null)
-        setNotice('sessionExpired')
-        void revokeSession(session)
+        if (!session.refreshToken) {
+          signOutExpired()
+          return
+        }
+        // Rotate the session instead of forcing a new login. Refresh tokens are
+        // single-use: a failed or compromised rotation ends the session.
+        void refreshSession(session).then((next) => {
+          if (sessionVersion.current !== version) return
+          setSession({ ...session, ...next })
+        }, signOutExpired)
       } else {
         timer = setTimeout(checkExpiry, Math.min(remaining, 2_147_483_647))
       }
