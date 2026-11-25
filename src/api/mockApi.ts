@@ -1205,10 +1205,28 @@ export function createMockApi(options: MockApiOptions = {}): Api {
 
     async listMenu(signal?: AbortSignal): Promise<MenuCategory[]> {
       await guard(signal)
-      return menu.map((category) => ({
+      const base = menu.map((category) => ({
         ...category,
         items: category.items.map((entry) => ({ ...entry })),
       }))
+      // Items created through the admin endpoints show up under their category.
+      const added = categories
+        .filter((category) => category.isActive && managedItems.some((item) => item.isActive && item.categoryId === category.id))
+        .map((category) => {
+          const items = managedItems
+            .filter((item) => item.isActive && item.categoryId === category.id)
+            .map((item) => ({
+              id: item.id,
+              nameAr: item.nameAr,
+              nameEn: item.nameEn,
+              price: item.basePrice,
+              available: item.isVisibleToCustomers,
+              imageUrl: item.imageUrl,
+              categoryId: item.categoryId,
+            }))
+          return { id: category.id, nameAr: category.nameAr, nameEn: category.nameEn, count: items.length, items }
+        })
+      return [...base, ...added]
     },
 
     async updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void> {
