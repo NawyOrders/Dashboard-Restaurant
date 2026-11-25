@@ -116,6 +116,21 @@ export type BrandingFetchResult =
   | { notModified: true; etag: string | null }
   | { notModified: false; branding: RestaurantBranding; etag: string | null }
 
+export type BranchDetails = {
+  id: string
+  nameAr: string
+  nameEn: string
+  address: string
+  isActive: boolean
+  isPrimary: boolean
+  sortOrder: number
+}
+
+export type MenuItemBranchAvailability = {
+  branchId: string
+  isAvailable: boolean
+}
+
 export type MenuItem = {
   id: string
   nameAr: string
@@ -124,6 +139,7 @@ export type MenuItem = {
   available: boolean
   imageUrl: string | null
   categoryId: string
+  branchAvailabilities?: MenuItemBranchAvailability[]
 }
 
 export type MenuCategory = {
