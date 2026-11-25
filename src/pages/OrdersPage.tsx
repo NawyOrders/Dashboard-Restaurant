@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Api } from '../api'
+import { can, PERMISSIONS } from '../authz'
 import type { Lang, T } from '../i18n'
 import type { LiveOrder, LiveOrderPayment, LiveOrderStatus } from '../types'
 import { formatOrderTotal, mapLiveOrderStatus, transitionCodeFor } from '../orders'
@@ -23,6 +24,10 @@ export type OrdersPageProps = {
   onToast: (message: string) => void
   // SignalR hub settings for live "OrderPlaced" events; null in mock mode.
   ordersHub?: OrdersHubConfig | null
+  // Permission keys from the signed-in session (API reference section 5).
+  // Action buttons the user is not entitled to are hidden; the backend still
+  // enforces the same permissions server-side.
+  permissions?: readonly string[]
 }
 
 const COLUMNS: LiveOrderStatus[] = ['new', 'preparing', 'ready', 'delivered']
@@ -45,7 +50,11 @@ function PaymentIcon({ method, className }: { method: LiveOrderPayment; classNam
   return <WalletIcon className={className} />
 }
 
-export default function OrdersPage({ t, lang, api, onToast, ordersHub = null }: OrdersPageProps) {
+export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, permissions = [] }: OrdersPageProps) {
+  const canAccept = can(permissions, PERMISSIONS.ordersAccept)
+  const canReject = can(permissions, PERMISSIONS.ordersReject)
+  const canUpdateStatus = can(permissions, PERMISSIONS.ordersStatusUpdate)
+  const canViewReceipt = can(permissions, PERMISSIONS.paymentsView)
   const orderPlaced = useOrdersHub(ordersHub)
   const announceOrderPlaced = useCallback(
     (payload: OrderPlacedNotificationPayload) => {
@@ -188,6 +197,9 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null }: 
                       t={t}
                       lang={lang}
                       isPending={Boolean(pending[order.id])}
+                      canAccept={canAccept}
+                      canReject={canReject}
+                      canViewReceipt={canViewReceipt}
                       onAccept={() => void accept(order)}
                       onReject={() => reject(order)}
                       onReceipt={() => onToast(t.liveOrders.receiptHint)}
@@ -199,6 +211,7 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null }: 
                       t={t}
                       lang={lang}
                       isPending={Boolean(pending[order.id])}
+                      canAdvance={canUpdateStatus}
                       onAdvance={() => void advance(order)}
                       onPreparing={() => onToast(t.liveOrders.preparing)}
                     />
@@ -218,11 +231,14 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null }: 
   )
 }
 
-function DetailedOrderCard({ order, t, lang, isPending, onAccept, onReject, onReceipt }: {
+function DetailedOrderCard({ order, t, lang, isPending, canAccept, canReject, canViewReceipt, onAccept, onReject, onReceipt }: {
   order: LiveOrder
   t: T
   lang: Lang
   isPending: boolean
+  canAccept: boolean
+  canReject: boolean
+  canViewReceipt: boolean
   onAccept: () => void
   onReject: () => void
   onReceipt: () => void
@@ -281,7 +297,7 @@ function DetailedOrderCard({ order, t, lang, isPending, onAccept, onReject, onRe
             <CheckCircleIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-mint-600" />
             <span>
               {t.liveOrders.paymentConfirmed}
-              {order.payment !== 'cash' && (
+              {order.payment !== 'cash' && canViewReceipt && (
                 <button type="button" onClick={onReceipt} className="mt-1 block text-brand-600 underline decoration-brand-300 underline-offset-2 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200">
                   {t.liveOrders.viewReceipt}
                 </button>
@@ -291,24 +307,31 @@ function DetailedOrderCard({ order, t, lang, isPending, onAccept, onReject, onRe
         )}
       </div>
 
-      <div className="mt-3 flex flex-col gap-2">
-        <button type="button" onClick={onAccept} disabled={isPending} className={PRIMARY_BUTTON}>
-          {isPending && <SpinnerIcon className="h-4 w-4 animate-spin" />}
-          {t.liveOrders.accept}
-        </button>
-        <button type="button" onClick={onReject} disabled={isPending} className={OUTLINE_BUTTON}>
-          {t.liveOrders.reject}
-        </button>
-      </div>
+      {(canAccept || canReject) && (
+        <div className="mt-3 flex flex-col gap-2">
+          {canAccept && (
+            <button type="button" onClick={onAccept} disabled={isPending} className={PRIMARY_BUTTON}>
+              {isPending && <SpinnerIcon className="h-4 w-4 animate-spin" />}
+              {t.liveOrders.accept}
+            </button>
+          )}
+          {canReject && (
+            <button type="button" onClick={onReject} disabled={isPending} className={OUTLINE_BUTTON}>
+              {t.liveOrders.reject}
+            </button>
+          )}
+        </div>
+      )}
     </article>
   )
 }
 
-function CompactOrderCard({ order, t, lang, isPending, onAdvance }: {
+function CompactOrderCard({ order, t, lang, isPending, canAdvance, onAdvance }: {
   order: LiveOrder
   t: T
   lang: Lang
   isPending: boolean
+  canAdvance: boolean
   onAdvance: () => void
   onPreparing: () => void
 }) {
@@ -329,7 +352,7 @@ function CompactOrderCard({ order, t, lang, isPending, onAdvance }: {
       </div>
 
       <div className="mt-3">
-        {order.status === 'preparing' && (
+        {order.status === 'preparing' && canAdvance && (
           <button
             type="button"
             onClick={onAdvance}
@@ -340,7 +363,7 @@ function CompactOrderCard({ order, t, lang, isPending, onAdvance }: {
             {order.statusCode === 1 ? t.liveOrders.preparing : t.liveOrders.markReady}
           </button>
         )}
-        {order.status === 'ready' && (
+        {order.status === 'ready' && canAdvance && (
           <button type="button" onClick={onAdvance} disabled={isPending} className={MINT_BUTTON}>
             {isPending && <SpinnerIcon className="h-4 w-4 animate-spin" />}
             {t.liveOrders.deliver}
