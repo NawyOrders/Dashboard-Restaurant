@@ -129,7 +129,7 @@ function stringArray(value: unknown): string[] {
 }
 
 async function request(
-  path: '/api/v1/auth/login' | '/api/v1/auth/revoke',
+  path: '/api/v1/auth/login' | '/api/v1/auth/revoke' | '/api/v1/auth/refresh',
   body: object,
   signal?: AbortSignal,
   accessToken?: string,
@@ -224,8 +224,56 @@ export async function login(email: string, password: string, signal?: AbortSigna
   }
 }
 
+export interface RefreshResult {
+  accessToken: string
+  refreshToken: string
+  expiresAt: number
+}
+
+// The server rotates the refresh token on every refresh and revokes the whole
+// family when a token is reused, so concurrent refreshes of the same session
+// must share one in-flight request instead of racing the rotation.
+let refreshFlight: Promise<RefreshResult> | null = null
+
+export function refreshSession(session: Session, signal?: AbortSignal): Promise<RefreshResult> {
+  if (!API_BASE_URL || !session.refreshToken || session.apiOrigin !== API_BASE_URL) {
+    return Promise.reject(new AuthError('configuration'))
+  }
+  if (!refreshFlight) {
+    refreshFlight = request('/api/v1/auth/refresh', { refreshToken: session.refreshToken }, signal)
+      .then(parseRefresh)
+      .finally(() => { refreshFlight = null })
+  }
+  return refreshFlight
+}
+
+function parseRefresh(response: { status: number; ok: boolean; body: unknown }): RefreshResult {
+  if (response.status === 401 || response.status === 403) throw new AuthError('forbidden')
+  if (response.status === 429) throw new AuthError('rateLimited')
+  if (!response.ok) throw new AuthError('service')
+  const envelope = response.body
+  if (!isRecord(envelope) || envelope.isSuccess !== true || !isRecord(envelope.data)) {
+    throw new AuthError('invalidResponse')
+  }
+  const data = envelope.data
+  const expiresAt = typeof data.expiresAtUtc === 'string' ? Date.parse(data.expiresAtUtc) : NaN
+  if (
+    !nonEmptyString(data.accessToken) || /[\r\n]/.test(data.accessToken) ||
+    typeof data.tokenType !== 'string' || data.tokenType.toLowerCase() !== 'bearer' ||
+    !Number.isFinite(expiresAt) || expiresAt <= Date.now() ||
+    typeof data.expiresIn !== 'number' || !Number.isFinite(data.expiresIn) || data.expiresIn <= 0 ||
+    !nonEmptyString(data.refreshToken) || /[\r\n]/.test(data.refreshToken)
+  ) {
+    throw new AuthError('invalidResponse')
+  }
+  return {
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+    expiresAt: Math.min(expiresAt, Date.now() + data.expiresIn * 1000),
+  }
+}
+
 // Sign-out always clears the local session in App, even if revocation is offline.
-// No automatic refresh: after expiry/reload the user signs in again.
 export async function revokeSession(session: Session): Promise<boolean> {
   if (!session.refreshToken) return true
   if (session.apiOrigin !== API_BASE_URL) return false
