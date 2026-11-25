@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import type { Api } from '../api'
+import { useEffect, useMemo, useState } from 'react'
+import type { AdminOrderDetails, Api } from '../api'
 import type { Lang, T } from '../i18n'
 import type { LiveOrder, LiveOrderPayment, LiveOrderStatus } from '../types'
 import { formatOrderTotal, mapLiveOrderStatus, transitionCodeFor } from '../orders'
@@ -50,14 +50,52 @@ export default function OrdersPage({ t, lang, api, onToast }: OrdersPageProps) {
   const [error, setError] = useState<string | null>(null)
 
   // Rejected (2), cancelled (7) and closed (8) orders leave the board.
+  const [details, setDetails] = useState<Record<string, AdminOrderDetails>>({})
+
+  // The list endpoint omits lines and phone; fetch details for the detailed
+  // (new-column) cards only.
+  useEffect(() => {
+    const fresh = remoteOrders.filter((order) => order.statusCode === 0 && order.orderId)
+    if (!fresh.length) return
+    const controller = new AbortController()
+    for (const order of fresh) {
+      api
+        .getOrderDetails(order.orderId ?? order.id, controller.signal)
+        .then((result) => {
+          if (controller.signal.aborted) return
+          setDetails((current) => ({ ...current, [order.id]: result }))
+        })
+        .catch(() => {
+          // Keep the list data when the details call fails.
+        })
+    }
+    return () => controller.abort()
+  }, [api, remoteOrders])
+
+  // Rejected (2), cancelled (7) and closed (8) orders leave the board.
   const orders = useMemo(
     () =>
       remoteOrders.flatMap((order) => {
         const statusCode = overrides[order.id] ?? order.statusCode ?? 0
         const status = mapLiveOrderStatus(statusCode)
-        return status && !rejected.includes(order.id) ? [{ ...order, statusCode, status }] : []
+        if (!status || rejected.includes(order.id)) return []
+        const detail = details[order.id]
+        if (!detail) return [{ ...order, statusCode, status }]
+        return [{
+          ...order,
+          statusCode,
+          status,
+          customer: detail.customerName?.trim() || order.customer,
+          phone: detail.contactPhone ?? undefined,
+          itemCount: detail.items.reduce((sum, item) => sum + item.quantity, 0),
+          lines: detail.items.map((item) => ({
+            name: item.sizeName ? `${item.itemName} (${item.sizeName})` : item.itemName,
+            extras: `×${item.quantity}`,
+          })),
+          paymentConfirmed: detail.payment?.paymentStatus === 3,
+        }]
       }),
-    [remoteOrders, overrides, rejected],
+    [remoteOrders, overrides, rejected, details],
   )
 
   const grouped = useMemo(() => {
@@ -102,6 +140,21 @@ export default function OrdersPage({ t, lang, api, onToast }: OrdersPageProps) {
       () => setRejected((current) => [...current, order.id]),
       t.liveOrders.rejected,
     )
+  }
+
+  const receipt = async (order: LiveOrder) => {
+    if (!order.orderId) {
+      onToast(t.liveOrders.receiptHint)
+      return
+    }
+    try {
+      const html = await api.getOrderReceiptHtml(order.orderId)
+      const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
+      window.open(url, '_blank', 'noopener')
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch {
+      onToast(t.liveOrders.receiptHint)
+    }
   }
 
   const advance = (order: LiveOrder) => {
@@ -180,7 +233,7 @@ export default function OrdersPage({ t, lang, api, onToast }: OrdersPageProps) {
                       isPending={Boolean(pending[order.id])}
                       onAccept={() => void accept(order)}
                       onReject={() => reject(order)}
-                      onReceipt={() => onToast(t.liveOrders.receiptHint)}
+                      onReceipt={() => void receipt(order)}
                     />
                   ) : (
                     <CompactOrderCard

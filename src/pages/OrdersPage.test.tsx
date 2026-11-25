@@ -30,6 +30,12 @@ describe('live orders board', () => {
     expect(within(deliveredColumn).getByRole('heading', { name: 'نور خالد' })).toBeInTheDocument()
   })
 
+  it('loads order details into the new-column card', async () => {
+    setup()
+    const newColumn = screen.getByRole('region', { name: t.liveOrders.columns.new })
+    expect(await within(newColumn).findByText('+201001234567')).toBeInTheDocument()
+  })
+
   it('accepts a new order through the accept endpoint and moves it to preparing', async () => {
     const { api, onToast, user } = setup()
     const acceptOrder = vi.spyOn(api, 'acceptOrder')

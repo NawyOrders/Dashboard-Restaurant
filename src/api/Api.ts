@@ -1,4 +1,5 @@
 import type {
+  AdminOrderDetails,
   AdminOrderListItem,
   BrandingFetchResult,
   ListOrdersQuery,
@@ -16,6 +17,8 @@ import type {
 export interface Api {
   listOrders(query?: ListOrdersQuery, signal?: AbortSignal): Promise<PagedResult<AdminOrderListItem>>
   transitionOrderStatus(id: string, targetStatus: number, signal?: AbortSignal): Promise<void>
+  getOrderDetails(id: string, signal?: AbortSignal): Promise<AdminOrderDetails>
+  getOrderReceiptHtml(id: string, signal?: AbortSignal): Promise<string>
   acceptOrder(id: string, signal?: AbortSignal): Promise<void>
   rejectOrder(id: string, rejectionReason: string, signal?: AbortSignal): Promise<void>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
