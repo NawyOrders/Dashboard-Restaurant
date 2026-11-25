@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { translations } from './i18n'
-import { staffLoginResponse } from './test/fixtures'
+import { staffLoginResponse, staffRefreshResponse } from './test/fixtures'
 
 const fetchMock = vi.fn<typeof fetch>()
 const ar = translations.ar
@@ -78,6 +78,31 @@ describe('authentication lifecycle', () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ isSuccess: true })))
     const future = Date.now() + 4_000_000
     vi.spyOn(Date, 'now').mockReturnValue(future)
+    act(() => { window.dispatchEvent(new Event('focus')) })
+    expect(await screen.findByText(ar.auth.sessionExpired)).toBeInTheDocument()
+    expect(screen.getByLabelText(ar.auth.password)).toBeVisible()
+  })
+
+  it('refreshes the session instead of signing out when the token expires', async () => {
+    mount()
+    await signIn()
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 4_000_000)
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(staffRefreshResponse())))
+    act(() => { window.dispatchEvent(new Event('focus')) })
+    await waitFor(() => {
+      const [url, init] = fetchMock.mock.calls[1]
+      expect(url).toContain('/api/v1/auth/refresh')
+      expect(JSON.parse(init!.body as string)).toEqual({ refreshToken: 'test-refresh-token' })
+    })
+    expect(screen.getByText(ar.auth.previewTitle)).toBeInTheDocument()
+    expect(screen.queryByLabelText(ar.auth.password)).not.toBeInTheDocument()
+  })
+
+  it('signs out when token refresh fails', async () => {
+    mount()
+    await signIn()
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ errors: { detail: 'RefreshToken.CompromisedReuse' } }), { status: 401 }))
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 4_000_000)
     act(() => { window.dispatchEvent(new Event('focus')) })
     expect(await screen.findByText(ar.auth.sessionExpired)).toBeInTheDocument()
     expect(screen.getByLabelText(ar.auth.password)).toBeVisible()
