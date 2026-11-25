@@ -17,6 +17,16 @@ import {
   type UpdatePaymentMethodInput,
 } from './types'
 import {
+  validateCreateCategory,
+  validateReorder,
+  validateUpdateCategory,
+  type CategorySummary,
+  type CreateCategoryInput,
+  type ManagedCategory,
+  type ReorderCategoriesInput,
+  type UpdateCategoryInput,
+} from './categories'
+import {
   validateCreateRole,
   validatePermissionKeys,
   validateUpdateRole,
@@ -408,6 +418,8 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       permissionKeys: [PERMISSIONS.ordersView, PERMISSIONS.ordersAccept, PERMISSIONS.ordersReject],
     },
   ]
+  let categories: ManagedCategory[] = []
+  let categorySeq = 0
   let roleSeq = 2
   let staffSeq = 1
   let branchSeq = 1
@@ -665,6 +677,99 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       await guard(signal)
       findOffer(id)
       offers = offers.filter((offer) => offer.id !== id)
+    },
+
+    async listRootCategories(signal?: AbortSignal): Promise<CategorySummary[]> {
+      await guard(signal)
+      return categories
+        .filter((item) => item.parentId === null && item.isActive)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((item) => ({
+          id: item.id,
+          nameAr: item.nameAr,
+          nameEn: item.nameEn,
+          imageKey: item.imageKey,
+          sortOrder: item.sortOrder,
+          isActive: item.isActive,
+          itemCount: 0,
+          hasSubCategories: categories.some((child) => child.parentId === item.id && child.isActive),
+        }))
+    },
+
+    async listSubcategories(categoryId: string, signal?: AbortSignal): Promise<CategorySummary[]> {
+      await guard(signal)
+      requireId(categoryId)
+      return categories
+        .filter((item) => item.parentId === categoryId && item.isActive)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((item) => ({
+          id: item.id,
+          nameAr: item.nameAr,
+          nameEn: item.nameEn,
+          imageKey: item.imageKey,
+          sortOrder: item.sortOrder,
+          isActive: item.isActive,
+          itemCount: 0,
+          hasSubCategories: null,
+        }))
+    },
+
+    async createCategory(input: CreateCategoryInput, signal?: AbortSignal): Promise<ManagedCategory> {
+      await guard(signal)
+      validateCreateCategory(input)
+      if (input.parentId) {
+        const parent = categories.find((item) => item.id === input.parentId && item.isActive)
+        if (!parent) throw new ApiError('notFound')
+        if (parent.parentId !== null) throw new ApiError('validation')
+      }
+      categorySeq += 1
+      const created: ManagedCategory = {
+        id: `00000000-0000-7000-8000-d${String(categorySeq).padStart(11, '0')}`,
+        menuId: '00000000-0000-7000-8000-0000000000e1',
+        parentId: input.parentId ?? null,
+        nameAr: input.nameAr.trim(),
+        nameEn: input.nameEn.trim(),
+        imageKey: input.imageKey ?? null,
+        sortOrder: input.sortOrder,
+        isActive: true,
+      }
+      categories = [...categories, created]
+      return { ...created }
+    },
+
+    async updateCategory(id: string, input: UpdateCategoryInput, signal?: AbortSignal): Promise<ManagedCategory> {
+      await guard(signal)
+      requireId(id)
+      validateUpdateCategory(input)
+      const current = categories.find((item) => item.id === id && item.isActive)
+      if (!current) throw new ApiError('notFound')
+      const next = { ...current, nameAr: input.nameAr.trim(), nameEn: input.nameEn.trim(), imageKey: input.imageKey ?? null }
+      categories = categories.map((item) => (item.id === id ? next : item))
+      return { ...next }
+    },
+
+    async reorderCategories(input: ReorderCategoriesInput, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      validateReorder(input)
+      const parentId = input.parentId ?? null
+      if (parentId && !categories.some((item) => item.id === parentId && item.isActive)) throw new ApiError('notFound')
+      const level = categories.filter((item) => item.parentId === parentId && item.isActive)
+      const sameSet =
+        level.length === input.orderedCategoryIds.length && level.every((item) => input.orderedCategoryIds.includes(item.id))
+      if (!sameSet) throw new ApiError('validation')
+      categories = categories.map((item) => {
+        const index = input.orderedCategoryIds.indexOf(item.id)
+        return index === -1 ? item : { ...item, sortOrder: index }
+      })
+    },
+
+    async deleteCategory(id: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      requireId(id)
+      const current = categories.find((item) => item.id === id && item.isActive)
+      if (!current) throw new ApiError('notFound')
+      if (categories.some((item) => item.parentId === id && item.isActive)) throw new ApiError('conflict')
+      categories = categories.filter((item) => item.id !== id)
     },
 
     async listPermissions(signal?: AbortSignal): Promise<PermissionInfo[]> {
@@ -954,4 +1059,4 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       settings = cloneSettings(next)
     },
   }
-}
+        }
