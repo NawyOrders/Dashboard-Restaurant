@@ -22,6 +22,15 @@ import {
   type UpdatePaymentMethodInput,
 } from './types'
 import {
+  parsePermission,
+  parseRole,
+  validateCreateRole,
+  validatePermissionKeys,
+  validateUpdateRole,
+  type CreateRoleInput,
+  type UpdateRoleInput,
+} from './roles'
+import {
   parseStaffUser,
   validateInviteStaff,
   validateStaffListQuery,
@@ -504,6 +513,45 @@ export function createHttpApi(options: HttpApiOptions): Api {
 
     async deleteOffer(id: string, signal?: AbortSignal) {
       await request(`/api/v1/admin/offers/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Roles and permissions (reference section 18): Owner / RestaurantOwner only.
+    async listPermissions(signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/permissions', { signal })
+      return readEnvelopeList(response.body).map(parsePermission)
+    },
+
+    async listRoles(signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/roles', { signal })
+      return readEnvelopeList(response.body).map(parseRole)
+    },
+
+    async getRole(id: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/admin/roles/${requireId(id)}`, { signal })
+      return parseRole(readEnvelopeData(response.body))
+    },
+
+    async createRole(input: CreateRoleInput, signal?: AbortSignal) {
+      validateCreateRole(input)
+      const response = await request('/api/v1/admin/roles', { method: 'POST', body: input, signal })
+      return parseRole(readEnvelopeData(response.body))
+    },
+
+    async updateRole(id: string, input: UpdateRoleInput, signal?: AbortSignal) {
+      requireId(id)
+      validateUpdateRole(input)
+      const response = await request(`/api/v1/admin/roles/${id}`, { method: 'PATCH', body: input, signal })
+      return parseRole(readEnvelopeData(response.body))
+    },
+
+    async replaceRolePermissions(id: string, permissionKeys: string[], signal?: AbortSignal) {
+      requireId(id)
+      validatePermissionKeys(permissionKeys)
+      await request(`/api/v1/admin/roles/${id}/permissions`, { method: 'PUT', body: { permissionKeys }, signal })
+    },
+
+    async deleteRole(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/admin/roles/${requireId(id)}`, { method: 'DELETE', signal })
     },
 
     // Staff (reference section 17): Owner / RestaurantOwner only, prefix /api/v1/staff.
