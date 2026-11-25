@@ -1,5 +1,13 @@
 import type { Api } from './Api'
 import {
+  validateCreateAddOn,
+  validateUpdateAddOn,
+  type AddOn,
+  type CreateAddOnInput,
+  type ListAddOnsQuery,
+  type UpdateAddOnInput,
+} from './addOns'
+import {
   ApiError,
   type AdminOrderListItem,
   type BestSeller,
@@ -430,6 +438,8 @@ export function createMockApi(options: MockApiOptions = {}): Api {
   let categories: ManagedCategory[] = []
   let managedItems: ManagedMenuItem[] = []
   let itemSeq = 0
+  let addOns: AddOn[] = []
+  let addOnSeq = 0
   let categorySeq = 0
   let roleSeq = 2
   let staffSeq = 1
@@ -782,6 +792,72 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       requireId(id)
       if (!managedItems.some((item) => item.id === id && item.isActive)) throw new ApiError('notFound')
       managedItems = managedItems.filter((item) => item.id !== id)
+    },
+
+    async listAddOns(query: ListAddOnsQuery = {}, signal?: AbortSignal): Promise<PagedResult<AddOn>> {
+      await guard(signal)
+      validatePaging(query.pageNumber, query.pageSize)
+      const page = query.pageNumber ?? 1
+      const pageSize = query.pageSize ?? 20
+      const filtered = addOns.filter((item) => query.isActive === undefined || item.isActive === query.isActive)
+      const totalPages = Math.ceil(filtered.length / pageSize)
+      return {
+        items: structuredClone(filtered.slice((page - 1) * pageSize, page * pageSize)),
+        totalCount: filtered.length,
+        page,
+        pageSize,
+        totalPages,
+        hasPreviousPage: page > 1,
+        hasNextPage: page < totalPages,
+      }
+    },
+
+    async createAddOn(itemId: string, input: CreateAddOnInput, signal?: AbortSignal): Promise<AddOn> {
+      await guard(signal)
+      requireId(itemId)
+      validateCreateAddOn(input)
+      if (!managedItems.some((item) => item.id === itemId && item.isActive)) throw new ApiError('notFound')
+      addOnSeq += 1
+      const created: AddOn = {
+        id: `00000000-0000-7000-8000-a${String(addOnSeq).padStart(11, '0')}`,
+        menuItemId: itemId,
+        nameAr: input.nameAr.trim(),
+        nameEn: input.nameEn.trim(),
+        price: input.price,
+        sortOrder: addOns.filter((item) => item.menuItemId === itemId).length,
+        isActive: true,
+      }
+      addOns = [...addOns, created]
+      return structuredClone(created)
+    },
+
+    async updateAddOn(itemId: string, addOnId: string, input: UpdateAddOnInput, signal?: AbortSignal): Promise<AddOn> {
+      await guard(signal)
+      requireId(itemId)
+      requireId(addOnId)
+      validateUpdateAddOn(input)
+      if (!managedItems.some((item) => item.id === itemId && item.isActive)) throw new ApiError('notFound')
+      const current = addOns.find((item) => item.id === addOnId && item.menuItemId === itemId)
+      if (!current) throw new ApiError('notFound')
+      const { sortOrder, ...fields } = input
+      const patch = Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined))
+      const updated: AddOn = { ...current, ...patch }
+      if (typeof patch.nameAr === 'string') updated.nameAr = patch.nameAr.trim()
+      if (typeof patch.nameEn === 'string') updated.nameEn = patch.nameEn.trim()
+      const siblings = addOns.filter((item) => item.menuItemId === itemId).sort((a, b) => a.sortOrder - b.sortOrder)
+      const ordered = siblings.filter((item) => item.id !== addOnId)
+      ordered.splice(Math.min(sortOrder ?? current.sortOrder, ordered.length), 0, updated)
+      const positions = new Map(ordered.map((item, index) => [item.id, { ...item, sortOrder: index }]))
+      addOns = addOns.map((item) => positions.get(item.id) ?? item)
+      return structuredClone(positions.get(addOnId) as AddOn)
+    },
+
+    async deleteAddOn(itemId: string, addOnId: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      requireId(itemId)
+      requireId(addOnId)
+      if (!addOns.some((item) => item.id === addOnId && item.menuItemId === itemId)) throw new ApiError('notFound')
+      addOns = addOns.filter((item) => item.id !== addOnId)
     },
 
     async listRootCategories(signal?: AbortSignal): Promise<CategorySummary[]> {
@@ -1164,4 +1240,4 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       settings = cloneSettings(next)
     },
   }
-                                               }
+        }
