@@ -41,4 +41,10 @@ export const MANAGE_MODULES: ManageModule[] = [
     subtitle: (lang) => manageCopy[lang].roles.subtitle,
     permissions: [PERMISSIONS.staffManage],
   },
+  {
+    path: '/manage/categories',
+    title: (lang) => manageCopy[lang].categories.title,
+    subtitle: (lang) => manageCopy[lang].categories.subtitle,
+    permissions: [PERMISSIONS.menuView, PERMISSIONS.menuEdit],
+  },
 ]
