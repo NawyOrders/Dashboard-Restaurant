@@ -1,3 +1,4 @@
+import type { InviteStaffInput, ListStaffQuery, StaffUser } from './staff'
 import type {
   BranchDetails,
   CreateBranchInput,
@@ -56,6 +57,11 @@ export interface Api {
   getBranch(id: string, signal?: AbortSignal): Promise<BranchDetails>
   createBranch(input: CreateBranchInput, signal?: AbortSignal): Promise<BranchDetails>
   updateBranch(id: string, input: UpdateBranchInput, signal?: AbortSignal): Promise<BranchDetails>
+  listStaff(query?: ListStaffQuery, signal?: AbortSignal): Promise<PagedResult<StaffUser>>
+  inviteStaff(input: InviteStaffInput, signal?: AbortSignal): Promise<StaffUser>
+  resendStaffInvitation(id: string, signal?: AbortSignal): Promise<void>
+  changeStaffRole(id: string, roleId: string, signal?: AbortSignal): Promise<void>
+  deleteStaff(id: string, signal?: AbortSignal): Promise<void>
   getDeliverySettings(signal?: AbortSignal): Promise<DeliverySettings>
   updateDeliverySettings(input: DeliverySettings, signal?: AbortSignal): Promise<DeliverySettings>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
