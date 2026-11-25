@@ -85,6 +85,21 @@ export type ManageCopy = {
     invalid: string
     owner: string
   }
+  roles: {
+    title: string
+    subtitle: string
+    add: string
+    edit: string
+    empty: string
+    kinds: Record<string, string>
+    staffCount: string
+    permissionsCount: string
+    name: string
+    description: string
+    permissions: string
+    invalid: string
+    protectedNote: string
+  }
   offers: {
     title: string
     subtitle: string
@@ -203,6 +218,21 @@ const ar: ManageCopy = {
     invalid: 'تحقق من الحقول: الاسم والبريد صحيحان واختر الدور وفرعاً واحداً على الأقل.',
     owner: 'المالك',
   },
+  roles: {
+    title: 'الأدوار والصلاحيات',
+    subtitle: 'أنشئ أدواراً مخصصة وحدد صلاحيات كل دور (للمالك فقط)',
+    add: 'إضافة دور',
+    edit: 'تعديل الدور',
+    empty: 'لا توجد أدوار.',
+    kinds: { Owner: 'المالك', Seeded: 'أساسي', Custom: 'مخصص' },
+    staffCount: 'موظفون',
+    permissionsCount: 'صلاحية',
+    name: 'اسم الدور',
+    description: 'الوصف',
+    permissions: 'الصلاحيات',
+    invalid: 'اسم الدور مطلوب (حتى 100 حرف) والوصف حتى 500 حرف.',
+    protectedNote: 'هذا دور محمي ولا يمكن تعديله.',
+  },
   offers: {
     title: 'العروض',
     subtitle: 'عروض الأصناف والكومبو',
@@ -320,6 +350,21 @@ const en: ManageCopy = {
     changeRole: 'Change role',
     invalid: 'Check the fields: valid name and email, pick a role and at least one branch.',
     owner: 'Owner',
+  },
+  roles: {
+    title: 'Roles and permissions',
+    subtitle: 'Create custom roles and choose what each role can do (Owner only)',
+    add: 'Add role',
+    edit: 'Edit role',
+    empty: 'No roles.',
+    kinds: { Owner: 'Owner', Seeded: 'Built in', Custom: 'Custom' },
+    staffCount: 'staff',
+    permissionsCount: 'permissions',
+    name: 'Role name',
+    description: 'Description',
+    permissions: 'Permissions',
+    invalid: 'Role name is required (up to 100 characters) and the description up to 500.',
+    protectedNote: 'This is a protected role and cannot be changed.',
   },
   offers: {
     title: 'Offers',
