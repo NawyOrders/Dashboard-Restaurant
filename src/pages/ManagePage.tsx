@@ -1,26 +1,11 @@
 import { useNavigate } from 'react-router-dom'
-import { canAny, PERMISSIONS, type PermissionKey } from '../authz'
+import { canAny } from '../authz'
 import type { Lang } from '../i18n'
 import { PageHeading } from '../components/PageHeading'
 import { ChevronLeftIcon, ChevronRightIcon, ReceiptIcon } from '../icons'
+import { MANAGE_MODULES } from '../manage/modules'
 import { manageCopy } from '../manage/text'
 
-export type ManageModule = {
-  path: string
-  title: (lang: Lang) => string
-  subtitle: (lang: Lang) => string
-  permissions: PermissionKey[]
-}
-
-// Each management PR adds its module here and a route in App.tsx.
-export const MANAGE_MODULES: ManageModule[] = [
-  {
-    path: '/manage/offers',
-    title: (lang) => manageCopy[lang].offers.title,
-    subtitle: (lang) => manageCopy[lang].offers.subtitle,
-    permissions: [PERMISSIONS.offersView, PERMISSIONS.offersManage],
-  },
-]
 
 export default function ManagePage({ lang, dir, permissions }: { lang: Lang; dir: 'rtl' | 'ltr'; permissions: readonly string[] }) {
   const c = manageCopy[lang]

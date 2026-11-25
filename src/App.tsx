@@ -4,7 +4,8 @@ import type { Lang } from './i18n'
 import { translations } from './i18n'
 import type { Session } from './auth'
 import { API_BASE_URL, clearLegacySession, revokeSession } from './auth'
-import { canAny, PERMISSIONS } from './authz'
+import { canAny } from './authz'
+import { MANAGE_MODULES } from './manage/modules'
 import { createApi, isMockErrorRequested, isMockRequested } from './api'
 import type { OrdersHubConfig } from './realtime/ordersHub'
 import { useOrders } from './useOrders'
@@ -22,6 +23,8 @@ const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const ManagePage = lazy(() => import('./pages/ManagePage'))
 const OffersPage = lazy(() => import('./pages/OffersPage'))
+const BranchesPage = lazy(() => import('./pages/BranchesPage'))
+const PaymentsPage = lazy(() => import('./pages/PaymentsPage'))
 
 const PATH_BY_SECTION: Record<SectionKey, string> = {
   home: '/',
@@ -296,9 +299,11 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                 <Route path="/orders" element={<OrdersPage t={t} lang={lang} api={remoteApi ?? featureApi} ordersHub={ordersHub} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="/menu" element={<MenuPage t={t} lang={lang} api={featureApi} onToast={showToast} />} />
                 <Route path="/reports" element={<ReportsPage t={t} lang={lang} api={featureApi} onToast={showToast} />} />
-                <Route path="/settings" element={<SettingsPage t={t} lang={lang} storageKey={settingsStorageKey} onToast={showToast} onOpenManage={canAny(session.user.permissions, PERMISSIONS.offersView, PERMISSIONS.offersManage) ? () => navigate('/manage') : undefined} />} />
+                <Route path="/settings" element={<SettingsPage t={t} lang={lang} storageKey={settingsStorageKey} onToast={showToast} onOpenManage={canAny(session.user.permissions, ...MANAGE_MODULES.flatMap((module) => module.permissions)) ? () => navigate('/manage') : undefined} />} />
                 <Route path="/manage" element={<ManagePage lang={lang} dir={t.dir} permissions={session.user.permissions} />} />
                 <Route path="/manage/offers" element={<OffersPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} uploadsEnabled={Boolean(remoteApi)} onToast={showToast} />} />
+                <Route path="/manage/branches" element={<BranchesPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
+                <Route path="/manage/payments" element={<PaymentsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

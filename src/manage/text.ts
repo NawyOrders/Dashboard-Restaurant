@@ -17,6 +17,56 @@ export type ManageCopy = {
   noAccess: string
   saved: string
   deleted: string
+  branches: {
+    title: string
+    subtitle: string
+    add: string
+    edit: string
+    empty: string
+    statuses: { Open: string; TemporarilyClosed: string }
+    primary: string
+    inactive: string
+    nameAr: string
+    nameEn: string
+    address: string
+    phone: string
+    latitude: string
+    longitude: string
+    status: string
+    active: string
+    makePrimary: string
+    sortOrder: string
+    hours: string
+    closed: string
+    opens: string
+    closes: string
+    nextDay: string
+    days: Record<string, string>
+    invalid: string
+    delivery: string
+    deliverySub: string
+    baseFee: string
+    feePerKm: string
+    maxRadius: string
+    maxRadiusHint: string
+    saveDelivery: string
+  }
+  payments: {
+    title: string
+    subtitle: string
+    methods: Record<string, string>
+    enabled: string
+    needsProof: string
+    proofLocked: string
+    cashLocked: string
+    nameAr: string
+    nameEn: string
+    account: string
+    instructionsAr: string
+    instructionsEn: string
+    invalid: string
+    save: string
+  }
   offers: {
     title: string
     subtitle: string
@@ -67,6 +117,56 @@ const ar: ManageCopy = {
   noAccess: 'ليس لديك صلاحية لهذه الصفحة.',
   saved: 'تم الحفظ',
   deleted: 'تم الحذف',
+  branches: {
+    title: 'الفروع',
+    subtitle: 'الفروع وساعات العمل ورسوم التوصيل',
+    add: 'إضافة فرع',
+    edit: 'تعديل الفرع',
+    empty: 'لا توجد فروع بعد.',
+    statuses: { Open: 'مفتوح', TemporarilyClosed: 'مغلق مؤقتاً' },
+    primary: 'الفرع الرئيسي',
+    inactive: 'غير مفعل',
+    nameAr: 'الاسم بالعربية',
+    nameEn: 'الاسم بالإنجليزية',
+    address: 'العنوان',
+    phone: 'الهاتف',
+    latitude: 'خط العرض',
+    longitude: 'خط الطول',
+    status: 'الحالة',
+    active: 'الفرع مفعل',
+    makePrimary: 'جعله الفرع الرئيسي',
+    sortOrder: 'الترتيب',
+    hours: 'ساعات العمل',
+    closed: 'مغلق',
+    opens: 'يفتح',
+    closes: 'يغلق',
+    nextDay: 'اليوم التالي',
+    days: { Sunday: 'الأحد', Monday: 'الاثنين', Tuesday: 'الثلاثاء', Wednesday: 'الأربعاء', Thursday: 'الخميس', Friday: 'الجمعة', Saturday: 'السبت' },
+    invalid: 'تحقق من الحقول: الأسماء والعنوان وساعات العمل.',
+    delivery: 'رسوم التوصيل',
+    deliverySub: 'تنطبق على كل الفروع',
+    baseFee: 'رسوم التوصيل الأساسية',
+    feePerKm: 'رسوم لكل كيلومتر',
+    maxRadius: 'أقصى نطاق توصيل (كم)',
+    maxRadiusHint: 'اتركه فارغاً لعدم وضع حد',
+    saveDelivery: 'حفظ رسوم التوصيل',
+  },
+  payments: {
+    title: 'وسائل الدفع',
+    subtitle: 'فعّل وسائل الدفع واضبط الحساب والتعليمات للعميل',
+    methods: { Cash: 'الدفع عند الاستلام', InstaPay: 'إنستا باي', MobileWallet: 'المحفظة الإلكترونية' },
+    enabled: 'مفعلة',
+    needsProof: 'تتطلب إثبات الدفع',
+    proofLocked: 'الدفع الإلكتروني يتطلب إثباتاً دائماً',
+    cashLocked: 'الدفع النقدي مفعل دائماً ولا يتطلب حساباً',
+    nameAr: 'الاسم بالعربية',
+    nameEn: 'الاسم بالإنجليزية',
+    account: 'رقم الحساب أو المحفظة',
+    instructionsAr: 'تعليمات العميل بالعربية',
+    instructionsEn: 'تعليمات العميل بالإنجليزية',
+    invalid: 'تحقق من الحقول: الأسماء مطلوبة والتعليمات حتى 500 حرف.',
+    save: 'حفظ الوسيلة',
+  },
   offers: {
     title: 'العروض',
     subtitle: 'عروض الأصناف والكومبو',
@@ -117,6 +217,56 @@ const en: ManageCopy = {
   noAccess: 'You do not have access to this page.',
   saved: 'Saved',
   deleted: 'Deleted',
+  branches: {
+    title: 'Branches',
+    subtitle: 'Branches, working hours and delivery fees',
+    add: 'Add branch',
+    edit: 'Edit branch',
+    empty: 'No branches yet.',
+    statuses: { Open: 'Open', TemporarilyClosed: 'Temporarily closed' },
+    primary: 'Primary branch',
+    inactive: 'Inactive',
+    nameAr: 'Name (Arabic)',
+    nameEn: 'Name (English)',
+    address: 'Address',
+    phone: 'Phone',
+    latitude: 'Latitude',
+    longitude: 'Longitude',
+    status: 'Status',
+    active: 'Branch is active',
+    makePrimary: 'Make primary branch',
+    sortOrder: 'Sort order',
+    hours: 'Working hours',
+    closed: 'Closed',
+    opens: 'Opens',
+    closes: 'Closes',
+    nextDay: 'Next day',
+    days: { Sunday: 'Sunday', Monday: 'Monday', Tuesday: 'Tuesday', Wednesday: 'Wednesday', Thursday: 'Thursday', Friday: 'Friday', Saturday: 'Saturday' },
+    invalid: 'Check the fields: names, address and working hours.',
+    delivery: 'Delivery fees',
+    deliverySub: 'Applies to all branches',
+    baseFee: 'Base delivery fee',
+    feePerKm: 'Fee per km',
+    maxRadius: 'Max delivery radius (km)',
+    maxRadiusHint: 'Leave empty for no limit',
+    saveDelivery: 'Save delivery fees',
+  },
+  payments: {
+    title: 'Payment methods',
+    subtitle: 'Turn payment methods on and set the account and customer instructions',
+    methods: { Cash: 'Cash on delivery', InstaPay: 'InstaPay', MobileWallet: 'Mobile wallet' },
+    enabled: 'Enabled',
+    needsProof: 'Requires payment proof',
+    proofLocked: 'Electronic payments always require proof',
+    cashLocked: 'Cash is always on and needs no account',
+    nameAr: 'Name (Arabic)',
+    nameEn: 'Name (English)',
+    account: 'Account or wallet number',
+    instructionsAr: 'Customer instructions (Arabic)',
+    instructionsEn: 'Customer instructions (English)',
+    invalid: 'Check the fields: names are required and instructions are up to 500 characters.',
+    save: 'Save method',
+  },
   offers: {
     title: 'Offers',
     subtitle: 'Single-item offers and combos',
