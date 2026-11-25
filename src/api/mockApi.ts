@@ -17,6 +17,23 @@ import {
   type UpdatePaymentMethodInput,
 } from './types'
 import {
+  validateCreateRole,
+  validatePermissionKeys,
+  validateUpdateRole,
+  type CreateRoleInput,
+  type PermissionInfo,
+  type RoleSummary,
+  type UpdateRoleInput,
+} from './roles'
+import { PERMISSIONS } from '../authz'
+import {
+  validateInviteStaff,
+  validateStaffListQuery,
+  type InviteStaffInput,
+  type ListStaffQuery,
+  type StaffUser,
+} from './staff'
+import {
   DAYS_OF_WEEK,
   validateCreateBranch,
   validateDeliverySettings,
@@ -42,6 +59,12 @@ import {
 } from './offers'
 import { requireId, validatePaging } from './shared'
 import { validatePaymentMethodUpdate } from './paymentMethods'
+
+// Role ids used by the mock staff directory. Real ids come from GET /api/v1/admin/roles.
+const MOCK_ROLE_IDS = {
+  owner: '00000000-0000-7000-8000-0000000000c1',
+  orderStaff: '00000000-0000-7000-8000-0000000000c2',
+}
 
 const MOCK_PAYMENT_METHODS: RestaurantPaymentMethodConfig[] = [
   { paymentMethod: 'Cash', nameAr: 'الدفع عند الاستلام', nameEn: 'Cash on Delivery', accountIdentifier: null, isEnabled: true, requiresVerificationProof: false, instructionsAr: 'يرجى تجهيز المبلغ نقداً', instructionsEn: 'Please prepare exact cash upon delivery' },
@@ -347,6 +370,46 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       })),
     },
   ]
+  let staff: StaffUser[] = [
+    {
+      id: '00000000-0000-7000-8000-0000000000a1',
+      fullName: 'Demo Owner',
+      email: 'owner@mock.local',
+      phone: null,
+      roleId: MOCK_ROLE_IDS.owner,
+      role: 'Owner',
+      branchIds: ['00000000-0000-7000-8000-0000000000b1'],
+      isActive: true,
+      status: 'Active',
+      mustSetInitialPassword: false,
+      activationTokenExpiresAtUtc: null,
+      lastLoginAt: null,
+    },
+  ]
+  let roles: RoleSummary[] = [
+    {
+      id: MOCK_ROLE_IDS.owner,
+      name: 'Owner',
+      description: 'Full restaurant owner access',
+      kind: 'Owner',
+      isProtected: true,
+      canBeDeleted: false,
+      staffCount: 1,
+      permissionKeys: Object.values(PERMISSIONS),
+    },
+    {
+      id: MOCK_ROLE_IDS.orderStaff,
+      name: 'OrderStaff',
+      description: 'Handles incoming orders',
+      kind: 'Seeded',
+      isProtected: false,
+      canBeDeleted: false,
+      staffCount: 0,
+      permissionKeys: [PERMISSIONS.ordersView, PERMISSIONS.ordersAccept, PERMISSIONS.ordersReject],
+    },
+  ]
+  let roleSeq = 2
+  let staffSeq = 1
   let branchSeq = 1
   let deliverySettings: DeliverySettings = { baseDeliveryFee: 20, deliveryFeePerKm: 4.5, maxDeliveryRadiusKm: 15 }
   let offers: PromotionalOffer[] = []
@@ -602,6 +665,159 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       await guard(signal)
       findOffer(id)
       offers = offers.filter((offer) => offer.id !== id)
+    },
+
+    async listPermissions(signal?: AbortSignal): Promise<PermissionInfo[]> {
+      await guard(signal)
+      return Object.values(PERMISSIONS).map((key) => ({ key, module: key.split('.')[0], description: key }))
+    },
+
+    async listRoles(signal?: AbortSignal): Promise<RoleSummary[]> {
+      await guard(signal)
+      return structuredClone(roles)
+    },
+
+    async getRole(id: string, signal?: AbortSignal): Promise<RoleSummary> {
+      await guard(signal)
+      requireId(id)
+      const role = roles.find((item) => item.id === id)
+      if (!role) throw new ApiError('notFound')
+      return structuredClone(role)
+    },
+
+    async createRole(input: CreateRoleInput, signal?: AbortSignal): Promise<RoleSummary> {
+      await guard(signal)
+      validateCreateRole(input)
+      const known: string[] = Object.values(PERMISSIONS)
+      if (!input.permissionKeys.every((key) => known.includes(key))) throw new ApiError('validation')
+      if (roles.some((role) => role.name.toLowerCase() === input.name.trim().toLowerCase())) throw new ApiError('conflict')
+      roleSeq += 1
+      const created: RoleSummary = {
+        id: `00000000-0000-7000-8000-c${String(roleSeq).padStart(11, '0')}`,
+        name: input.name.trim(),
+        description: input.description ?? null,
+        kind: 'Custom',
+        isProtected: false,
+        canBeDeleted: true,
+        staffCount: 0,
+        permissionKeys: [...input.permissionKeys],
+      }
+      roles = [...roles, created]
+      return structuredClone(created)
+    },
+
+    async updateRole(id: string, input: UpdateRoleInput, signal?: AbortSignal): Promise<RoleSummary> {
+      await guard(signal)
+      requireId(id)
+      validateUpdateRole(input)
+      const role = roles.find((item) => item.id === id)
+      if (!role) throw new ApiError('notFound')
+      if (role.kind === 'Owner') throw new ApiError('conflict')
+      if (role.kind === 'Seeded' && input.name !== role.name) throw new ApiError('conflict')
+      if (roles.some((item) => item.id !== id && item.name.toLowerCase() === input.name.trim().toLowerCase())) {
+        throw new ApiError('conflict')
+      }
+      role.name = input.name.trim()
+      role.description = input.description ?? null
+      return structuredClone(role)
+    },
+
+    async replaceRolePermissions(id: string, permissionKeys: string[], signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      requireId(id)
+      validatePermissionKeys(permissionKeys)
+      const role = roles.find((item) => item.id === id)
+      if (!role) throw new ApiError('notFound')
+      if (role.kind === 'Owner') throw new ApiError('conflict')
+      const known: string[] = Object.values(PERMISSIONS)
+      if (!permissionKeys.every((key) => known.includes(key))) throw new ApiError('validation')
+      role.permissionKeys = [...permissionKeys]
+    },
+
+    async deleteRole(id: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      requireId(id)
+      const role = roles.find((item) => item.id === id)
+      if (!role) throw new ApiError('notFound')
+      if (role.kind !== 'Custom' || role.staffCount > 0) throw new ApiError('conflict')
+      roles = roles.filter((item) => item.id !== id)
+    },
+
+    async listStaff(query: ListStaffQuery = {}, signal?: AbortSignal): Promise<PagedResult<StaffUser>> {
+      await guard(signal)
+      validateStaffListQuery(query)
+      const search = query.search?.trim().toLowerCase()
+      const filtered = staff.filter(
+        (user) =>
+          (!query.branchId || user.branchIds.includes(query.branchId)) &&
+          (!query.role || user.role === query.role) &&
+          (!query.status || user.status === query.status) &&
+          (!search || user.fullName.toLowerCase().includes(search) || user.email.toLowerCase().includes(search)),
+      )
+      const page = query.pageNumber ?? 1
+      const pageSize = query.pageSize ?? 20
+      const totalPages = Math.ceil(filtered.length / pageSize)
+      return {
+        items: structuredClone(filtered.slice((page - 1) * pageSize, page * pageSize)),
+        totalCount: filtered.length,
+        page,
+        pageSize,
+        totalPages,
+        hasPreviousPage: page > 1,
+        hasNextPage: page < totalPages,
+      }
+    },
+
+    async inviteStaff(input: InviteStaffInput, signal?: AbortSignal): Promise<StaffUser> {
+      await guard(signal)
+      validateInviteStaff(input)
+      if (input.roleId === MOCK_ROLE_IDS.owner) throw new ApiError('conflict')
+      if (staff.some((user) => user.email.toLowerCase() === input.email.toLowerCase())) throw new ApiError('conflict')
+      staffSeq += 1
+      const created: StaffUser = {
+        id: `00000000-0000-7000-8000-a${String(staffSeq).padStart(11, '0')}`,
+        fullName: input.fullName.trim(),
+        email: input.email,
+        phone: input.phone || null,
+        roleId: input.roleId,
+        role: 'OrderStaff',
+        branchIds: [...input.branchIds],
+        isActive: false,
+        status: 'PendingInvitation',
+        mustSetInitialPassword: true,
+        activationTokenExpiresAtUtc: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+        lastLoginAt: null,
+      }
+      staff = [...staff, created]
+      return structuredClone(created)
+    },
+
+    async resendStaffInvitation(id: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      requireId(id)
+      const user = staff.find((item) => item.id === id)
+      if (!user) throw new ApiError('notFound')
+      if (user.status !== 'PendingInvitation') throw new ApiError('conflict')
+      user.activationTokenExpiresAtUtc = new Date(Date.now() + 3 * 86_400_000).toISOString()
+    },
+
+    async changeStaffRole(id: string, roleId: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      requireId(id)
+      requireId(roleId)
+      const user = staff.find((item) => item.id === id)
+      if (!user) throw new ApiError('notFound')
+      if (roleId === MOCK_ROLE_IDS.owner) throw new ApiError('conflict')
+      user.roleId = roleId
+    },
+
+    async deleteStaff(id: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      requireId(id)
+      const user = staff.find((item) => item.id === id)
+      if (!user) throw new ApiError('notFound')
+      if (user.role === 'Owner') throw new ApiError('conflict')
+      staff = staff.filter((item) => item.id !== id)
     },
 
     async listBranches(query: ListBranchesQuery = {}, signal?: AbortSignal): Promise<PagedResult<BranchDetails>> {

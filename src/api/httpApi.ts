@@ -22,6 +22,22 @@ import {
   type UpdatePaymentMethodInput,
 } from './types'
 import {
+  parsePermission,
+  parseRole,
+  validateCreateRole,
+  validatePermissionKeys,
+  validateUpdateRole,
+  type CreateRoleInput,
+  type UpdateRoleInput,
+} from './roles'
+import {
+  parseStaffUser,
+  validateInviteStaff,
+  validateStaffListQuery,
+  type InviteStaffInput,
+  type ListStaffQuery,
+} from './staff'
+import {
   parseBranch,
   parseDeliverySettings,
   validateCreateBranch,
@@ -499,6 +515,82 @@ export function createHttpApi(options: HttpApiOptions): Api {
       await request(`/api/v1/admin/offers/${requireId(id)}`, { method: 'DELETE', signal })
     },
 
+    // Roles and permissions (reference section 18): Owner / RestaurantOwner only.
+    async listPermissions(signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/permissions', { signal })
+      return readEnvelopeList(response.body).map(parsePermission)
+    },
+
+    async listRoles(signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/roles', { signal })
+      return readEnvelopeList(response.body).map(parseRole)
+    },
+
+    async getRole(id: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/admin/roles/${requireId(id)}`, { signal })
+      return parseRole(readEnvelopeData(response.body))
+    },
+
+    async createRole(input: CreateRoleInput, signal?: AbortSignal) {
+      validateCreateRole(input)
+      const response = await request('/api/v1/admin/roles', { method: 'POST', body: input, signal })
+      return parseRole(readEnvelopeData(response.body))
+    },
+
+    async updateRole(id: string, input: UpdateRoleInput, signal?: AbortSignal) {
+      requireId(id)
+      validateUpdateRole(input)
+      const response = await request(`/api/v1/admin/roles/${id}`, { method: 'PATCH', body: input, signal })
+      return parseRole(readEnvelopeData(response.body))
+    },
+
+    async replaceRolePermissions(id: string, permissionKeys: string[], signal?: AbortSignal) {
+      requireId(id)
+      validatePermissionKeys(permissionKeys)
+      await request(`/api/v1/admin/roles/${id}/permissions`, { method: 'PUT', body: { permissionKeys }, signal })
+    },
+
+    async deleteRole(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/admin/roles/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Staff (reference section 17): Owner / RestaurantOwner only, prefix /api/v1/staff.
+    async listStaff(query: ListStaffQuery = {}, signal?: AbortSignal) {
+      validateStaffListQuery(query)
+      const response = await request('/api/v1/staff', {
+        query: {
+          branchId: query.branchId,
+          role: query.role || undefined,
+          search: query.search?.trim() || undefined,
+          status: query.status,
+          pageNumber: query.pageNumber,
+          pageSize: query.pageSize,
+        },
+        signal,
+      })
+      return parsePaged(readEnvelopeData(response.body), parseStaffUser)
+    },
+
+    async inviteStaff(input: InviteStaffInput, signal?: AbortSignal) {
+      validateInviteStaff(input)
+      const response = await request('/api/v1/staff/invitations', { method: 'POST', body: input, signal })
+      return parseStaffUser(readEnvelopeData(response.body))
+    },
+
+    async resendStaffInvitation(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/staff/${requireId(id)}/resend-invitation`, { method: 'POST', signal })
+    },
+
+    async changeStaffRole(id: string, roleId: string, signal?: AbortSignal) {
+      requireId(id)
+      requireId(roleId)
+      await request(`/api/v1/staff/${id}/role`, { method: 'PUT', body: { roleId }, signal })
+    },
+
+    async deleteStaff(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/staff/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
     // Branches and delivery settings (reference section 15).
     // branches.view reads, branches.manage writes.
     async listBranches(query: ListBranchesQuery = {}, signal?: AbortSignal) {
@@ -590,4 +682,4 @@ export function createHttpApi(options: HttpApiOptions): Api {
       })
     },
   }
-                      }
+}

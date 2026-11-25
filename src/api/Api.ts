@@ -1,3 +1,5 @@
+import type { CreateRoleInput, PermissionInfo, RoleSummary, UpdateRoleInput } from './roles'
+import type { InviteStaffInput, ListStaffQuery, StaffUser } from './staff'
 import type {
   BranchDetails,
   CreateBranchInput,
@@ -56,6 +58,18 @@ export interface Api {
   getBranch(id: string, signal?: AbortSignal): Promise<BranchDetails>
   createBranch(input: CreateBranchInput, signal?: AbortSignal): Promise<BranchDetails>
   updateBranch(id: string, input: UpdateBranchInput, signal?: AbortSignal): Promise<BranchDetails>
+  listPermissions(signal?: AbortSignal): Promise<PermissionInfo[]>
+  listRoles(signal?: AbortSignal): Promise<RoleSummary[]>
+  getRole(id: string, signal?: AbortSignal): Promise<RoleSummary>
+  createRole(input: CreateRoleInput, signal?: AbortSignal): Promise<RoleSummary>
+  updateRole(id: string, input: UpdateRoleInput, signal?: AbortSignal): Promise<RoleSummary>
+  replaceRolePermissions(id: string, permissionKeys: string[], signal?: AbortSignal): Promise<void>
+  deleteRole(id: string, signal?: AbortSignal): Promise<void>
+  listStaff(query?: ListStaffQuery, signal?: AbortSignal): Promise<PagedResult<StaffUser>>
+  inviteStaff(input: InviteStaffInput, signal?: AbortSignal): Promise<StaffUser>
+  resendStaffInvitation(id: string, signal?: AbortSignal): Promise<void>
+  changeStaffRole(id: string, roleId: string, signal?: AbortSignal): Promise<void>
+  deleteStaff(id: string, signal?: AbortSignal): Promise<void>
   getDeliverySettings(signal?: AbortSignal): Promise<DeliverySettings>
   updateDeliverySettings(input: DeliverySettings, signal?: AbortSignal): Promise<DeliverySettings>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
