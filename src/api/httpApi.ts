@@ -2,14 +2,19 @@ import type { Api } from './Api'
 import {
   ApiError,
   isRecord,
+  type AdminOrderDetails,
+  type AdminOrderItem,
+  type AdminOrderPayment,
   numberOrNull,
   stringOrNull,
   type AdminOrderListItem,
   type BestSeller,
+  type BranchDetails,
   type BrandingFetchResult,
   type ListOrdersQuery,
   type MenuCategory,
   type MenuItem,
+  type MenuItemBranchAvailability,
   type PagedResult,
   type PaymentBreakdown,
   type PaymentMethodKey,
@@ -34,6 +39,7 @@ type RequestOptions = {
   query?: Record<string, string | number | undefined>
   body?: object
   etag?: string
+  rawText?: boolean
   signal?: AbortSignal
 }
 
@@ -106,6 +112,76 @@ function parseOrder(value: unknown): AdminOrderListItem {
   }
 }
 
+function parseOrderDetails(data: unknown): AdminOrderDetails {
+  if (!isRecord(data)) throw new ApiError('invalidResponse')
+  const orderId = stringOrNull(data.orderId)
+  const total = numberOrNull(data.total)
+  const createdAtUtc = stringOrNull(data.createdAtUtc)
+  if (!orderId || total == null || !createdAtUtc) throw new ApiError('invalidResponse')
+
+  const rawItems = data.items
+  const items: AdminOrderItem[] = (Array.isArray(rawItems) ? rawItems : []).flatMap((value) => {
+    if (!isRecord(value)) return []
+    const orderItemId = stringOrNull(value.orderItemId)
+    const itemName = stringOrNull(value.itemName)
+    const unitPrice = numberOrNull(value.unitPrice)
+    const quantity = numberOrNull(value.quantity)
+    const lineTotal = numberOrNull(value.lineTotal)
+    if (!orderItemId || !itemName || unitPrice == null || quantity == null || lineTotal == null) return []
+    return [{
+      orderItemId,
+      menuItemId: stringOrNull(value.menuItemId) ?? '',
+      itemSizeId: stringOrNull(value.itemSizeId),
+      itemName,
+      sizeName: stringOrNull(value.sizeName),
+      unitPrice,
+      quantity,
+      lineTotal,
+    }]
+  })
+
+  let payment: AdminOrderPayment | null = null
+  if (isRecord(data.payment)) {
+    payment = {
+      paymentId: stringOrNull(data.payment.paymentId) ?? '',
+      paymentMethod: numberOrNull(data.payment.paymentMethod),
+      paymentStatus: numberOrNull(data.payment.paymentStatus),
+      accountIdentifier: stringOrNull(data.payment.accountIdentifier),
+      requiresVerificationProof: data.payment.requiresVerificationProof === true,
+      proofUrl: stringOrNull(data.payment.proofUrl),
+      proofUrlExpiresAtUtc: stringOrNull(data.payment.proofUrlExpiresAtUtc),
+    }
+  }
+
+  return {
+    orderId,
+    orderNumber: stringOrNull(data.orderNumber),
+    status: numberOrNull(data.status) ?? 0,
+    fulfilmentType: numberOrNull(data.fulfilmentType) ?? 0,
+    branchId: stringOrNull(data.branchId) ?? '',
+    branchNameAr: stringOrNull(data.branchNameAr),
+    branchNameEn: stringOrNull(data.branchNameEn),
+    areaId: stringOrNull(data.areaId),
+    address: stringOrNull(data.address),
+    customerName: stringOrNull(data.customerName),
+    contactPhone: stringOrNull(data.contactPhone),
+    customerNotes: stringOrNull(data.customerNotes),
+    rejectionReason: stringOrNull(data.rejectionReason),
+    subTotal: numberOrNull(data.subTotal) ?? 0,
+    deliveryFee: numberOrNull(data.deliveryFee),
+    productDiscountAmount: numberOrNull(data.productDiscountAmount),
+    deliveryDiscountAmount: numberOrNull(data.deliveryDiscountAmount),
+    vatRate: numberOrNull(data.vatRate),
+    vatBaseAmount: numberOrNull(data.vatBaseAmount),
+    vatAmount: numberOrNull(data.vatAmount),
+    total,
+    createdAtUtc,
+    modifiedAtUtc: stringOrNull(data.modifiedAtUtc),
+    items,
+    payment,
+  }
+}
+
 function parseBranding(data: unknown): RestaurantBranding {
   if (!isRecord(data)) throw new ApiError('invalidResponse')
   const tenantId = stringOrNull(data.tenantId)
@@ -140,37 +216,53 @@ function parseBranding(data: unknown): RestaurantBranding {
   }
 }
 
-function parseMenuItem(value: unknown): MenuItem {
-  if (!isRecord(value)) throw new ApiError('invalidResponse')
+function parseBranch(value: unknown): BranchDetails | null {
+  if (!isRecord(value)) return null
   const id = stringOrNull(value.id)
-  const price = numberOrNull(value.price)
-  if (!id || price == null) throw new ApiError('invalidResponse')
+  if (!id) return null
   return {
     id,
     nameAr: stringOrNull(value.nameAr) ?? '',
     nameEn: stringOrNull(value.nameEn) ?? '',
-    price,
-    available: value.available === true,
-    imageUrl: stringOrNull(value.imageUrl),
-    categoryId: stringOrNull(value.categoryId) ?? '',
+    address: stringOrNull(value.address) ?? '',
+    isActive: value.isActive === true,
+    isPrimary: value.isPrimary === true,
+    sortOrder: numberOrNull(value.sortOrder) ?? 0,
   }
 }
 
-function parseMenu(data: unknown): MenuCategory[] {
-  if (!isRecord(data) || !Array.isArray(data.categories)) throw new ApiError('invalidResponse')
-  return data.categories.map((value) => {
-    if (!isRecord(value)) throw new ApiError('invalidResponse')
-    const id = stringOrNull(value.id)
-    if (!id) throw new ApiError('invalidResponse')
-    const items = Array.isArray(value.items) ? value.items.map(parseMenuItem) : []
-    return {
-      id,
-      nameAr: stringOrNull(value.nameAr) ?? '',
-      nameEn: stringOrNull(value.nameEn) ?? '',
-      count: numberOrNull(value.count) ?? items.length,
-      items,
-    }
+function parseBranches(data: unknown): BranchDetails[] {
+  // The admin branches endpoint returns a paged envelope.
+  if (!isRecord(data) || !Array.isArray(data.items)) throw new ApiError('invalidResponse')
+  return data.items.flatMap((value) => {
+    const branch = parseBranch(value)
+    return branch ? [branch] : []
   })
+}
+
+function parsePublicMenuItem(value: unknown): MenuItem | null {
+  if (!isRecord(value)) return null
+  const id = stringOrNull(value.id)
+  if (!id) return null
+  // Public shape: price may arrive as basePrice (managed shape) or price.
+  const price = numberOrNull(value.basePrice) ?? numberOrNull(value.price)
+  const branchAvailabilities: MenuItemBranchAvailability[] = Array.isArray(value.branchAvailabilities)
+    ? value.branchAvailabilities.flatMap((entry) => {
+        if (!isRecord(entry)) return []
+        const branchId = stringOrNull(entry.branchId)
+        return branchId ? [{ branchId, isAvailable: entry.isAvailable === true }] : []
+      })
+    : []
+  return {
+    id,
+    nameAr: stringOrNull(value.nameAr) ?? '',
+    nameEn: stringOrNull(value.nameEn) ?? '',
+    price: price ?? 0,
+    available: true,
+    imageUrl: stringOrNull(value.imageUrl),
+    categoryId: stringOrNull(value.categoryId) ?? '',
+    branchAvailabilities,
+  }
 }
 
 const PAYMENT_KEYS: PaymentMethodKey[] = ['cash', 'instapay', 'wallet']
@@ -318,7 +410,7 @@ export function createHttpApi(options: HttpApiOptions): Api {
       let payload: unknown = null
       if (response.ok) {
         try {
-          payload = await response.json()
+          payload = requestOptions.rawText ? await response.text() : await response.json()
         } catch {
           if (controller.signal.aborted) throw new DOMException('Request cancelled', 'AbortError')
           throw new ApiError('invalidResponse')
@@ -365,6 +457,39 @@ export function createHttpApi(options: HttpApiOptions): Api {
       })
     },
 
+    async getOrderDetails(id: string, signal?: AbortSignal): Promise<AdminOrderDetails> {
+      if (!id.trim()) throw new ApiError('validation')
+      const response = await request(`/api/v1/admin/orders/${encodeURIComponent(id)}`, { signal })
+      return parseOrderDetails(readEnvelopeData(response.body))
+    },
+
+    // The receipt endpoint returns raw text/html on 200, not the JSON envelope.
+    async getOrderReceiptHtml(id: string, signal?: AbortSignal): Promise<string> {
+      if (!id.trim()) throw new ApiError('validation')
+      const response = await request(`/api/v1/admin/orders/${encodeURIComponent(id)}/receipt`, {
+        query: { format: 'html' },
+        rawText: true,
+        signal,
+      })
+      if (typeof response.body !== 'string') throw new ApiError('invalidResponse')
+      return response.body
+    },
+
+    // Order review actions live under /api/v1/orders (no /admin prefix).
+    async acceptOrder(id: string, signal?: AbortSignal) {
+      if (!id.trim()) throw new ApiError('validation')
+      await request(`/api/v1/orders/${encodeURIComponent(id)}/accept`, { method: 'POST', signal })
+    },
+
+    async rejectOrder(id: string, rejectionReason: string, signal?: AbortSignal) {
+      if (!id.trim() || !rejectionReason.trim()) throw new ApiError('validation')
+      await request(`/api/v1/orders/${encodeURIComponent(id)}/reject`, {
+        method: 'POST',
+        body: { rejectionReason: rejectionReason.trim() },
+        signal,
+      })
+    },
+
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
       const response = await request('/api/v1/Branding', { etag, signal })
       if (response.status === 304) {
@@ -374,18 +499,47 @@ export function createHttpApi(options: HttpApiOptions): Api {
       return { notModified: false, branding, etag: response.etag ?? branding.eTag }
     },
 
+    // Dashboard menu reads use the public endpoints: categories for the list,
+    // items grouped client-side. Items hidden from customers (isVisibleToCustomers
+    // false) are simply not returned by the public read.
     async listMenu(signal?: AbortSignal): Promise<MenuCategory[]> {
-      // TODO: confirm endpoint with backend
-      const response = await request('/api/v1/admin/menu', { signal })
-      return parseMenu(readEnvelopeData(response.body))
+      const [categoriesResponse, itemsResponse] = await Promise.all([
+        request('/api/v1/menu/categories', { signal }),
+        request('/api/v1/menu/items', { signal }),
+      ])
+      const rawCategories = readEnvelopeData(categoriesResponse.body)
+      if (!Array.isArray(rawCategories)) throw new ApiError('invalidResponse')
+      const rawItems = readEnvelopeData(itemsResponse.body)
+      const items = (Array.isArray(rawItems) ? rawItems : []).flatMap((value) => {
+        const item = parsePublicMenuItem(value)
+        return item ? [item] : []
+      })
+      return rawCategories.flatMap((value) => {
+        if (!isRecord(value)) return []
+        const id = stringOrNull(value.id)
+        if (!id) return []
+        const categoryItems = items.filter((item) => item.categoryId === id)
+        return [{
+          id,
+          nameAr: stringOrNull(value.nameAr) ?? '',
+          nameEn: stringOrNull(value.nameEn) ?? '',
+          count: numberOrNull(value.itemCount) ?? categoryItems.length,
+          items: categoryItems,
+        }]
+      })
     },
 
-    async updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void> {
-      if (!itemId.trim()) throw new ApiError('validation')
-      // TODO: confirm endpoint with backend
-      await request(`/api/v1/admin/menu/items/${encodeURIComponent(itemId)}/availability`, {
-        method: 'POST',
-        body: { available },
+    async listBranches(signal?: AbortSignal): Promise<BranchDetails[]> {
+      const response = await request('/api/v1/admin/branches', { signal })
+      return parseBranches(readEnvelopeData(response.body))
+    },
+
+    // Availability is per branch: PATCH .../items/{itemId}/branches/{branchId}/availability.
+    async updateMenuItemAvailability(itemId: string, branchId: string, available: boolean, signal?: AbortSignal): Promise<void> {
+      if (!itemId.trim() || !branchId.trim()) throw new ApiError('validation')
+      await request(`/api/v1/admin/menu/items/${encodeURIComponent(itemId)}/branches/${encodeURIComponent(branchId)}/availability`, {
+        method: 'PATCH',
+        body: { isAvailable: available },
         signal,
       })
     },
