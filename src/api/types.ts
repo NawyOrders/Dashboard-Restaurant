@@ -19,6 +19,55 @@ export type PagedResult<T> = {
   hasNextPage: boolean
 }
 
+export type AdminOrderItem = {
+  orderItemId: string
+  menuItemId: string
+  itemSizeId: string | null
+  itemName: string
+  sizeName: string | null
+  unitPrice: number
+  quantity: number
+  lineTotal: number
+}
+
+export type AdminOrderPayment = {
+  paymentId: string
+  paymentMethod: number | null
+  paymentStatus: number | null
+  accountIdentifier: string | null
+  requiresVerificationProof: boolean
+  proofUrl: string | null
+  proofUrlExpiresAtUtc: string | null
+}
+
+export type AdminOrderDetails = {
+  orderId: string
+  orderNumber: string | null
+  status: number
+  fulfilmentType: number
+  branchId: string
+  branchNameAr: string | null
+  branchNameEn: string | null
+  areaId: string | null
+  address: string | null
+  customerName: string | null
+  contactPhone: string | null
+  customerNotes: string | null
+  rejectionReason: string | null
+  subTotal: number
+  deliveryFee: number | null
+  productDiscountAmount: number | null
+  deliveryDiscountAmount: number | null
+  vatRate: number | null
+  vatBaseAmount: number | null
+  vatAmount: number | null
+  total: number
+  createdAtUtc: string
+  modifiedAtUtc: string | null
+  items: AdminOrderItem[]
+  payment: AdminOrderPayment | null
+}
+
 export type AdminOrderListItem = {
   orderId: string
   orderNumber: string | null
