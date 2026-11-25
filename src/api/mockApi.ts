@@ -17,6 +17,15 @@ import {
   type UpdatePaymentMethodInput,
 } from './types'
 import {
+  validateMenuItemImageRequest,
+  validateMenuItemInput,
+  type CreateMenuItemInput,
+  type ManagedMenuItem,
+  type MenuItemImageUploadRequest,
+  type MenuItemImageUploadUrl,
+  type UpdateMenuItemInput,
+} from './menuItems'
+import {
   validateCreateCategory,
   validateReorder,
   validateUpdateCategory,
@@ -419,6 +428,8 @@ export function createMockApi(options: MockApiOptions = {}): Api {
     },
   ]
   let categories: ManagedCategory[] = []
+  let managedItems: ManagedMenuItem[] = []
+  let itemSeq = 0
   let categorySeq = 0
   let roleSeq = 2
   let staffSeq = 1
@@ -677,6 +688,100 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       await guard(signal)
       findOffer(id)
       offers = offers.filter((offer) => offer.id !== id)
+    },
+
+    async createMenuItemImageUploadUrl(input: MenuItemImageUploadRequest, signal?: AbortSignal): Promise<MenuItemImageUploadUrl> {
+      await guard(signal)
+      validateMenuItemImageRequest(input)
+      const objectKey = `tenants/mock/menu/items/${Date.now()}.${input.contentType.split('/')[1]}`
+      return {
+        objectKey,
+        uploadUrl: `https://uploads.example.test/${objectKey}`,
+        expiresAtUtc: new Date(Date.now() + 15 * 60_000).toISOString(),
+        contentType: input.contentType,
+        maximumSizeBytes: 5_242_880,
+      }
+    },
+
+    async createMenuItem(input: CreateMenuItemInput, signal?: AbortSignal): Promise<ManagedMenuItem> {
+      await guard(signal)
+      validateMenuItemInput(input)
+      if (!categories.some((item) => item.id === input.categoryId && item.isActive)) throw new ApiError('notFound')
+      itemSeq += 1
+      const id = `00000000-0000-7000-8000-e${String(itemSeq).padStart(11, '0')}`
+      const created: ManagedMenuItem = {
+        id,
+        categoryId: input.categoryId,
+        nameAr: input.nameAr.trim(),
+        nameEn: input.nameEn.trim(),
+        descriptionAr: input.descriptionAr ?? null,
+        descriptionEn: input.descriptionEn ?? null,
+        imageKey: input.imageKey ?? null,
+        imageUrl: input.imageKey ? `https://cdn.example.test/${input.imageKey}` : null,
+        basePrice: input.basePrice,
+        sortOrder: input.sortOrder,
+        isActive: true,
+        isVisibleToCustomers: input.isVisibleToCustomers ?? true,
+        sizes: (input.sizes ?? []).map((size, index) => ({ ...size, id: `${id}-size-${index + 1}` })),
+        branchAvailabilities: (input.branchAvailabilities ?? []).map((entry) => ({
+          ...entry,
+          updatedBy: null,
+          updatedAt: new Date().toISOString(),
+        })),
+      }
+      managedItems = [...managedItems, created]
+      return structuredClone(created)
+    },
+
+    async updateMenuItem(id: string, input: UpdateMenuItemInput, signal?: AbortSignal): Promise<ManagedMenuItem> {
+      await guard(signal)
+      requireId(id)
+      validateMenuItemInput(input)
+      const current = managedItems.find((item) => item.id === id && item.isActive)
+      if (!current) throw new ApiError('notFound')
+      if (!categories.some((item) => item.id === input.categoryId && item.isActive)) throw new ApiError('notFound')
+      const imageKey = input.imageKey ?? current.imageKey
+      const next: ManagedMenuItem = {
+        ...current,
+        categoryId: input.categoryId,
+        nameAr: input.nameAr.trim(),
+        nameEn: input.nameEn.trim(),
+        descriptionAr: input.descriptionAr ?? null,
+        descriptionEn: input.descriptionEn ?? null,
+        imageKey,
+        imageUrl: imageKey ? `https://cdn.example.test/${imageKey}` : null,
+        basePrice: input.basePrice,
+        sortOrder: input.sortOrder,
+        isVisibleToCustomers: input.isVisibleToCustomers ?? current.isVisibleToCustomers,
+        sizes:
+          input.sizes == null ? current.sizes : input.sizes.map((size, index) => ({ ...size, id: `${id}-size-${index + 1}` })),
+      }
+      for (const entry of input.branchAvailabilities ?? []) {
+        const existing = next.branchAvailabilities.find((item) => item.branchId === entry.branchId)
+        const stamped = { ...entry, updatedBy: null, updatedAt: new Date().toISOString() }
+        next.branchAvailabilities = existing
+          ? next.branchAvailabilities.map((item) => (item.branchId === entry.branchId ? stamped : item))
+          : [...next.branchAvailabilities, stamped]
+      }
+      managedItems = managedItems.map((item) => (item.id === id ? next : item))
+      return structuredClone(next)
+    },
+
+    async removeMenuItemImage(id: string, signal?: AbortSignal): Promise<ManagedMenuItem> {
+      await guard(signal)
+      requireId(id)
+      const current = managedItems.find((item) => item.id === id && item.isActive)
+      if (!current) throw new ApiError('notFound')
+      const next = { ...current, imageKey: null, imageUrl: null }
+      managedItems = managedItems.map((item) => (item.id === id ? next : item))
+      return structuredClone(next)
+    },
+
+    async deleteMenuItem(id: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      requireId(id)
+      if (!managedItems.some((item) => item.id === id && item.isActive)) throw new ApiError('notFound')
+      managedItems = managedItems.filter((item) => item.id !== id)
     },
 
     async listRootCategories(signal?: AbortSignal): Promise<CategorySummary[]> {
@@ -1059,4 +1164,4 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       settings = cloneSettings(next)
     },
   }
-        }
+                                               }
