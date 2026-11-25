@@ -38,7 +38,7 @@ const MOCK_BRANDING: RestaurantBranding = {
 }
 
 const MOCK_ORDERS: AdminOrderListItem[] = [
-  order('00000000-0000-4000-8000-000000000101', 'ORD-2841', 'منى عبد الله', 148.5, 0, '2026-11-11T09:12:00Z'),
+  order('00000000-0000-4000-8000-000000000101', 'ORD-2841', 'منى عبد الله', 148.5, 0, '2026-11-11T09:12:00Z', 2),
   order('00000000-0000-4000-8000-000000000102', 'ORD-2840', 'Ahmed Hassan', 92, 1, '2026-11-11T09:04:00Z'),
   order('00000000-0000-4000-8000-000000000103', 'ORD-2839', 'سارة محمود', 214.25, 1, '2026-11-11T08:57:00Z'),
   order('00000000-0000-4000-8000-000000000104', 'ORD-2838', 'Youssef Ali', 64, 3, '2026-11-11T08:41:00Z'),
@@ -54,6 +54,7 @@ function order(
   total: number,
   status: number,
   createdAtUtc: string,
+  paymentStatus = 1,
 ): AdminOrderListItem {
   return {
     orderId,
@@ -66,7 +67,7 @@ function order(
     vatAmount: Math.round(total * 0.14 * 100) / 100,
     createdAtUtc,
     paymentMethod: 1,
-    paymentStatus: 1,
+    paymentStatus,
   }
 }
 
@@ -355,6 +356,27 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       target.status = 2
     },
 
+    // Mirrors the reference: non-cash needs ProofSubmitted (2), cash needs CashDue (0).
+    async confirmPayment(id: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      if (!id.trim()) throw new ApiError('validation')
+      const target = orders.find((item) => item.orderId === id)
+      if (!target) throw new ApiError('notFound')
+      const expected = target.paymentMethod === 0 ? 0 : 2
+      if (target.paymentStatus !== expected) throw new ApiError('validation')
+      target.paymentStatus = 3
+    },
+
+    async rejectPaymentProof(id: string, rejectionReason: string, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      const reason = rejectionReason.trim()
+      if (!id.trim() || !reason || reason.length > 1000) throw new ApiError('validation')
+      const target = orders.find((item) => item.orderId === id)
+      if (!target) throw new ApiError('notFound')
+      if (target.paymentStatus !== 2) throw new ApiError('validation')
+      target.paymentStatus = 4
+    },
+
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
       await guard(signal)
       if (etag && etag === MOCK_BRANDING.eTag) {
@@ -405,4 +427,4 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       settings = cloneSettings(next)
     },
   }
-}
+          }
