@@ -29,4 +29,10 @@ export const MANAGE_MODULES: ManageModule[] = [
     subtitle: (lang) => manageCopy[lang].payments.subtitle,
     permissions: [PERMISSIONS.restaurantSettingsView, PERMISSIONS.restaurantSettingsManage],
   },
+  {
+    path: '/manage/staff',
+    title: (lang) => manageCopy[lang].staff.title,
+    subtitle: (lang) => manageCopy[lang].staff.subtitle,
+    permissions: [PERMISSIONS.staffView, PERMISSIONS.staffManage],
+  },
 ]
