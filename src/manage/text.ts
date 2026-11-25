@@ -130,6 +130,23 @@ export type ManageCopy = {
     uploadError: string
     hidden: string
   }
+  addons: {
+    title: string
+    subtitle: string
+    add: string
+    edit: string
+    empty: string
+    noItems: string
+    item: string
+    nameAr: string
+    nameEn: string
+    price: string
+    active: string
+    inactive: string
+    onlyActive: string
+    invalid: string
+    more: string
+  }
   roles: {
     title: string
     subtitle: string
@@ -308,6 +325,23 @@ const ar: ManageCopy = {
     uploadError: 'تعذّر رفع الصورة. استخدم JPEG أو PNG أو WebP.',
     hidden: 'مخفي',
   },
+  addons: {
+    title: 'إضافات الأصناف',
+    subtitle: 'أنشئ إضافات اختيارية بسعر لكل صنف، زي الجبنة الزيادة أو الصوص',
+    add: 'إضافة إضافة',
+    edit: 'تعديل الإضافة',
+    empty: 'لا توجد إضافات بعد.',
+    noItems: 'أضف صنفاً أولاً من شاشة أصناف القائمة.',
+    item: 'الصنف',
+    nameAr: 'الاسم بالعربية',
+    nameEn: 'الاسم بالإنجليزية',
+    price: 'السعر',
+    active: 'نشطة',
+    inactive: 'غير نشطة',
+    onlyActive: 'النشطة فقط',
+    invalid: 'اختر الصنف، واكتب الاسمين بالعربية والإنجليزية وسعراً صحيحاً.',
+    more: 'عرض المزيد',
+  },
   roles: {
     title: 'الأدوار والصلاحيات',
     subtitle: 'أنشئ أدواراً مخصصة وحدد صلاحيات كل دور (للمالك فقط)',
@@ -485,6 +519,23 @@ const en: ManageCopy = {
     invalid: 'Pick a category, write both names and a valid price, and use valid sizes without duplicates.',
     uploadError: 'Could not upload the image. Use JPEG, PNG or WebP.',
     hidden: 'Hidden',
+  },
+  addons: {
+    title: 'Item add-ons',
+    subtitle: 'Create optional priced add-ons per item, like extra cheese or a sauce',
+    add: 'Add add-on',
+    edit: 'Edit add-on',
+    empty: 'No add-ons yet.',
+    noItems: 'Add an item first from the Menu items screen.',
+    item: 'Item',
+    nameAr: 'Arabic name',
+    nameEn: 'English name',
+    price: 'Price',
+    active: 'Active',
+    inactive: 'Inactive',
+    onlyActive: 'Active only',
+    invalid: 'Pick an item, write both names and a valid price.',
+    more: 'Show more',
   },
   roles: {
     title: 'Roles and permissions',
