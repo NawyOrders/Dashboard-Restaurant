@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Api } from './api'
 import type { Lang } from './i18n'
 import { mapAdminOrders, mapLiveOrder } from './orders'
+import type { OrderPlacedNotificationPayload, OrderPlacedSource } from './realtime/ordersHub'
 import type { LiveOrder, OrderRow } from './types'
 
 export type OrdersLoadState = 'loading' | 'ready' | 'error'
@@ -49,7 +50,12 @@ export type RemoteLiveOrders = {
 
 // Fetches the restaurant-scoped order list for the live board. The backend
 // owns tenant isolation and permissions; this hook only manages view state.
-export function useLiveOrders(api: Api | null, lang: Lang): RemoteLiveOrders {
+export function useLiveOrders(
+  api: Api | null,
+  lang: Lang,
+  live?: OrderPlacedSource | null,
+  onOrderPlaced?: (payload: OrderPlacedNotificationPayload) => void,
+): RemoteLiveOrders {
   const [state, setState] = useState<OrdersLoadState>(api ? 'loading' : 'ready')
   const [orders, setOrders] = useState<LiveOrder[]>([])
   const [nonce, setNonce] = useState(0)
@@ -72,6 +78,16 @@ export function useLiveOrders(api: Api | null, lang: Lang): RemoteLiveOrders {
       })
     return () => controller.abort()
   }, [api, lang, nonce])
+
+  // A new order pushed over SignalR re-runs the list fetch so the board
+  // reflects the server state (group routing already filtered by branch).
+  useEffect(() => {
+    if (!live) return
+    return live.subscribe((payload) => {
+      onOrderPlaced?.(payload)
+      setNonce((value) => value + 1)
+    })
+  }, [live, onOrderPlaced])
 
   return { state, orders, reload: () => setNonce((value) => value + 1) }
 }

@@ -380,6 +380,25 @@ export function createHttpApi(options: HttpApiOptions): Api {
       })
     },
 
+    // Payment proof review: POST /api/v1/orders/{id}/confirm-payment (no body)
+    // needs payments.proof.confirm; the reviewer comes from the JWT.
+    async confirmPayment(id: string, signal?: AbortSignal) {
+      if (!id.trim()) throw new ApiError('validation')
+      await request(`/api/v1/orders/${encodeURIComponent(id)}/confirm-payment`, { method: 'POST', signal })
+    },
+
+    // POST /api/v1/orders/{id}/reject-proof needs payments.proof.reject and a
+    // reason that is non-empty after trimming and at most 1000 characters.
+    async rejectPaymentProof(id: string, rejectionReason: string, signal?: AbortSignal) {
+      const reason = rejectionReason.trim()
+      if (!id.trim() || !reason || reason.length > 1000) throw new ApiError('validation')
+      await request(`/api/v1/orders/${encodeURIComponent(id)}/reject-proof`, {
+        method: 'POST',
+        body: { rejectionReason: reason },
+        signal,
+      })
+    },
+
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
       const response = await request('/api/v1/Branding', { etag, signal })
       if (response.status === 304) {

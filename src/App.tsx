@@ -5,6 +5,7 @@ import { translations } from './i18n'
 import type { Session } from './auth'
 import { API_BASE_URL, clearLegacySession, revokeSession } from './auth'
 import { createApi, isMockErrorRequested, isMockRequested } from './api'
+import type { OrdersHubConfig } from './realtime/ordersHub'
 import { useOrders } from './useOrders'
 import { Login } from './components/Login'
 import type { SectionKey } from './types'
@@ -131,6 +132,28 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           })
         : null,
     [mockMode, search, session],
+  )
+  // The orders board runs on the real API outside mock mode; pages whose
+  // endpoints are not confirmed yet keep the local preview adapter.
+  const remoteApi = useMemo(
+    () =>
+      mockMode
+        ? null
+        : createApi({
+            baseUrl: API_BASE_URL,
+            getAccessToken: () => session.accessToken,
+            mock: false,
+          }),
+    [mockMode, session],
+  )
+  // Live order push settings; the connection itself opens only while the
+  // orders board is mounted (see useOrdersHub).
+  const ordersHub = useMemo<OrdersHubConfig | null>(
+    () =>
+      remoteApi
+        ? { baseUrl: API_BASE_URL, getAccessToken: () => session.accessToken }
+        : null,
+    [remoteApi, session],
   )
   // Preview pages use the local adapter until their endpoints are confirmed.
   const featureApi = useMemo(
@@ -267,7 +290,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                     />
                   }
                 />
-                <Route path="/orders" element={<OrdersPage t={t} lang={lang} api={featureApi} onToast={showToast} />} />
+                <Route path="/orders" element={<OrdersPage t={t} lang={lang} api={remoteApi ?? featureApi} ordersHub={ordersHub} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="/menu" element={<MenuPage t={t} lang={lang} api={featureApi} onToast={showToast} />} />
                 <Route path="/reports" element={<ReportsPage t={t} lang={lang} api={featureApi} onToast={showToast} />} />
                 <Route path="/settings" element={<SettingsPage t={t} lang={lang} storageKey={settingsStorageKey} onToast={showToast} />} />
