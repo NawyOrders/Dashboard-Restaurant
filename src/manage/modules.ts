@@ -1,0 +1,26 @@
+import { PERMISSIONS, type PermissionKey } from '../authz'
+import type { Lang } from '../i18n'
+import { manageCopy } from './text'
+
+export type ManageModule = {
+  path: string
+  title: (lang: Lang) => string
+  subtitle: (lang: Lang) => string
+  permissions: PermissionKey[]
+}
+
+// Each management PR adds its module here and a route in App.tsx.
+export const MANAGE_MODULES: ManageModule[] = [
+  {
+    path: '/manage/offers',
+    title: (lang) => manageCopy[lang].offers.title,
+    subtitle: (lang) => manageCopy[lang].offers.subtitle,
+    permissions: [PERMISSIONS.offersView, PERMISSIONS.offersManage],
+  },
+  {
+    path: '/manage/branches',
+    title: (lang) => manageCopy[lang].branches.title,
+    subtitle: (lang) => manageCopy[lang].branches.subtitle,
+    permissions: [PERMISSIONS.branchesView, PERMISSIONS.branchesManage],
+  },
+]
