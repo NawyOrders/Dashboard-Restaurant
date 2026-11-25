@@ -1,5 +1,8 @@
 import type {
   AdminOrderListItem,
+  PaymentMethodName,
+  RestaurantPaymentMethodConfig,
+  UpdatePaymentMethodInput,
   BrandingFetchResult,
   ListOrdersQuery,
   MenuCategory,
@@ -20,6 +23,12 @@ export interface Api {
   rejectOrder(id: string, rejectionReason: string, signal?: AbortSignal): Promise<void>
   confirmPayment(id: string, signal?: AbortSignal): Promise<void>
   rejectPaymentProof(id: string, rejectionReason: string, signal?: AbortSignal): Promise<void>
+  listPaymentMethods(signal?: AbortSignal): Promise<RestaurantPaymentMethodConfig[]>
+  updatePaymentMethod(
+    method: PaymentMethodName,
+    input: UpdatePaymentMethodInput,
+    signal?: AbortSignal,
+  ): Promise<RestaurantPaymentMethodConfig>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
   listMenu(signal?: AbortSignal): Promise<MenuCategory[]>
   updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void>

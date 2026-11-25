@@ -18,7 +18,10 @@ import {
   type ReportsSummary,
   type RestaurantBranding,
   type RestaurantSettings,
+  type PaymentMethodName,
+  type UpdatePaymentMethodInput,
 } from './types'
+import { parsePaymentMethod, validatePaymentMethodUpdate } from './paymentMethods'
 
 const DEFAULT_TIMEOUT_MS = 15_000
 
@@ -274,6 +277,14 @@ function readEnvelopeData(body: unknown): unknown {
   return body.data
 }
 
+// Same envelope check for endpoints whose data is an array.
+function readEnvelopeList(body: unknown): unknown[] {
+  if (!isRecord(body) || body.isSuccess !== true || !Array.isArray(body.data)) {
+    throw new ApiError('invalidResponse')
+  }
+  return body.data
+}
+
 export function createHttpApi(options: HttpApiOptions): Api {
   const fetchImpl = options.fetchImpl ?? fetch
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
@@ -397,6 +408,24 @@ export function createHttpApi(options: HttpApiOptions): Api {
         body: { rejectionReason: reason },
         signal,
       })
+    },
+
+    // GET /api/v1/admin/payment-methods needs restaurant.settings.view.
+    async listPaymentMethods(signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/payment-methods', { signal })
+      return readEnvelopeList(response.body).map(parsePaymentMethod)
+    },
+
+    // PATCH /api/v1/admin/payment-methods/{paymentMethod} needs
+    // restaurant.settings.manage. The route takes the method NAME, never a number.
+    async updatePaymentMethod(method: PaymentMethodName, input: UpdatePaymentMethodInput, signal?: AbortSignal) {
+      validatePaymentMethodUpdate(method, input)
+      const response = await request(`/api/v1/admin/payment-methods/${method}`, {
+        method: 'PATCH',
+        body: input,
+        signal,
+      })
+      return parsePaymentMethod(readEnvelopeData(response.body))
     },
 
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
