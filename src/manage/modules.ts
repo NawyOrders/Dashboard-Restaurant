@@ -23,4 +23,10 @@ export const MANAGE_MODULES: ManageModule[] = [
     subtitle: (lang) => manageCopy[lang].branches.subtitle,
     permissions: [PERMISSIONS.branchesView, PERMISSIONS.branchesManage],
   },
+  {
+    path: '/manage/payments',
+    title: (lang) => manageCopy[lang].payments.title,
+    subtitle: (lang) => manageCopy[lang].payments.subtitle,
+    permissions: [PERMISSIONS.restaurantSettingsView, PERMISSIONS.restaurantSettingsManage],
+  },
 ]
