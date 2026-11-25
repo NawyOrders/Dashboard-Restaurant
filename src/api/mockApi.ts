@@ -12,7 +12,17 @@ import {
   type ReportsSummary,
   type RestaurantBranding,
   type RestaurantSettings,
+  type PaymentMethodName,
+  type RestaurantPaymentMethodConfig,
+  type UpdatePaymentMethodInput,
 } from './types'
+import { validatePaymentMethodUpdate } from './paymentMethods'
+
+const MOCK_PAYMENT_METHODS: RestaurantPaymentMethodConfig[] = [
+  { paymentMethod: 'Cash', nameAr: 'الدفع عند الاستلام', nameEn: 'Cash on Delivery', accountIdentifier: null, isEnabled: true, requiresVerificationProof: false, instructionsAr: 'يرجى تجهيز المبلغ نقداً', instructionsEn: 'Please prepare exact cash upon delivery' },
+  { paymentMethod: 'InstaPay', nameAr: 'إنستا باي', nameEn: 'InstaPay', accountIdentifier: 'demo@instapay', isEnabled: true, requiresVerificationProof: true, instructionsAr: 'حول المبلغ وارفع صورة الإيصال', instructionsEn: 'Transfer the total and upload the receipt screenshot' },
+  { paymentMethod: 'MobileWallet', nameAr: 'محفظة إلكترونية', nameEn: 'Mobile Wallet', accountIdentifier: '01001234567', isEnabled: false, requiresVerificationProof: true, instructionsAr: null, instructionsEn: null },
+]
 
 // OrderStatus codes from the API reference: 0=New, 1=Accepted, 2=Rejected,
 // 3=Preparing, 4=Ready, 5=OutForDelivery, 6=Completed, 7=CancelledByRestaurant,
@@ -290,6 +300,7 @@ export function createMockApi(options: MockApiOptions = {}): Api {
     month: cloneReport(MOCK_REPORTS.month),
   }
   let settings = cloneSettings(MOCK_SETTINGS)
+  let paymentMethods = MOCK_PAYMENT_METHODS.map((item) => ({ ...item }))
 
   async function guard(signal?: AbortSignal): Promise<void> {
     await wait(latencyMs, signal)
@@ -375,6 +386,34 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       if (!target) throw new ApiError('notFound')
       if (target.paymentStatus !== 2) throw new ApiError('validation')
       target.paymentStatus = 4
+    },
+
+    async listPaymentMethods(signal?: AbortSignal): Promise<RestaurantPaymentMethodConfig[]> {
+      await guard(signal)
+      return paymentMethods.map((item) => ({ ...item }))
+    },
+
+    async updatePaymentMethod(
+      method: PaymentMethodName,
+      input: UpdatePaymentMethodInput,
+      signal?: AbortSignal,
+    ): Promise<RestaurantPaymentMethodConfig> {
+      await guard(signal)
+      validatePaymentMethodUpdate(method, input)
+      const target = paymentMethods.find((item) => item.paymentMethod === method)
+      if (!target) throw new ApiError('notFound')
+      const next = { ...target }
+      if (input.nameAr != null) next.nameAr = input.nameAr
+      if (input.nameEn != null) next.nameEn = input.nameEn
+      if (input.accountIdentifier != null) next.accountIdentifier = input.accountIdentifier || null
+      if (input.isEnabled != null) next.isEnabled = input.isEnabled
+      if (input.requiresVerificationProof != null) next.requiresVerificationProof = input.requiresVerificationProof
+      if (input.instructionsAr != null) next.instructionsAr = input.instructionsAr || null
+      if (input.instructionsEn != null) next.instructionsEn = input.instructionsEn || null
+      // Non-cash methods that are enabled need an account identifier.
+      if (method !== 'Cash' && next.isEnabled && !next.accountIdentifier) throw new ApiError('validation')
+      paymentMethods = paymentMethods.map((item) => (item.paymentMethod === method ? next : item))
+      return { ...next }
     },
 
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
