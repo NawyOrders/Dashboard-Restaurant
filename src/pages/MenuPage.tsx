@@ -76,9 +76,9 @@ export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
   useEffect(() => {
     let cancelled = false
     api
-      .listBranches()
-      .then((data) => {
-        if (!cancelled) setBranches(data)
+      .listBranches({ pageSize: 100 })
+      .then((page) => {
+        if (!cancelled) setBranches(page.items)
       })
       .catch(() => {
         // Toggles stay disabled-free; a failed toggle rolls back with a toast.
