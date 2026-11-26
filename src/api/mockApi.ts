@@ -12,7 +12,6 @@ import {
   type AdminOrderDetails,
   type AdminOrderListItem,
   type BestSeller,
-  type BranchDetails,
   type BrandingFetchResult,
   type ListOrdersQuery,
   type MenuCategory,
@@ -1281,19 +1280,6 @@ export function createMockApi(options: MockApiOptions = {}): Api {
           return { id: category.id, nameAr: category.nameAr, nameEn: category.nameEn, count: items.length, items }
         })
       return [...base, ...added]
-    },
-
-    async listBranches(signal?: AbortSignal): Promise<BranchDetails[]> {
-      await guard(signal)
-      return [{
-        id: '00000000-0000-4000-8000-0000000000bb',
-        nameAr: 'فرع المعادي',
-        nameEn: 'Maadi Branch',
-        address: '15 Street 9, Maadi, Cairo',
-        isActive: true,
-        isPrimary: true,
-        sortOrder: 0,
-      }]
     },
 
     async updateMenuItemAvailability(itemId: string, branchId: string, available: boolean, signal?: AbortSignal): Promise<void> {
