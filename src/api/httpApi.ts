@@ -9,7 +9,6 @@ import {
   stringOrNull,
   type AdminOrderListItem,
   type BestSeller,
-  type BranchDetails,
   type BrandingFetchResult,
   type ListOrdersQuery,
   type MenuCategory,
@@ -285,30 +284,6 @@ function parseBranding(data: unknown): RestaurantBranding {
     socialLinks,
     eTag: stringOrNull(data.eTag),
   }
-}
-
-function parseBranch(value: unknown): BranchDetails | null {
-  if (!isRecord(value)) return null
-  const id = stringOrNull(value.id)
-  if (!id) return null
-  return {
-    id,
-    nameAr: stringOrNull(value.nameAr) ?? '',
-    nameEn: stringOrNull(value.nameEn) ?? '',
-    address: stringOrNull(value.address) ?? '',
-    isActive: value.isActive === true,
-    isPrimary: value.isPrimary === true,
-    sortOrder: numberOrNull(value.sortOrder) ?? 0,
-  }
-}
-
-function parseBranches(data: unknown): BranchDetails[] {
-  // The admin branches endpoint returns a paged envelope.
-  if (!isRecord(data) || !Array.isArray(data.items)) throw new ApiError('invalidResponse')
-  return data.items.flatMap((value) => {
-    const branch = parseBranch(value)
-    return branch ? [branch] : []
-  })
 }
 
 function parsePublicMenuItem(value: unknown): MenuItem | null {
@@ -904,11 +879,6 @@ export function createHttpApi(options: HttpApiOptions): Api {
           items: categoryItems,
         }]
       })
-    },
-
-    async listBranches(signal?: AbortSignal): Promise<BranchDetails[]> {
-      const response = await request('/api/v1/admin/branches', { signal })
-      return parseBranches(readEnvelopeData(response.body))
     },
 
     // Availability is per branch: PATCH .../items/{itemId}/branches/{branchId}/availability.
