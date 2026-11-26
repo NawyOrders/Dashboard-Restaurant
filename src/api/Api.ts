@@ -33,7 +33,6 @@ import type {
 } from './offers'
 import type {
   AdminOrderDetails,
-  BranchDetails,
   AdminOrderListItem,
   PaymentMethodName,
   RestaurantPaymentMethodConfig,
@@ -108,7 +107,6 @@ export interface Api {
   updateDeliverySettings(input: DeliverySettings, signal?: AbortSignal): Promise<DeliverySettings>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
   listMenu(signal?: AbortSignal): Promise<MenuCategory[]>
-  listBranches(signal?: AbortSignal): Promise<BranchDetails[]>
   updateMenuItemAvailability(itemId: string, branchId: string, available: boolean, signal?: AbortSignal): Promise<void>
   getReportsSummary(range: ReportRange, signal?: AbortSignal): Promise<ReportsSummary>
   getRestaurantSettings(signal?: AbortSignal): Promise<RestaurantSettings>
