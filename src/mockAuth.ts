@@ -1,4 +1,5 @@
 import type { Session } from './auth'
+import { PERMISSIONS } from './authz'
 
 export type MockRole = 'Owner' | 'Manager' | 'Staff'
 
@@ -13,24 +14,61 @@ export const MOCK_API_ORIGIN = 'mock://local'
 
 // Development-only identities. They are never sent to the tenant API and are
 // not a substitute for server-issued roles or backend authorization.
+// Permission sets mirror the RBAC matrix in the API reference (section 5):
+// Owner receives all 24 permissions; Manager and Staff use the BranchManager
+// and OrderStaff defaults.
 const MOCK_ACCOUNTS: Record<MockRole, MockAccount> = {
   Owner: {
     id: 'mock-owner',
     name: 'Demo Owner',
     email: 'owner@mock.local',
-    permissions: ['orders:read', 'orders:write', 'menu:read', 'menu:write', 'reports:read', 'staff:manage', 'settings:manage'],
+    permissions: Object.values(PERMISSIONS),
   },
   Manager: {
     id: 'mock-manager',
     name: 'Demo Manager',
     email: 'manager@mock.local',
-    permissions: ['orders:read', 'orders:write', 'menu:read', 'reports:read', 'staff:read'],
+    permissions: [
+      PERMISSIONS.restaurantSettingsView,
+      PERMISSIONS.branchesView,
+      PERMISSIONS.branchesManage,
+      PERMISSIONS.menuView,
+      PERMISSIONS.menuAvailability,
+      PERMISSIONS.offersView,
+      PERMISSIONS.staffView,
+      PERMISSIONS.staffManage,
+      PERMISSIONS.ordersView,
+      PERMISSIONS.ordersReceive,
+      PERMISSIONS.ordersAccept,
+      PERMISSIONS.ordersReject,
+      PERMISSIONS.ordersStatusUpdate,
+      PERMISSIONS.ordersCancel,
+      PERMISSIONS.paymentsView,
+      PERMISSIONS.paymentsProofConfirm,
+      PERMISSIONS.paymentsProofReject,
+      PERMISSIONS.reportsBranchView,
+      PERMISSIONS.reportsOperationalView,
+      PERMISSIONS.auditView,
+    ],
   },
   Staff: {
     id: 'mock-staff',
     name: 'Demo Staff',
     email: 'staff@mock.local',
-    permissions: ['orders:read', 'orders:write'],
+    permissions: [
+      PERMISSIONS.branchesView,
+      PERMISSIONS.menuView,
+      PERMISSIONS.offersView,
+      PERMISSIONS.ordersView,
+      PERMISSIONS.ordersReceive,
+      PERMISSIONS.ordersAccept,
+      PERMISSIONS.ordersReject,
+      PERMISSIONS.ordersStatusUpdate,
+      PERMISSIONS.paymentsView,
+      PERMISSIONS.paymentsProofConfirm,
+      PERMISSIONS.paymentsProofReject,
+      PERMISSIONS.reportsOperationalView,
+    ],
   },
 }
 

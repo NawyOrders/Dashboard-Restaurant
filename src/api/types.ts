@@ -243,6 +243,32 @@ export class ApiError extends Error {
   }
 }
 
+// GET/PATCH /api/v1/admin/payment-methods (reference section 16).
+export type PaymentMethodName = 'Cash' | 'InstaPay' | 'MobileWallet'
+
+export type RestaurantPaymentMethodConfig = {
+  paymentMethod: PaymentMethodName
+  nameAr: string
+  nameEn: string
+  accountIdentifier: string | null
+  isEnabled: boolean
+  requiresVerificationProof: boolean
+  instructionsAr: string | null
+  instructionsEn: string | null
+}
+
+// Omitted or null keeps the stored value; an empty string clears a nullable
+// text field (accountIdentifier, instructionsAr, instructionsEn).
+export type UpdatePaymentMethodInput = {
+  nameAr?: string | null
+  nameEn?: string | null
+  accountIdentifier?: string | null
+  isEnabled?: boolean | null
+  requiresVerificationProof?: boolean | null
+  instructionsAr?: string | null
+  instructionsEn?: string | null
+}
+
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

@@ -3,10 +3,14 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from
 import type { Lang } from './i18n'
 import { translations } from './i18n'
 import type { Session } from './auth'
+import { canAny } from './authz'
+import { MANAGE_MODULES } from './manage/modules'
 import { API_BASE_URL, clearLegacySession, refreshSession, revokeSession } from './auth'
 import { createApi, isMockErrorRequested, isMockRequested } from './api'
+import type { OrdersHubConfig } from './realtime/ordersHub'
 import { useOrders } from './useOrders'
 import { Login } from './components/Login'
+import { SetPassword, SET_PASSWORD_PATH } from './components/SetPassword'
 import type { SectionKey } from './types'
 import { filterOrders } from './orders'
 import { MobileDrawer, MobileHeader, Sidebar } from './components/Sidebar'
@@ -18,6 +22,15 @@ const OrdersPage = lazy(() => import('./pages/OrdersPage'))
 const MenuPage = lazy(() => import('./pages/MenuPage'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const ManagePage = lazy(() => import('./pages/ManagePage'))
+const OffersPage = lazy(() => import('./pages/OffersPage'))
+const BranchesPage = lazy(() => import('./pages/BranchesPage'))
+const PaymentsPage = lazy(() => import('./pages/PaymentsPage'))
+const StaffPage = lazy(() => import('./pages/StaffPage'))
+const RolesPage = lazy(() => import('./pages/RolesPage'))
+const CategoriesPage = lazy(() => import('./pages/CategoriesPage'))
+const MenuItemsPage = lazy(() => import('./pages/MenuItemsPage'))
+const AddOnsPage = lazy(() => import('./pages/AddOnsPage'))
 
 const PATH_BY_SECTION: Record<SectionKey, string> = {
   home: '/',
@@ -31,7 +44,7 @@ function sectionFromPath(pathname: string): SectionKey {
   if (pathname.startsWith('/orders')) return 'orders'
   if (pathname.startsWith('/menu')) return 'menu'
   if (pathname.startsWith('/reports')) return 'reports'
-  if (pathname.startsWith('/settings')) return 'settings'
+  if (pathname.startsWith('/settings') || pathname.startsWith('/manage')) return 'settings'
   return 'home'
 }
 
@@ -108,6 +121,12 @@ export default function App() {
     <BrowserRouter>
       {session ? (
         <Dashboard key={`${session.apiOrigin}:${session.user.id}`} session={session} lang={lang} setLang={setLang} onLogout={handleLogout} />
+      ) : typeof window !== 'undefined' && window.location.pathname === SET_PASSWORD_PATH ? (
+        <SetPassword
+          lang={lang}
+          onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')}
+          onDone={() => window.location.assign('/')}
+        />
       ) : (
         <Login t={t} langToggle={t.nav.langToggle} onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')} onSuccess={handleSuccess} initialNotice={notice ? t.auth[notice] : undefined} />
       )}
@@ -145,6 +164,28 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           })
         : null,
     [mockMode, search, session],
+  )
+  // The orders board runs on the real API outside mock mode; pages whose
+  // endpoints are not confirmed yet keep the local preview adapter.
+  const remoteApi = useMemo(
+    () =>
+      mockMode
+        ? null
+        : createApi({
+            baseUrl: API_BASE_URL,
+            getAccessToken: () => session.accessToken,
+            mock: false,
+          }),
+    [mockMode, session],
+  )
+  // Live order push settings; the connection itself opens only while the
+  // orders board is mounted (see useOrdersHub).
+  const ordersHub = useMemo<OrdersHubConfig | null>(
+    () =>
+      remoteApi
+        ? { baseUrl: API_BASE_URL, getAccessToken: () => session.accessToken }
+        : null,
+    [remoteApi, session],
   )
   // Preview pages use the local adapter until their endpoints are confirmed.
   const featureApi = useMemo(
@@ -286,10 +327,19 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                     />
                   }
                 />
-                <Route path="/orders" element={<OrdersPage t={t} lang={lang} api={featureApi} onToast={showToast} />} />
+                <Route path="/orders" element={<OrdersPage t={t} lang={lang} api={remoteApi ?? featureApi} ordersHub={ordersHub} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="/menu" element={<MenuPage t={t} lang={lang} api={featureApi} onToast={showToast} />} />
                 <Route path="/reports" element={<ReportsPage t={t} lang={lang} api={featureApi} onToast={showToast} />} />
-                <Route path="/settings" element={<SettingsPage t={t} lang={lang} storageKey={settingsStorageKey} onToast={showToast} />} />
+                <Route path="/settings" element={<SettingsPage t={t} lang={lang} storageKey={settingsStorageKey} onToast={showToast} onOpenManage={canAny(session.user.permissions, ...MANAGE_MODULES.flatMap((module) => module.permissions)) ? () => navigate('/manage') : undefined} />} />
+                <Route path="/manage" element={<ManagePage lang={lang} dir={t.dir} permissions={session.user.permissions} />} />
+                <Route path="/manage/offers" element={<OffersPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} uploadsEnabled={Boolean(remoteApi)} onToast={showToast} />} />
+                <Route path="/manage/branches" element={<BranchesPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
+                <Route path="/manage/payments" element={<PaymentsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
+                <Route path="/manage/staff" element={<StaffPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
+                <Route path="/manage/roles" element={<RolesPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
+                <Route path="/manage/categories" element={<CategoriesPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
+                <Route path="/manage/menu-items" element={<MenuItemsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} uploadsEnabled={Boolean(remoteApi)} onToast={showToast} />} />
+                <Route path="/manage/addons" element={<AddOnsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

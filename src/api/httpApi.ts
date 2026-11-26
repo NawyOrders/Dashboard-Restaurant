@@ -9,7 +9,6 @@ import {
   stringOrNull,
   type AdminOrderListItem,
   type BestSeller,
-  type BranchDetails,
   type BrandingFetchResult,
   type ListOrdersQuery,
   type MenuCategory,
@@ -23,7 +22,78 @@ import {
   type ReportsSummary,
   type RestaurantBranding,
   type RestaurantSettings,
+  type PaymentMethodName,
+  type UpdatePaymentMethodInput,
 } from './types'
+import {
+  parseManagedMenuItem,
+  parseMenuItemImageUploadUrl,
+  validateMenuItemImageRequest,
+  validateMenuItemInput,
+  type CreateMenuItemInput,
+  type MenuItemImageUploadRequest,
+  type UpdateMenuItemInput,
+} from './menuItems'
+import {
+  parseCategorySummary,
+  parseManagedCategory,
+  validateCreateCategory,
+  validateReorder,
+  validateUpdateCategory,
+  type CreateCategoryInput,
+  type ReorderCategoriesInput,
+  type UpdateCategoryInput,
+} from './categories'
+import {
+  parsePermission,
+  parseRole,
+  validateCreateRole,
+  validatePermissionKeys,
+  validateUpdateRole,
+  type CreateRoleInput,
+  type UpdateRoleInput,
+} from './roles'
+import {
+  parseStaffUser,
+  validateInviteStaff,
+  validateStaffListQuery,
+  type InviteStaffInput,
+  type ListStaffQuery,
+} from './staff'
+import {
+  parseBranch,
+  parseDeliverySettings,
+  validateCreateBranch,
+  validateDeliverySettings,
+  validateUpdateBranch,
+  type CreateBranchInput,
+  type DeliverySettings,
+  type ListBranchesQuery,
+  type UpdateBranchInput,
+} from './branches'
+import {
+  parseOffer,
+  parseOfferImageUploadUrl,
+  validateCreateOffer,
+  validateOfferImageRequest,
+  validateOfferListQuery,
+  validateUpdateOffer,
+  type CreateOfferInput,
+  type ListOffersQuery,
+  type OfferImageUploadRequest,
+  type OfferStatusInput,
+  type UpdateOfferInput,
+} from './offers'
+import {
+  parseAddOn,
+  validateCreateAddOn,
+  validateUpdateAddOn,
+  type CreateAddOnInput,
+  type ListAddOnsQuery,
+  type UpdateAddOnInput,
+} from './addOns'
+import { parsePaged, requireId, validatePaging } from './shared'
+import { parsePaymentMethod, validatePaymentMethodUpdate } from './paymentMethods'
 
 const DEFAULT_TIMEOUT_MS = 15_000
 
@@ -35,7 +105,7 @@ export type HttpApiOptions = {
 }
 
 type RequestOptions = {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   query?: Record<string, string | number | undefined>
   body?: object
   etag?: string
@@ -216,30 +286,6 @@ function parseBranding(data: unknown): RestaurantBranding {
   }
 }
 
-function parseBranch(value: unknown): BranchDetails | null {
-  if (!isRecord(value)) return null
-  const id = stringOrNull(value.id)
-  if (!id) return null
-  return {
-    id,
-    nameAr: stringOrNull(value.nameAr) ?? '',
-    nameEn: stringOrNull(value.nameEn) ?? '',
-    address: stringOrNull(value.address) ?? '',
-    isActive: value.isActive === true,
-    isPrimary: value.isPrimary === true,
-    sortOrder: numberOrNull(value.sortOrder) ?? 0,
-  }
-}
-
-function parseBranches(data: unknown): BranchDetails[] {
-  // The admin branches endpoint returns a paged envelope.
-  if (!isRecord(data) || !Array.isArray(data.items)) throw new ApiError('invalidResponse')
-  return data.items.flatMap((value) => {
-    const branch = parseBranch(value)
-    return branch ? [branch] : []
-  })
-}
-
 function parsePublicMenuItem(value: unknown): MenuItem | null {
   if (!isRecord(value)) return null
   const id = stringOrNull(value.id)
@@ -361,6 +407,14 @@ function parseSettings(data: unknown): RestaurantSettings {
 
 function readEnvelopeData(body: unknown): unknown {
   if (!isRecord(body) || body.isSuccess !== true || !isRecord(body.data)) {
+    throw new ApiError('invalidResponse')
+  }
+  return body.data
+}
+
+// Same envelope check for endpoints whose data is an array.
+function readEnvelopeList(body: unknown): unknown[] {
+  if (!isRecord(body) || body.isSuccess !== true || !Array.isArray(body.data)) {
     throw new ApiError('invalidResponse')
   }
   return body.data
@@ -490,6 +544,304 @@ export function createHttpApi(options: HttpApiOptions): Api {
       })
     },
 
+    // Payment proof review: POST /api/v1/orders/{id}/confirm-payment (no body)
+    // needs payments.proof.confirm; the reviewer comes from the JWT.
+    async confirmPayment(id: string, signal?: AbortSignal) {
+      if (!id.trim()) throw new ApiError('validation')
+      await request(`/api/v1/orders/${encodeURIComponent(id)}/confirm-payment`, { method: 'POST', signal })
+    },
+
+    // POST /api/v1/orders/{id}/reject-proof needs payments.proof.reject and a
+    // reason that is non-empty after trimming and at most 1000 characters.
+    async rejectPaymentProof(id: string, rejectionReason: string, signal?: AbortSignal) {
+      const reason = rejectionReason.trim()
+      if (!id.trim() || !reason || reason.length > 1000) throw new ApiError('validation')
+      await request(`/api/v1/orders/${encodeURIComponent(id)}/reject-proof`, {
+        method: 'POST',
+        body: { rejectionReason: reason },
+        signal,
+      })
+    },
+
+    // GET /api/v1/admin/payment-methods needs restaurant.settings.view.
+    async listPaymentMethods(signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/payment-methods', { signal })
+      return readEnvelopeList(response.body).map(parsePaymentMethod)
+    },
+
+    // PATCH /api/v1/admin/payment-methods/{paymentMethod} needs
+    // restaurant.settings.manage. The route takes the method NAME, never a number.
+    async updatePaymentMethod(method: PaymentMethodName, input: UpdatePaymentMethodInput, signal?: AbortSignal) {
+      validatePaymentMethodUpdate(method, input)
+      const response = await request(`/api/v1/admin/payment-methods/${method}`, {
+        method: 'PATCH',
+        body: input,
+        signal,
+      })
+      return parsePaymentMethod(readEnvelopeData(response.body))
+    },
+
+    // Offers (reference section 14). offers.view reads, offers.manage writes.
+    // POST /api/v1/admin/offers/image-upload-url returns a presigned PUT URL.
+    async createOfferImageUploadUrl(input: OfferImageUploadRequest, signal?: AbortSignal) {
+      validateOfferImageRequest(input)
+      const response = await request('/api/v1/admin/offers/image-upload-url', { method: 'POST', body: input, signal })
+      return parseOfferImageUploadUrl(readEnvelopeData(response.body))
+    },
+
+    async createOffer(input: CreateOfferInput, signal?: AbortSignal) {
+      validateCreateOffer(input)
+      const response = await request('/api/v1/admin/offers', { method: 'POST', body: input, signal })
+      return parseOffer(readEnvelopeData(response.body))
+    },
+
+    async listOffers(query: ListOffersQuery = {}, signal?: AbortSignal) {
+      validateOfferListQuery(query)
+      validatePaging(query.pageNumber, query.pageSize)
+      const response = await request('/api/v1/admin/offers', {
+        query: { kind: query.kind, status: query.status, pageNumber: query.pageNumber, pageSize: query.pageSize },
+        signal,
+      })
+      return parsePaged(readEnvelopeData(response.body), parseOffer)
+    },
+
+    async getOffer(id: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/admin/offers/${requireId(id)}`, { signal })
+      return parseOffer(readEnvelopeData(response.body))
+    },
+
+    async updateOffer(id: string, input: UpdateOfferInput, signal?: AbortSignal) {
+      requireId(id)
+      validateUpdateOffer(input)
+      const response = await request(`/api/v1/admin/offers/${id}`, { method: 'PUT', body: input, signal })
+      return parseOffer(readEnvelopeData(response.body))
+    },
+
+    async setOfferStatus(id: string, input: OfferStatusInput, signal?: AbortSignal) {
+      requireId(id)
+      const response = await request(`/api/v1/admin/offers/${id}/status`, { method: 'PATCH', body: input, signal })
+      return parseOffer(readEnvelopeData(response.body))
+    },
+
+    async deleteOffer(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/admin/offers/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Admin menu items and images (reference section 12), all menu.edit.
+    // Upload the bytes to uploadUrl with a plain PUT (no Authorization header),
+    // then pass objectKey as imageKey on create or update.
+    async createMenuItemImageUploadUrl(input: MenuItemImageUploadRequest, signal?: AbortSignal) {
+      validateMenuItemImageRequest(input)
+      const response = await request('/api/v1/admin/menu/items/image-upload-url', { method: 'POST', body: input, signal })
+      return parseMenuItemImageUploadUrl(readEnvelopeData(response.body))
+    },
+
+    async createMenuItem(input: CreateMenuItemInput, signal?: AbortSignal) {
+      validateMenuItemInput(input)
+      const response = await request('/api/v1/admin/menu/items', { method: 'POST', body: input, signal })
+      return parseManagedMenuItem(readEnvelopeData(response.body))
+    },
+
+    async updateMenuItem(id: string, input: UpdateMenuItemInput, signal?: AbortSignal) {
+      requireId(id)
+      validateMenuItemInput(input)
+      const response = await request(`/api/v1/admin/menu/items/${id}`, { method: 'PUT', body: input, signal })
+      return parseManagedMenuItem(readEnvelopeData(response.body))
+    },
+
+    async removeMenuItemImage(id: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/admin/menu/items/${requireId(id)}/image`, { method: 'DELETE', signal })
+      return parseManagedMenuItem(readEnvelopeData(response.body))
+    },
+
+    async deleteMenuItem(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/admin/menu/items/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Admin menu add-ons (reference section 13), all menu.edit.
+    async listAddOns(query: ListAddOnsQuery = {}, signal?: AbortSignal) {
+      validatePaging(query.pageNumber, query.pageSize)
+      const response = await request('/api/v1/admin/menu/addons', {
+        query: {
+          isActive: query.isActive === undefined ? undefined : String(query.isActive),
+          pageNumber: query.pageNumber,
+          pageSize: query.pageSize,
+        },
+        signal,
+      })
+      return parsePaged(readEnvelopeData(response.body), parseAddOn)
+    },
+
+    async createAddOn(itemId: string, input: CreateAddOnInput, signal?: AbortSignal) {
+      validateCreateAddOn(input)
+      const response = await request(`/api/v1/admin/menu/items/${requireId(itemId)}/addons`, { method: 'POST', body: input, signal })
+      return parseAddOn(readEnvelopeData(response.body))
+    },
+
+    async updateAddOn(itemId: string, addOnId: string, input: UpdateAddOnInput, signal?: AbortSignal) {
+      requireId(itemId)
+      requireId(addOnId)
+      validateUpdateAddOn(input)
+      const response = await request(`/api/v1/admin/menu/items/${itemId}/addons/${addOnId}`, { method: 'PATCH', body: input, signal })
+      return parseAddOn(readEnvelopeData(response.body))
+    },
+
+    async deleteAddOn(itemId: string, addOnId: string, signal?: AbortSignal) {
+      await request(`/api/v1/admin/menu/items/${requireId(itemId)}/addons/${requireId(addOnId)}`, { method: 'DELETE', signal })
+    },
+
+    // Menu categories (reference section 11). Writes need menu.edit and share
+    // the /api/v1/menu/categories path with the public reads.
+    async listRootCategories(signal?: AbortSignal) {
+      const response = await request('/api/v1/menu/categories', { signal })
+      return readEnvelopeList(response.body).map(parseCategorySummary)
+    },
+
+    async listSubcategories(categoryId: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/menu/categories/${requireId(categoryId)}/subcategories`, { signal })
+      return readEnvelopeList(response.body).map(parseCategorySummary)
+    },
+
+    async createCategory(input: CreateCategoryInput, signal?: AbortSignal) {
+      validateCreateCategory(input)
+      const response = await request('/api/v1/menu/categories', { method: 'POST', body: input, signal })
+      return parseManagedCategory(readEnvelopeData(response.body))
+    },
+
+    async updateCategory(id: string, input: UpdateCategoryInput, signal?: AbortSignal) {
+      requireId(id)
+      validateUpdateCategory(input)
+      const response = await request(`/api/v1/menu/categories/${id}`, { method: 'PUT', body: input, signal })
+      return parseManagedCategory(readEnvelopeData(response.body))
+    },
+
+    // PUT /api/v1/menu/categories/reorder must list every active category at that level once.
+    async reorderCategories(input: ReorderCategoriesInput, signal?: AbortSignal) {
+      validateReorder(input)
+      await request('/api/v1/menu/categories/reorder', { method: 'PUT', body: input, signal })
+    },
+
+    async deleteCategory(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/menu/categories/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Roles and permissions (reference section 18): Owner / RestaurantOwner only.
+    async listPermissions(signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/permissions', { signal })
+      return readEnvelopeList(response.body).map(parsePermission)
+    },
+
+    async listRoles(signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/roles', { signal })
+      return readEnvelopeList(response.body).map(parseRole)
+    },
+
+    async getRole(id: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/admin/roles/${requireId(id)}`, { signal })
+      return parseRole(readEnvelopeData(response.body))
+    },
+
+    async createRole(input: CreateRoleInput, signal?: AbortSignal) {
+      validateCreateRole(input)
+      const response = await request('/api/v1/admin/roles', { method: 'POST', body: input, signal })
+      return parseRole(readEnvelopeData(response.body))
+    },
+
+    async updateRole(id: string, input: UpdateRoleInput, signal?: AbortSignal) {
+      requireId(id)
+      validateUpdateRole(input)
+      const response = await request(`/api/v1/admin/roles/${id}`, { method: 'PATCH', body: input, signal })
+      return parseRole(readEnvelopeData(response.body))
+    },
+
+    async replaceRolePermissions(id: string, permissionKeys: string[], signal?: AbortSignal) {
+      requireId(id)
+      validatePermissionKeys(permissionKeys)
+      await request(`/api/v1/admin/roles/${id}/permissions`, { method: 'PUT', body: { permissionKeys }, signal })
+    },
+
+    async deleteRole(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/admin/roles/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Staff (reference section 17): Owner / RestaurantOwner only, prefix /api/v1/staff.
+    async listStaff(query: ListStaffQuery = {}, signal?: AbortSignal) {
+      validateStaffListQuery(query)
+      const response = await request('/api/v1/staff', {
+        query: {
+          branchId: query.branchId,
+          role: query.role || undefined,
+          search: query.search?.trim() || undefined,
+          status: query.status,
+          pageNumber: query.pageNumber,
+          pageSize: query.pageSize,
+        },
+        signal,
+      })
+      return parsePaged(readEnvelopeData(response.body), parseStaffUser)
+    },
+
+    async inviteStaff(input: InviteStaffInput, signal?: AbortSignal) {
+      validateInviteStaff(input)
+      const response = await request('/api/v1/staff/invitations', { method: 'POST', body: input, signal })
+      return parseStaffUser(readEnvelopeData(response.body))
+    },
+
+    async resendStaffInvitation(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/staff/${requireId(id)}/resend-invitation`, { method: 'POST', signal })
+    },
+
+    async changeStaffRole(id: string, roleId: string, signal?: AbortSignal) {
+      requireId(id)
+      requireId(roleId)
+      await request(`/api/v1/staff/${id}/role`, { method: 'PUT', body: { roleId }, signal })
+    },
+
+    async deleteStaff(id: string, signal?: AbortSignal) {
+      await request(`/api/v1/staff/${requireId(id)}`, { method: 'DELETE', signal })
+    },
+
+    // Branches and delivery settings (reference section 15).
+    // branches.view reads, branches.manage writes.
+    async listBranches(query: ListBranchesQuery = {}, signal?: AbortSignal) {
+      validatePaging(query.pageNumber, query.pageSize)
+      const response = await request('/api/v1/admin/branches', {
+        query: { pageNumber: query.pageNumber, pageSize: query.pageSize },
+        signal,
+      })
+      return parsePaged(readEnvelopeData(response.body), parseBranch)
+    },
+
+    async getBranch(id: string, signal?: AbortSignal) {
+      const response = await request(`/api/v1/admin/branches/${requireId(id)}`, { signal })
+      return parseBranch(readEnvelopeData(response.body))
+    },
+
+    async createBranch(input: CreateBranchInput, signal?: AbortSignal) {
+      validateCreateBranch(input)
+      const response = await request('/api/v1/admin/branches', { method: 'POST', body: input, signal })
+      return parseBranch(readEnvelopeData(response.body))
+    },
+
+    async updateBranch(id: string, input: UpdateBranchInput, signal?: AbortSignal) {
+      requireId(id)
+      validateUpdateBranch(input)
+      const response = await request(`/api/v1/admin/branches/${id}`, { method: 'PATCH', body: input, signal })
+      return parseBranch(readEnvelopeData(response.body))
+    },
+
+    // GET/PUT /api/v1/admin/delivery-settings: view needs branches.view, PUT needs branches.manage.
+    async getDeliverySettings(signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/delivery-settings', { signal })
+      return parseDeliverySettings(readEnvelopeData(response.body))
+    },
+
+    async updateDeliverySettings(input: DeliverySettings, signal?: AbortSignal) {
+      validateDeliverySettings(input)
+      const response = await request('/api/v1/admin/delivery-settings', { method: 'PUT', body: input, signal })
+      return parseDeliverySettings(readEnvelopeData(response.body))
+    },
+
     async getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult> {
       const response = await request('/api/v1/Branding', { etag, signal })
       if (response.status === 304) {
@@ -527,11 +879,6 @@ export function createHttpApi(options: HttpApiOptions): Api {
           items: categoryItems,
         }]
       })
-    },
-
-    async listBranches(signal?: AbortSignal): Promise<BranchDetails[]> {
-      const response = await request('/api/v1/admin/branches', { signal })
-      return parseBranches(readEnvelopeData(response.body))
     },
 
     // Availability is per branch: PATCH .../items/{itemId}/branches/{branchId}/availability.

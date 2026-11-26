@@ -115,6 +115,7 @@ export function mapLiveOrder(item: AdminOrderListItem, lang: Lang): LiveOrder {
     status: mapLiveOrderStatus(item.status) ?? 'delivered',
     payment: item.paymentMethod === 0 ? 'cash' : item.paymentMethod === 2 ? 'wallet' : 'instapay',
     paymentConfirmed: item.paymentStatus === 3,
+    paymentStatus: item.paymentStatus ?? undefined,
     lines: [],
   }
 }
