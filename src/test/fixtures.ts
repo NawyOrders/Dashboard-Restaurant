@@ -19,3 +19,20 @@ export function staffLoginResponse(role = 'Owner', expiresIn = 3600) {
     timestamp: new Date().toISOString(),
   }
 }
+
+// Synthetic rotated-token response for refresh tests.
+export function staffRefreshResponse(expiresIn = 3600) {
+  return {
+    statusCode: 200,
+    isSuccess: true,
+    data: {
+      accessToken: 'test-access-token-rotated',
+      tokenType: 'Bearer',
+      expiresIn,
+      expiresAtUtc: new Date(Date.now() + expiresIn * 1000).toISOString(),
+      refreshToken: 'test-refresh-token-rotated',
+    },
+    errors: null,
+    timestamp: new Date().toISOString(),
+  }
+}

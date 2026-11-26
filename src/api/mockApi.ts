@@ -9,8 +9,10 @@ import {
 } from './addOns'
 import {
   ApiError,
+  type AdminOrderDetails,
   type AdminOrderListItem,
   type BestSeller,
+  type BranchDetails,
   type BrandingFetchResult,
   type ListOrdersQuery,
   type MenuCategory,
@@ -543,6 +545,58 @@ export function createMockApi(options: MockApiOptions = {}): Api {
         hasPreviousPage: page > 1,
         hasNextPage: page < totalPages,
       }
+    },
+
+    async getOrderDetails(id: string, signal?: AbortSignal): Promise<AdminOrderDetails> {
+      await guard(signal)
+      const target = orders.find((item) => item.orderId === id)
+      if (!target) throw new ApiError('notFound')
+      return {
+        ...target,
+        branchNameAr: 'فرع المعادي',
+        branchNameEn: 'Maadi Branch',
+        areaId: null,
+        address: '15 Street 9, Maadi, Cairo',
+        contactPhone: '+201001234567',
+        customerNotes: null,
+        rejectionReason: null,
+        subTotal: Math.round((target.total - (target.vatAmount ?? 0)) * 100) / 100,
+        deliveryFee: 25,
+        productDiscountAmount: 0,
+        deliveryDiscountAmount: 0,
+        vatRate: 14,
+        vatBaseAmount: target.total,
+        modifiedAtUtc: null,
+        items: [
+          {
+            orderItemId: `${target.orderId}-i1`,
+            menuItemId: 'm1',
+            itemSizeId: null,
+            itemName: target.customerName ?? 'Order',
+            sizeName: null,
+            unitPrice: target.total,
+            quantity: 1,
+            lineTotal: target.total,
+          },
+        ],
+        payment: {
+          paymentId: `${target.orderId}-p1`,
+          paymentMethod: target.paymentMethod,
+          paymentStatus: target.paymentStatus,
+          accountIdentifier: 'restaurant@instapay',
+          requiresVerificationProof: (target.paymentMethod ?? 0) !== 0,
+          proofUrl: null,
+          proofUrlExpiresAtUtc: null,
+        },
+      }
+    },
+
+    async getOrderReceiptHtml(id: string, signal?: AbortSignal): Promise<string> {
+      await guard(signal)
+      const target = orders.find((item) => item.orderId === id)
+      if (!target) throw new ApiError('notFound')
+      const number = target.orderNumber ?? target.orderId
+      return `<!DOCTYPE html><html><body><h1>Receipt ${number}</h1><p>Total: ${target.total}</p></body></html>`
     },
 
     async transitionOrderStatus(id: string, targetStatus: number, signal?: AbortSignal): Promise<void> {
@@ -1229,9 +1283,22 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       return [...base, ...added]
     },
 
-    async updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void> {
+    async listBranches(signal?: AbortSignal): Promise<BranchDetails[]> {
       await guard(signal)
-      if (!itemId.trim()) throw new ApiError('validation')
+      return [{
+        id: '00000000-0000-4000-8000-0000000000bb',
+        nameAr: 'فرع المعادي',
+        nameEn: 'Maadi Branch',
+        address: '15 Street 9, Maadi, Cairo',
+        isActive: true,
+        isPrimary: true,
+        sortOrder: 0,
+      }]
+    },
+
+    async updateMenuItemAvailability(itemId: string, branchId: string, available: boolean, signal?: AbortSignal): Promise<void> {
+      await guard(signal)
+      if (!itemId.trim() || !branchId.trim()) throw new ApiError('validation')
       for (const category of menu) {
         const target = category.items.find((entry) => entry.id === itemId)
         if (target) {

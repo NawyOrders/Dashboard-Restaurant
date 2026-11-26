@@ -19,6 +19,55 @@ export type PagedResult<T> = {
   hasNextPage: boolean
 }
 
+export type AdminOrderItem = {
+  orderItemId: string
+  menuItemId: string
+  itemSizeId: string | null
+  itemName: string
+  sizeName: string | null
+  unitPrice: number
+  quantity: number
+  lineTotal: number
+}
+
+export type AdminOrderPayment = {
+  paymentId: string
+  paymentMethod: number | null
+  paymentStatus: number | null
+  accountIdentifier: string | null
+  requiresVerificationProof: boolean
+  proofUrl: string | null
+  proofUrlExpiresAtUtc: string | null
+}
+
+export type AdminOrderDetails = {
+  orderId: string
+  orderNumber: string | null
+  status: number
+  fulfilmentType: number
+  branchId: string
+  branchNameAr: string | null
+  branchNameEn: string | null
+  areaId: string | null
+  address: string | null
+  customerName: string | null
+  contactPhone: string | null
+  customerNotes: string | null
+  rejectionReason: string | null
+  subTotal: number
+  deliveryFee: number | null
+  productDiscountAmount: number | null
+  deliveryDiscountAmount: number | null
+  vatRate: number | null
+  vatBaseAmount: number | null
+  vatAmount: number | null
+  total: number
+  createdAtUtc: string
+  modifiedAtUtc: string | null
+  items: AdminOrderItem[]
+  payment: AdminOrderPayment | null
+}
+
 export type AdminOrderListItem = {
   orderId: string
   orderNumber: string | null
@@ -67,6 +116,21 @@ export type BrandingFetchResult =
   | { notModified: true; etag: string | null }
   | { notModified: false; branding: RestaurantBranding; etag: string | null }
 
+export type BranchDetails = {
+  id: string
+  nameAr: string
+  nameEn: string
+  address: string
+  isActive: boolean
+  isPrimary: boolean
+  sortOrder: number
+}
+
+export type MenuItemBranchAvailability = {
+  branchId: string
+  isAvailable: boolean
+}
+
 export type MenuItem = {
   id: string
   nameAr: string
@@ -75,6 +139,7 @@ export type MenuItem = {
   available: boolean
   imageUrl: string | null
   categoryId: string
+  branchAvailabilities?: MenuItemBranchAvailability[]
 }
 
 export type MenuCategory = {

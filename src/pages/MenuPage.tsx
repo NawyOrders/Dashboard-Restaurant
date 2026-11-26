@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Api } from '../api'
-import type { MenuCategory, MenuItem } from '../api/types'
+import type { BranchDetails, MenuCategory, MenuItem } from '../api/types'
 import type { Lang, T } from '../i18n'
 import { formatOrderTotal } from '../orders'
 import { PageHeading } from '../components/PageHeading'
@@ -46,9 +46,11 @@ function CategoryIcon({ categoryId, className }: { categoryId: string; className
 
 export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
   const [categories, setCategories] = useState<MenuCategory[] | null>(null)
+  const [branches, setBranches] = useState<BranchDetails[]>([])
   const [state, setState] = useState<LoadState>('loading')
   const [reloadKey, setReloadKey] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null)
   const [pending, setPending] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
@@ -70,41 +72,73 @@ export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
     }
   }, [api, reloadKey])
 
+  // Availability is per branch: load the branch list to know the toggle target.
+  useEffect(() => {
+    let cancelled = false
+    api
+      .listBranches()
+      .then((data) => {
+        if (!cancelled) setBranches(data)
+      })
+      .catch(() => {
+        // Toggles stay disabled-free; a failed toggle rolls back with a toast.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [api])
+
+  const activeBranch = branches.find((branch) => branch.id === selectedBranchId)
+    ?? branches.find((branch) => branch.isPrimary && branch.isActive)
+    ?? branches.find((branch) => branch.isActive)
+    ?? null
+
   const activeId = selected ?? categories?.[0]?.id ?? null
   const activeCategory = categories?.find((category) => category.id === activeId) ?? categories?.[0] ?? null
   const Chevron = t.dir === 'rtl' ? ChevronLeftIcon : ChevronRightIcon
 
+  const availabilityOf = (item: MenuItem): boolean => {
+    if (!activeBranch) return item.available
+    return item.branchAvailabilities?.find((entry) => entry.branchId === activeBranch.id)?.isAvailable ?? item.available
+  }
+
   const toggleAvailability = async (item: MenuItem) => {
-    if (pending[item.id]) return
-    const next = !item.available
+    if (pending[item.id] || !activeBranch) return
+    const next = !availabilityOf(item)
     const name = itemName(item, lang)
 
-    setPending((current) => ({ ...current, [item.id]: true }))
-    setCategories((current) =>
-      current
-        ? current.map((category) => ({
-            ...category,
-            items: category.items.map((entry) =>
-              entry.id === item.id ? { ...entry, available: next } : entry,
-            ),
-          }))
-        : current,
-    )
-
-    try {
-      await api.updateMenuItemAvailability(item.id, next)
-      onToast(`${name} — ${next ? t.menuPage.available : t.menuPage.unavailable}`)
-    } catch {
+    const previous = availabilityOf(item)
+    const applyAvailability = (value: boolean) =>
       setCategories((current) =>
         current
           ? current.map((category) => ({
               ...category,
               items: category.items.map((entry) =>
-                entry.id === item.id ? { ...entry, available: item.available } : entry,
+                entry.id === item.id
+                  ? {
+                      ...entry,
+                      available: value,
+                      branchAvailabilities: activeBranch
+                        ? [
+                            ...(entry.branchAvailabilities ?? []).filter((b) => b.branchId !== activeBranch.id),
+                            { branchId: activeBranch.id, isAvailable: value },
+                          ]
+                        : entry.branchAvailabilities,
+                    }
+                  : entry,
               ),
             }))
           : current,
       )
+
+    setPending((current) => ({ ...current, [item.id]: true }))
+    applyAvailability(next)
+
+    try {
+      await api.updateMenuItemAvailability(item.id, activeBranch.id, next)
+      onToast(`${name} — ${next ? t.menuPage.available : t.menuPage.unavailable}`)
+    } catch {
+      applyAvailability(previous)
       onToast(t.menuPage.toggleError)
     } finally {
       setPending((current) => {
@@ -131,6 +165,24 @@ export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
           </button>
         }
       />
+
+      {branches.length > 1 && (
+        <div className="mb-4 flex items-center gap-2">
+          <label htmlFor="branch-select" className="text-sm font-bold text-stone-600">{t.menuPage.branch}</label>
+          <select
+            id="branch-select"
+            value={activeBranch?.id ?? ''}
+            onChange={(event) => setSelectedBranchId(event.target.value)}
+            className="min-h-11 rounded-xl border border-line bg-white px-3 text-sm font-semibold text-stone-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+          >
+            {branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {lang === 'ar' ? branch.nameAr : branch.nameEn}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="dashboard-panel h-fit p-4">
@@ -221,7 +273,7 @@ export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
                         {categoryEmoji(activeCategory.id)}
                       </span>
                     )}
-                    {!item.available && (
+                    {!availabilityOf(item) && (
                       <span className="absolute start-3 top-3 rounded-full bg-stone-600/90 px-2.5 py-1 text-[11px] font-bold text-white">
                         {t.menuPage.unavailable}
                       </span>
@@ -233,19 +285,19 @@ export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
                     <p className="mt-1 text-sm font-extrabold tabular-nums text-brand-600">{formatOrderTotal(item.price, lang)}</p>
 
                     <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-3">
-                      <span className={`text-[11px] font-bold ${item.available ? 'text-mint-600' : 'text-stone-400'}`}>
-                        {item.available ? t.menuPage.available : t.menuPage.unavailable}
+                      <span className={`text-[11px] font-bold ${availabilityOf(item) ? 'text-mint-600' : 'text-stone-400'}`}>
+                        {availabilityOf(item) ? t.menuPage.available : t.menuPage.unavailable}
                       </span>
                       <button
                         type="button"
                         role="switch"
-                        aria-checked={item.available}
+                        aria-checked={availabilityOf(item)}
                         aria-label={itemName(item, lang)}
                         onClick={() => void toggleAvailability(item)}
                         disabled={Boolean(pending[item.id])}
-                        className={`relative h-6 w-11 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:opacity-60 ${item.available ? 'bg-[#D99A2B]' : 'bg-stone-300'}`}
+                        className={`relative h-6 w-11 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:opacity-60 ${availabilityOf(item) ? 'bg-[#D99A2B]' : 'bg-stone-300'}`}
                       >
-                        <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${item.available ? 'start-6' : 'start-1'}`} />
+                        <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${availabilityOf(item) ? 'start-6' : 'start-1'}`} />
                       </button>
                     </div>
                   </div>

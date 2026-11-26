@@ -32,6 +32,8 @@ import type {
   UpdateOfferInput,
 } from './offers'
 import type {
+  AdminOrderDetails,
+  BranchDetails,
   AdminOrderListItem,
   PaymentMethodName,
   RestaurantPaymentMethodConfig,
@@ -52,6 +54,8 @@ import type {
 export interface Api {
   listOrders(query?: ListOrdersQuery, signal?: AbortSignal): Promise<PagedResult<AdminOrderListItem>>
   transitionOrderStatus(id: string, targetStatus: number, signal?: AbortSignal): Promise<void>
+  getOrderDetails(id: string, signal?: AbortSignal): Promise<AdminOrderDetails>
+  getOrderReceiptHtml(id: string, signal?: AbortSignal): Promise<string>
   acceptOrder(id: string, signal?: AbortSignal): Promise<void>
   rejectOrder(id: string, rejectionReason: string, signal?: AbortSignal): Promise<void>
   confirmPayment(id: string, signal?: AbortSignal): Promise<void>
@@ -104,7 +108,8 @@ export interface Api {
   updateDeliverySettings(input: DeliverySettings, signal?: AbortSignal): Promise<DeliverySettings>
   getBranding(etag?: string, signal?: AbortSignal): Promise<BrandingFetchResult>
   listMenu(signal?: AbortSignal): Promise<MenuCategory[]>
-  updateMenuItemAvailability(itemId: string, available: boolean, signal?: AbortSignal): Promise<void>
+  listBranches(signal?: AbortSignal): Promise<BranchDetails[]>
+  updateMenuItemAvailability(itemId: string, branchId: string, available: boolean, signal?: AbortSignal): Promise<void>
   getReportsSummary(range: ReportRange, signal?: AbortSignal): Promise<ReportsSummary>
   getRestaurantSettings(signal?: AbortSignal): Promise<RestaurantSettings>
   updateRestaurantSettings(settings: RestaurantSettings, signal?: AbortSignal): Promise<void>

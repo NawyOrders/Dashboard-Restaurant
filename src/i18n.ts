@@ -359,6 +359,7 @@ export const translations = {
       subtitle: '48 صنفاً في 3 تصنيفات • 6 أصناف غير متوفرة',
       addItem: 'إضافة صنف جديد',
       categories: 'التصنيفات',
+      branch: 'الفرع',
       addCategory: 'إضافة تصنيف',
       allItems: 'جميع الأصناف',
       search: 'ابحث عن صنف…',
@@ -471,6 +472,7 @@ export const translations = {
     logout: 'تسجيل الخروج',
     actions: {
       close: 'إغلاق',
+      menu: 'القائمة الرئيسية',
       save: 'حفظ',
       cancel: 'إلغاء',
       viewDetails: 'عرض التفاصيل',
@@ -761,6 +763,7 @@ export const translations = {
       subtitle: '48 items in 3 categories • 6 items unavailable',
       addItem: 'Add new item',
       categories: 'Categories',
+      branch: 'Branch',
       addCategory: 'Add category',
       allItems: 'All items',
       search: 'Search for an item…',
@@ -873,6 +876,7 @@ export const translations = {
     logout: 'Sign out',
     actions: {
       close: 'Close',
+      menu: 'Open menu',
       save: 'Save',
       cancel: 'Cancel',
       viewDetails: 'View details',

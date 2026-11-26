@@ -3,9 +3,9 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from
 import type { Lang } from './i18n'
 import { translations } from './i18n'
 import type { Session } from './auth'
-import { API_BASE_URL, clearLegacySession, revokeSession } from './auth'
 import { canAny } from './authz'
 import { MANAGE_MODULES } from './manage/modules'
+import { API_BASE_URL, clearLegacySession, refreshSession, revokeSession } from './auth'
 import { createApi, isMockErrorRequested, isMockRequested } from './api'
 import type { OrdersHubConfig } from './realtime/ordersHub'
 import { useOrders } from './useOrders'
@@ -13,7 +13,7 @@ import { Login } from './components/Login'
 import { SetPassword, SET_PASSWORD_PATH } from './components/SetPassword'
 import type { SectionKey } from './types'
 import { filterOrders } from './orders'
-import { BottomNav, MobileHeader, Sidebar } from './components/Sidebar'
+import { MobileDrawer, MobileHeader, Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
 import { CheckIcon, CloseIcon, InfoIcon, SpinnerIcon } from './icons'
 
@@ -67,14 +67,28 @@ export default function App() {
   useEffect(() => {
     if (!session) return
     let timer: ReturnType<typeof setTimeout>
+    const version = sessionVersion.current
+    const signOutExpired = () => {
+      if (sessionVersion.current !== version) return
+      sessionVersion.current += 1
+      setSession(null)
+      setNotice('sessionExpired')
+      void revokeSession(session)
+    }
     const checkExpiry = () => {
       clearTimeout(timer)
       const remaining = session.expiresAt - Date.now()
       if (remaining <= 0) {
-        sessionVersion.current += 1
-        setSession(null)
-        setNotice('sessionExpired')
-        void revokeSession(session)
+        if (!session.refreshToken) {
+          signOutExpired()
+          return
+        }
+        // Rotate the session instead of forcing a new login. Refresh tokens are
+        // single-use: a failed or compromised rotation ends the session.
+        void refreshSession(session).then((next) => {
+          if (sessionVersion.current !== version) return
+          setSession({ ...session, ...next })
+        }, signOutExpired)
       } else {
         timer = setTimeout(checkExpiry, Math.min(remaining, 2_147_483_647))
       }
@@ -214,6 +228,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [navigate])
 
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+
   const toggleOpen = () => {
     const next = !isOpen
     setIsOpen(next)
@@ -238,7 +255,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           onNavigate={navigateSection}
         />
 
-        <main id="dashboard-content" tabIndex={-1} className="dashboard-main min-w-0 flex-1 px-4 pt-4 pb-28 outline-none sm:px-6 sm:pt-6 lg:px-7 lg:pb-10 xl:px-8">
+        <main id="dashboard-content" tabIndex={-1} className="dashboard-main min-w-0 flex-1 px-4 pt-4 pb-10 outline-none sm:px-6 sm:pt-6 lg:px-7 lg:pb-10 xl:px-8">
           <MobileHeader
             t={t}
             active={section}
@@ -250,6 +267,8 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             onToggleOpen={toggleOpen}
             onNavigate={navigateSection}
             onOpenNotifications={() => showToast(t.notifications.subtitle)}
+            menuOpen={drawerOpen}
+            onOpenMenu={() => setDrawerOpen((previous) => !previous)}
           />
 
           <Topbar
@@ -328,7 +347,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
         </main>
       </div>
 
-      <BottomNav
+      <MobileDrawer
+        open={drawerOpen}
+        onClose={closeDrawer}
         t={t}
         active={section}
         isOpen={isOpen}
@@ -341,7 +362,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
       />
 
       {toast && (
-        <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 lg:bottom-6">
+        <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4">
           <div key={toast.id} className="flex animate-toast-in items-center gap-2 rounded-full bg-stone-800 px-4 py-2.5 text-sm font-bold text-white shadow-soft">
             <CheckIcon className="h-4 w-4 text-mint-100" />
             {toast.message}
