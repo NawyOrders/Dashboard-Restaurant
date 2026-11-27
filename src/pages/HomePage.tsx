@@ -82,7 +82,7 @@ export default function HomePage({ t, lang, orders, state, query, onRetry, onVie
       delta: sales.text,
       up: sales.up,
       icon: <CoinsIcon />,
-      iconClass: 'bg-gradient-to-br from-gold-300 to-[#C9971F]',
+      iconClass: 'bg-gradient-to-br from-gold-300 to-gold-500 text-on-gold',
     },
     {
       key: 'newOrders',
@@ -91,7 +91,7 @@ export default function HomePage({ t, lang, orders, state, query, onRetry, onVie
       delta: newOrdersDelta.text,
       up: newOrdersDelta.up,
       icon: <BagIcon />,
-      iconClass: 'bg-gradient-to-br from-[#F26B5E] to-brand-600',
+      iconClass: 'bg-gradient-to-br from-brand-400 to-brand-600 text-white',
     },
     {
       key: 'customers',
@@ -100,7 +100,7 @@ export default function HomePage({ t, lang, orders, state, query, onRetry, onVie
       delta: customersDelta.text,
       up: customersDelta.up,
       icon: <UsersIcon />,
-      iconClass: 'bg-gradient-to-br from-[#F6A08E] to-[#E05A4A]',
+      iconClass: 'bg-gradient-to-br from-brand-300 to-brand-500 text-white',
     },
     {
       key: 'avgOrder',
@@ -110,7 +110,7 @@ export default function HomePage({ t, lang, orders, state, query, onRetry, onVie
       delta: averageDelta.text,
       up: averageDelta.up,
       icon: <StarIcon />,
-      iconClass: 'bg-gradient-to-br from-gold-300 to-[#C9971F]',
+      iconClass: 'bg-gradient-to-br from-gold-300 to-gold-500 text-on-gold',
     },
   ]
 

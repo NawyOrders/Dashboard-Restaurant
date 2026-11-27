@@ -40,7 +40,7 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
 
 const PILL: Record<string, string> = {
   good: 'bg-mint-100 text-mint-600',
-  gold: 'bg-[#FBF1D8] text-[#806116]',
+  gold: 'bg-gold-50 text-gold-800',
   muted: 'bg-stone-100 text-stone-500',
   bad: 'bg-brand-50 text-brand-700',
 }

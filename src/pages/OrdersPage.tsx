@@ -34,14 +34,14 @@ const COLUMNS: LiveOrderStatus[] = ['new', 'preparing', 'ready', 'delivered']
 
 const COLUMN_STYLE: Record<LiveOrderStatus, { border: string; surface: string; badge: string }> = {
   new: { border: 'border-t-brand-500', surface: 'bg-brand-50/40', badge: 'bg-brand-50 text-brand-700' },
-  preparing: { border: 'border-t-gold-400', surface: 'bg-[#FBF1D8]/40', badge: 'bg-[#FBF1D8] text-[#806116]' },
+  preparing: { border: 'border-t-gold-400', surface: 'bg-gold-50/40', badge: 'bg-gold-50 text-gold-800' },
   ready: { border: 'border-t-mint-600', surface: 'bg-mint-100/30', badge: 'bg-mint-100 text-[#176B4B]' },
   delivered: { border: 'border-t-stone-300', surface: 'bg-cream-50', badge: 'bg-cream-100 text-stone-500' },
 }
 
 const PRIMARY_BUTTON = 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-sm font-bold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 const OUTLINE_BUTTON = 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-4 text-sm font-bold text-brand-600 transition-colors hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
-const GOLD_BUTTON = 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#D99A2B] px-4 text-sm font-bold text-white transition-colors hover:bg-[#C0871F] disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-200'
+const GOLD_BUTTON = 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gold-400 px-4 text-sm font-bold text-on-gold transition-colors hover:bg-gold-500 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-200'
 const MINT_BUTTON = 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-mint-600 px-4 text-sm font-bold text-white transition-colors hover:bg-[#178257] disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-100'
 
 function PaymentIcon({ method, className }: { method: LiveOrderPayment; className?: string }) {
@@ -351,7 +351,7 @@ function DetailedOrderCard({ order, t, lang, isPending, canAccept, canReject, ca
       <ul className="mt-3 flex flex-col gap-2">
         {order.lines.map((line, index) => (
           <li key={`${order.id}-${index}`} className="flex items-center gap-2 rounded-xl bg-cream-50 p-2">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-gold-300 to-[#D99A2B] text-lg" aria-hidden="true">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-gold-300 to-gold-500 text-lg" aria-hidden="true">
               🍔
             </span>
             <span className="min-w-0 flex-1">

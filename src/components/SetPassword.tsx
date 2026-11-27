@@ -74,7 +74,7 @@ export const SET_PASSWORD_PATH = '/set-password'
 type Props = { lang: Lang; onToggleLang: () => void; onDone: () => void }
 
 const INPUT =
-  'block min-h-14 w-full min-w-0 rounded-xl border border-[#D9C9B5] bg-white px-4 py-3 text-left text-base text-[#342B27] outline-none hover:border-[#A48E77] focus-visible:border-[#C2281A] focus-visible:ring-2 focus-visible:ring-[#C2281A]/25 disabled:bg-[#F3ECE2] aria-[invalid=true]:border-[#C2281A]'
+  'block min-h-14 w-full min-w-0 rounded-xl border border-line-strong bg-white px-4 py-3 text-left text-base text-ink-900 outline-none hover:border-ink-500/60 focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600/25 disabled:bg-cream-100 aria-[invalid=true]:border-brand-600'
 
 export function SetPassword({ lang, onToggleLang, onDone }: Props) {
   const t = copy[lang]
@@ -105,13 +105,13 @@ export function SetPassword({ lang, onToggleLang, onDone }: Props) {
   }
 
   return (
-    <main dir={t.dir} lang={lang} className="flex min-h-screen min-h-[100svh] flex-col bg-[#FDF8F1] px-5 text-[#342B27] sm:px-10" aria-labelledby="setpw-heading">
+    <main dir={t.dir} lang={lang} className="flex min-h-screen min-h-[100svh] flex-col bg-cream-50 px-5 text-ink-900 sm:px-10" aria-labelledby="setpw-heading">
       <header className="flex items-center justify-between gap-3 py-4">
-        <div className="flex items-center gap-2.5 text-[#C2281A]">
+        <div className="flex items-center gap-2.5 text-brand-600">
           <UtensilsIcon className="h-6 w-6" />
           <p className="text-base font-extrabold"><bdi>{t.brand}</bdi></p>
         </div>
-        <button type="button" onClick={onToggleLang} className="min-h-11 rounded-lg border border-[#D9C9B5] px-3 text-sm font-bold hover:border-[#C2281A] hover:text-[#C2281A]">
+        <button type="button" onClick={onToggleLang} className="min-h-11 rounded-lg border border-line-strong px-3 text-sm font-bold hover:border-brand-600 hover:text-brand-600">
           {t.toggle}
         </button>
       </header>
@@ -120,18 +120,18 @@ export function SetPassword({ lang, onToggleLang, onDone }: Props) {
           {done ? (
             <div role="status" className="rounded-2xl border border-line bg-white p-6 shadow-card">
               <h1 id="setpw-heading" className="text-2xl font-extrabold">{t.doneTitle}</h1>
-              <p className="mb-6 mt-2 text-base text-[#726255]">{t.doneText}</p>
-              <button type="button" onClick={onDone} className="min-h-12 w-full rounded-xl bg-[#C2281A] px-4 text-base font-bold text-white hover:bg-[#A82014]">
+              <p className="mb-6 mt-2 text-base text-ink-500">{t.doneText}</p>
+              <button type="button" onClick={onDone} className="min-h-12 w-full rounded-xl bg-brand-600 px-4 text-base font-bold text-white hover:bg-brand-700">
                 {t.login}
               </button>
             </div>
           ) : (
             <>
               <h1 id="setpw-heading" className="text-3xl font-extrabold leading-relaxed">{t.title}</h1>
-              <p className="mb-7 mt-2 text-base leading-relaxed text-[#726255]">{t.subtitle}</p>
+              <p className="mb-7 mt-2 text-base leading-relaxed text-ink-500">{t.subtitle}</p>
               <form onSubmit={submit} noValidate aria-busy={pending} className="flex flex-col gap-5">
                 {error && (
-                  <p role="alert" className="rounded-xl border border-[#C2281A]/30 bg-[#C2281A]/5 px-4 py-3 text-sm font-medium leading-relaxed text-[#C2281A]">
+                  <p role="alert" className="rounded-xl border border-brand-600/30 bg-brand-600/5 px-4 py-3 text-sm font-medium leading-relaxed text-brand-600">
                     {t.errors[error]}
                   </p>
                 )}
@@ -146,13 +146,13 @@ export function SetPassword({ lang, onToggleLang, onDone }: Props) {
                 <div>
                   <label htmlFor="setpw-password" className="mb-2 block text-sm font-bold">{t.password}</label>
                   <input id="setpw-password" type="password" dir="ltr" autoComplete="new-password" disabled={pending} aria-invalid={weak} aria-describedby="setpw-rule" value={password} onChange={(e) => setPassword(e.target.value)} className={INPUT} />
-                  <p id="setpw-rule" className={`mt-2 text-xs leading-relaxed ${weak ? 'text-[#C2281A]' : 'text-[#726255]'}`}>{t.rule}</p>
+                  <p id="setpw-rule" className={`mt-2 text-xs leading-relaxed ${weak ? 'text-brand-600' : 'text-ink-500'}`}>{t.rule}</p>
                 </div>
                 <div>
                   <label htmlFor="setpw-confirm" className="mb-2 block text-sm font-bold">{t.confirm}</label>
                   <input id="setpw-confirm" type="password" dir="ltr" autoComplete="new-password" disabled={pending} aria-invalid={mismatch} value={confirm} onChange={(e) => setConfirm(e.target.value)} className={INPUT} />
                 </div>
-                <button type="submit" disabled={pending} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#C2281A] px-4 text-base font-bold text-white hover:bg-[#A82014] disabled:opacity-70">
+                <button type="submit" disabled={pending} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-base font-bold text-white hover:bg-brand-700 disabled:opacity-70">
                   {pending && <SpinnerIcon className="h-4 w-4 animate-spin" />}
                   {pending ? t.submitting : t.submit}
                 </button>

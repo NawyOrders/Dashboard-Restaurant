@@ -32,7 +32,20 @@ describe('pickBrand', () => {
   })
   it('trims the name and drops an unsafe logo', () => {
     const brand = pickBrand(branding({ nameEn: '  Cafe 7  ', logoUrl: 'javascript:x' }), 'en')
-    expect(brand).toEqual({ name: 'Cafe 7', logoUrl: null })
+    expect(brand).toEqual({ name: 'Cafe 7', logoUrl: null, theme: null })
+  })
+  it('returns the tenant colors when all three are valid', () => {
+    const brand = pickBrand(
+      { ...branding(), primaryColor: '#4c1354', secondaryColor: '#240223', accentColor: '#F4E234' },
+      'en',
+    )
+    expect(brand.theme).toEqual({ primary: '#4C1354', secondary: '#240223', accent: '#F4E234' })
+  })
+  it('returns no theme when a color is missing, invalid or unreadable', () => {
+    const base = { primaryColor: '#4C1354', secondaryColor: '#240223', accentColor: '#F4E234' }
+    expect(pickBrand({ ...branding(), ...base, accentColor: null }, 'en').theme).toBeNull()
+    expect(pickBrand({ ...branding(), ...base, primaryColor: 'red' }, 'en').theme).toBeNull()
+    expect(pickBrand({ ...branding(), ...base, primaryColor: '#FFFF00' }, 'en').theme).toBeNull()
   })
 })
 

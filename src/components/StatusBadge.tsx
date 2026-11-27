@@ -2,7 +2,7 @@ import type { OrderStatus } from '../types'
 
 const statusStyle: Record<OrderStatus, string> = {
   new: 'bg-brand-50 text-brand-700',
-  preparing: 'bg-[#FBF1D8] text-[#806116]',
+  preparing: 'bg-gold-50 text-gold-800',
   done: 'bg-mint-100 text-[#176B4B]',
 }
 

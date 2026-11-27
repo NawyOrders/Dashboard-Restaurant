@@ -20,7 +20,7 @@ const primaryButton =
 const secondaryButton =
   'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-cream-100 px-4 py-2.5 text-sm font-bold text-stone-600 transition-colors hover:bg-cream-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 const inputClass =
-  'w-full min-h-11 rounded-xl border border-[#D9C9B5] bg-white px-3.5 py-3 text-base text-stone-700 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-200'
+  'w-full min-h-11 rounded-xl border border-line-strong bg-white px-3.5 py-3 text-base text-stone-700 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-200'
 
 export function OrderDetails({
   t,

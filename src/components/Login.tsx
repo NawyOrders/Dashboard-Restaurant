@@ -141,30 +141,30 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
   }
 
   const inputClass =
-    'block min-h-14 w-full min-w-0 rounded-xl border border-[#D9C9B5] bg-white px-4 py-3 text-left text-base text-[#342B27] outline-none motion-safe:transition-colors hover:border-[#A48E77] focus-visible:border-[#C2281A] focus-visible:ring-2 focus-visible:ring-[#C2281A]/25 disabled:cursor-wait disabled:bg-[#F3ECE2] disabled:text-[#726255] aria-[invalid=true]:border-[#C2281A]'
+    'block min-h-14 w-full min-w-0 rounded-xl border border-line-strong bg-white px-4 py-3 text-left text-base text-ink-900 outline-none motion-safe:transition-colors hover:border-ink-500/60 focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600/25 disabled:cursor-wait disabled:bg-cream-100 disabled:text-ink-500 aria-[invalid=true]:border-brand-600'
   const focusClass =
-    'outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FDF8F1]'
+    'outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50'
 
   return (
     <main
       dir={t.dir}
       lang={t.dir === 'rtl' ? 'ar' : 'en'}
-      className="login-page flex min-h-screen min-h-[100svh] flex-col bg-[#FDF8F1] text-[#342B27] lg:grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]"
+      className="login-page flex min-h-screen min-h-[100svh] flex-col bg-cream-50 text-ink-900 lg:grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]"
       aria-labelledby="login-heading"
     >
-      <aside className="relative hidden min-w-0 flex-col items-center justify-center overflow-hidden bg-[#C2281A] px-12 py-24 text-center text-[#FDF8F1] lg:flex">
+      <aside className="relative hidden min-w-0 flex-col items-center justify-center overflow-hidden bg-brand-600 px-12 py-24 text-center text-cream-50 lg:flex">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-7 rounded-b-2xl rounded-t-[12rem] border border-[#D9B45A]/60"
+          className="pointer-events-none absolute inset-7 rounded-b-2xl rounded-t-[12rem] border border-gold-400/60"
         />
         <div className="relative w-full max-w-xs">
-          <span aria-hidden="true" className="mb-8 inline-flex text-[#D9B45A]">
+          <span aria-hidden="true" className="mb-8 inline-flex text-gold-400">
             <UtensilsIcon className="h-9 w-9" />
           </span>
           <h2 className="text-4xl font-extrabold leading-relaxed xl:text-5xl">
             <bdi>{t.auth.brandTitle}</bdi>
           </h2>
-          <div aria-hidden="true" className="mx-auto my-7 h-px w-12 bg-[#D9B45A]" />
+          <div aria-hidden="true" className="mx-auto my-7 h-px w-12 bg-gold-400" />
           <p className="text-lg leading-relaxed">{t.auth.brandSubtitle}</p>
         </div>
       </aside>
@@ -172,14 +172,14 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
       <div className="flex min-w-0 flex-1 flex-col px-5 sm:px-10 lg:px-12 xl:px-20">
         <header className="flex min-w-0 items-center justify-between gap-3 py-4 lg:justify-end lg:py-7">
           <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
-            <span aria-hidden="true" className="shrink-0 text-[#C2281A]">
+            <span aria-hidden="true" className="shrink-0 text-brand-600">
               <UtensilsIcon className="h-6 w-6" />
             </span>
             <div className="min-w-0">
-              <p className="login-brand-name text-base font-extrabold leading-snug text-[#C2281A]">
+              <p className="login-brand-name text-base font-extrabold leading-snug text-brand-600">
                 <bdi>{t.auth.brandTitle}</bdi>
               </p>
-              <p className="mt-1 text-xs leading-snug text-[#726255]">{t.auth.brandSubtitle}</p>
+              <p className="mt-1 text-xs leading-snug text-ink-500">{t.auth.brandSubtitle}</p>
             </div>
           </div>
           <button
@@ -187,7 +187,7 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
             onClick={onToggleLang}
             lang={t.dir === 'rtl' ? 'en' : 'ar'}
             dir="auto"
-            className={`min-h-11 shrink-0 rounded-lg border border-[#D9C9B5] px-3 text-sm font-bold motion-safe:transition-colors hover:border-[#C2281A] hover:text-[#C2281A] ${focusClass}`}
+            className={`min-h-11 shrink-0 rounded-lg border border-line-strong px-3 text-sm font-bold motion-safe:transition-colors hover:border-brand-600 hover:text-brand-600 ${focusClass}`}
           >
             {langToggle}
           </button>
@@ -195,22 +195,22 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
 
         <div className="flex flex-1 items-center justify-center py-7 sm:py-10 lg:pb-20">
           <div className="w-full min-w-0 max-w-[26rem]">
-            <p className="mb-5 border-s-2 border-[#D9B45A] ps-3 text-sm font-medium leading-relaxed text-[#726255]">
+            <p className="mb-5 border-s-2 border-gold-400 ps-3 text-sm font-medium leading-relaxed text-ink-500">
               {t.auth.staffOnly}
             </p>
             <h1 id="login-heading" className="text-3xl font-extrabold leading-relaxed sm:text-4xl">
               {t.auth.welcome}
             </h1>
-            <p className="mb-7 mt-2 text-base leading-relaxed text-[#726255]">{t.auth.subtitle}</p>
+            <p className="mb-7 mt-2 text-base leading-relaxed text-ink-500">{t.auth.subtitle}</p>
 
             {initialNotice && (
-              <p role="status" className="mb-5 rounded-xl border border-[#D9C9B5] bg-white/60 px-4 py-3 text-sm leading-relaxed">
+              <p role="status" className="mb-5 rounded-xl border border-line-strong bg-white/60 px-4 py-3 text-sm leading-relaxed">
                 {initialNotice}
               </p>
             )}
 
             {configurationError && (
-              <p role="alert" className="mb-5 rounded-xl border border-[#C2281A]/30 bg-[#C2281A]/5 px-4 py-3 text-sm font-medium leading-relaxed text-[#C2281A]">
+              <p role="alert" className="mb-5 rounded-xl border border-brand-600/30 bg-brand-600/5 px-4 py-3 text-sm font-medium leading-relaxed text-brand-600">
                 {t.auth.configuration}
               </p>
             )}
@@ -228,7 +228,7 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
                   ref={errorRef}
                   role="alert"
                   tabIndex={-1}
-                  className="rounded-xl border border-[#C2281A]/30 bg-[#C2281A]/5 px-4 py-3 text-sm font-medium leading-relaxed text-[#C2281A] outline-none focus:ring-2 focus:ring-[#C2281A] focus:ring-offset-2 focus:ring-offset-[#FDF8F1]"
+                  className="rounded-xl border border-brand-600/30 bg-brand-600/5 px-4 py-3 text-sm font-medium leading-relaxed text-brand-600 outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 focus:ring-offset-cream-50"
                 >
                   {errorMessages[errorCode]}
                 </p>
@@ -262,7 +262,7 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
                   className={inputClass}
                 />
                 {fieldErrors.email && (
-                  <p id="login-email-error" role="alert" className="mt-2 text-sm leading-relaxed text-[#C2281A]">
+                  <p id="login-email-error" role="alert" className="mt-2 text-sm leading-relaxed text-brand-600">
                     {t.auth[fieldErrors.email]}
                   </p>
                 )}
@@ -304,13 +304,13 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
                     title={showPassword ? t.auth.hide : t.auth.show}
                     aria-controls="login-password"
                     aria-pressed={showPassword}
-                    className={`absolute end-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-[#726255] motion-safe:transition-colors hover:bg-[#FDF8F1] hover:text-[#C2281A] aria-pressed:bg-[#FDF8F1] aria-pressed:text-[#C2281A] disabled:cursor-wait disabled:opacity-50 ${focusClass}`}
+                    className={`absolute end-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-ink-500 motion-safe:transition-colors hover:bg-cream-50 hover:text-brand-600 aria-pressed:bg-cream-50 aria-pressed:text-brand-600 disabled:cursor-wait disabled:opacity-50 ${focusClass}`}
                   >
                     <span aria-hidden="true"><EyeIcon className="h-5 w-5" /></span>
                   </button>
                 </div>
                 {fieldErrors.password && (
-                  <p id="login-password-error" role="alert" className="mt-2 text-sm leading-relaxed text-[#C2281A]">
+                  <p id="login-password-error" role="alert" className="mt-2 text-sm leading-relaxed text-brand-600">
                     {t.auth[fieldErrors.password]}
                   </p>
                 )}
@@ -319,7 +319,7 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
               <button
                 type="submit"
                 disabled={pending || configurationError}
-                className={`mt-1 flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#C2281A] px-4 py-3 text-base font-bold text-white motion-safe:transition-colors hover:bg-[#D93B2B] disabled:cursor-wait disabled:opacity-75 ${focusClass}`}
+                className={`mt-1 flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-base font-bold text-white motion-safe:transition-colors hover:bg-brand-500 disabled:cursor-wait disabled:opacity-75 ${focusClass}`}
               >
                 {pending && <span aria-hidden="true"><SpinnerIcon className="h-5 w-5 motion-reduce:animate-none" /></span>}
                 {pending ? t.auth.submitting : t.auth.submit}
@@ -330,10 +330,10 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
             {demoAvailable && (
               <section
                 aria-labelledby="login-demo-heading"
-                className="mt-6 rounded-xl border border-dashed border-[#D9C9B5] bg-white/70 p-4"
+                className="mt-6 rounded-xl border border-dashed border-line-strong bg-white/70 p-4"
               >
-                <h2 id="login-demo-heading" className="text-sm font-bold text-[#806116]">{t.auth.demoTitle}</h2>
-                <p className="mt-1 text-xs leading-relaxed text-[#726255]">{t.auth.demoHint}</p>
+                <h2 id="login-demo-heading" className="text-sm font-bold text-gold-800">{t.auth.demoTitle}</h2>
+                <p className="mt-1 text-xs leading-relaxed text-ink-500">{t.auth.demoHint}</p>
                 <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
                   {DEMO_ROLES.map((role) => (
                     <button
@@ -341,7 +341,7 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
                       type="button"
                       onClick={() => void handleDemoSignIn(role)}
                       disabled={demoPending !== null}
-                      className="min-h-11 rounded-lg border border-[#D9C9B5] bg-white px-3 py-2 text-sm font-bold text-[#342B27] motion-safe:transition-colors hover:border-[#C2281A] hover:text-[#C2281A] disabled:cursor-wait disabled:opacity-70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2281A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FDF8F1]"
+                      className="min-h-11 rounded-lg border border-line-strong bg-white px-3 py-2 text-sm font-bold text-ink-900 motion-safe:transition-colors hover:border-brand-600 hover:text-brand-600 disabled:cursor-wait disabled:opacity-70 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
                     >
                       {demoPending === role ? t.auth.submitting : demoLabels[role]}
                     </button>
@@ -350,7 +350,7 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
               </section>
             )}
 
-            <div className="mt-6 border-t border-[#D9C9B5] pt-5 text-[#726255]">
+            <div className="mt-6 border-t border-line-strong pt-5 text-ink-500">
               <p id="login-help" className="text-sm leading-relaxed">{t.auth.help}</p>
               <p id="login-secure-hint" className="mt-3 text-xs leading-relaxed">{t.auth.secureHint}</p>
             </div>

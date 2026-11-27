@@ -18,8 +18,9 @@ import { MobileDrawer, MobileHeader, Sidebar } from './components/Sidebar'
 import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
-import { useBranding } from './useBranding'
+import { NO_BRAND, useBranding } from './useBranding'
 import { BrandContext } from './brandContext'
+import { applyTheme, saveThemeCache } from './theme'
 import { applyFavicon, faviconHref } from './favicon'
 import { CheckIcon, CloseIcon, InfoIcon, SpinnerIcon } from './icons'
 
@@ -228,6 +229,13 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   }, [lang, t, brandName])
 
   useEffect(() => {
+    // NO_BRAND means branding has not loaded: keep whatever was painted from the cache.
+    if (branding === NO_BRAND) return
+    applyTheme(document.documentElement, branding.theme)
+    saveThemeCache(window.localStorage, window.location.host, branding.theme)
+  }, [branding])
+
+  useEffect(() => {
     applyFavicon(document, faviconHref(branding.name, branding.logoUrl))
   }, [branding.name, branding.logoUrl])
 
@@ -328,12 +336,12 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           />
 
           {!modeDismissed && (
-            <aside aria-label={api ? t.auth.mockTitle : t.auth.previewTitle} className="mt-4 flex items-start gap-3 rounded-2xl border border-gold-300/60 bg-gradient-to-r from-[#FBF1D8]/80 to-white px-4 py-3 text-stone-600 shadow-card">
-              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#FBF1D8] text-[#806116]">
+            <aside aria-label={api ? t.auth.mockTitle : t.auth.previewTitle} className="mt-4 flex items-start gap-3 rounded-2xl border border-gold-300/60 bg-gradient-to-r from-gold-50/80 to-white px-4 py-3 text-stone-600 shadow-card">
+              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold-50 text-gold-800">
                 <InfoIcon className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-[#806116]">{api ? t.auth.mockTitle : t.auth.previewTitle}</p>
+                <p className="text-xs font-bold text-gold-800">{api ? t.auth.mockTitle : t.auth.previewTitle}</p>
                 <p className="mt-1 text-xs leading-relaxed">{api ? t.auth.mockHint : t.auth.previewHint}</p>
               </div>
               <button type="button" onClick={() => setModeDismissed(true)} aria-label={t.actions.close} title={t.actions.close} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-stone-500 transition-colors hover:bg-white hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200">

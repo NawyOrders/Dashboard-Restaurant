@@ -210,11 +210,11 @@ export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
                     aria-pressed={isActive}
                     className={`flex w-full items-center gap-2.5 rounded-2xl border px-3 py-2.5 text-start transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
                       isActive
-                        ? 'border-[#F27061] bg-[#FFF5F4] text-brand-700 shadow-sm'
+                        ? 'border-brand-400 bg-brand-50 text-brand-700 shadow-sm'
                         : 'border-line bg-white text-stone-700 hover:border-gold-300 hover:bg-cream-50'
                     }`}
                   >
-                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${isActive ? 'bg-brand-600 text-white' : 'bg-[#FBF1D8] text-[#806116]'}`}>
+                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${isActive ? 'bg-brand-600 text-white' : 'bg-gold-50 text-gold-800'}`}>
                       <CategoryIcon categoryId={category.id} className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -265,7 +265,7 @@ export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
             <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {activeCategory.items.map((item) => (
                 <li key={item.id} className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-card">
-                  <div className="relative aspect-[4/3] bg-[#FBF1D8]">
+                  <div className="relative aspect-[4/3] bg-gold-50">
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
@@ -295,7 +295,7 @@ export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
                         aria-label={itemName(item, lang)}
                         onClick={() => void toggleAvailability(item)}
                         disabled={Boolean(pending[item.id])}
-                        className={`relative h-6 w-11 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:opacity-60 ${availabilityOf(item) ? 'bg-[#D99A2B]' : 'bg-stone-300'}`}
+                        className={`relative h-6 w-11 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:opacity-60 ${availabilityOf(item) ? 'bg-gold-400' : 'bg-stone-300'}`}
                       >
                         <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${availabilityOf(item) ? 'start-6' : 'start-1'}`} />
                       </button>

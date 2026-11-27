@@ -61,8 +61,8 @@ function Chart({
           <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block h-full w-full" role="img" aria-label={ariaLabel}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#C2281A" stopOpacity="0.18" />
-                <stop offset="100%" stopColor="#C2281A" stopOpacity="0.01" />
+                <stop offset="0%" style={{ stopColor: 'rgb(var(--c-brand-600))' }} stopOpacity="0.18" />
+                <stop offset="100%" style={{ stopColor: 'rgb(var(--c-brand-600))' }} stopOpacity="0.01" />
               </linearGradient>
             </defs>
             {ticks.map((tick) => (
@@ -72,7 +72,7 @@ function Chart({
                 x2={W}
                 y1={y(tick)}
                 y2={y(tick)}
-                stroke="#E9E1D7"
+                className="stroke-line"
                 strokeWidth="1"
                 strokeDasharray={tick === 0 ? undefined : '3 5'}
                 vectorEffect="non-scaling-stroke"
@@ -84,7 +84,7 @@ function Chart({
               x2={activeX}
               y1={PAD_TOP}
               y2={H - PAD_BOTTOM}
-              stroke="#D9B45A"
+              className="stroke-gold-400"
               strokeWidth="1"
               strokeDasharray="4 5"
               vectorEffect="non-scaling-stroke"
@@ -92,7 +92,7 @@ function Chart({
             <path
               d={line}
               fill="none"
-              stroke="#C2281A"
+              className="stroke-brand-600"
               strokeWidth="2.5"
               strokeLinejoin="round"
               strokeLinecap="round"

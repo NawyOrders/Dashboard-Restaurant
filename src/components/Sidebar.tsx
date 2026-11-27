@@ -178,10 +178,10 @@ function SidebarBody({
         className={`mt-auto flex w-full items-center gap-3 rounded-2xl border p-3 text-start transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${
           settingsActive
             ? 'border-brand-600 bg-brand-600 text-white shadow-card hover:bg-brand-700'
-            : 'border-gold-300/60 bg-[#FBF1D8]/70 hover:bg-[#FBF1D8]'
+            : 'border-gold-300/60 bg-gold-50/70 hover:bg-gold-50'
         }`}
       >
-        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${settingsActive ? 'bg-white/15 text-white' : 'bg-gold-400/30 text-[#806116]'}`}>
+        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${settingsActive ? 'bg-white/15 text-white' : 'bg-gold-400/30 text-gold-800'}`}>
           <GearIcon className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">
