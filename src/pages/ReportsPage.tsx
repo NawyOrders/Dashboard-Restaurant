@@ -167,10 +167,6 @@ export default function ReportsPage({ t, lang, api, onToast }: ReportsPageProps)
           )}
 
           <section className="dashboard-panel relative overflow-hidden p-5 sm:p-6">
-            <svg viewBox="0 0 800 80" preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 bottom-0 h-16 w-full text-brand-200/50" aria-hidden="true">
-              <path d="M0 50 C 150 10, 300 70, 450 40 S 700 10, 800 40 L800 80 L0 80 Z" fill="currentColor" />
-            </svg>
-
             <div className="relative z-10 flex flex-wrap items-start justify-between gap-6">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
