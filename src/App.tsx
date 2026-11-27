@@ -232,8 +232,11 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     [api, session],
   )
 
-  const remote = useOrders(api, lang)
-  const baseRows = api ? remote.rows : t.orders.rows
+  // Home and search read the same order list the board uses: the live API
+  // whenever a real session exists, and nothing at all in mock mode without one.
+  const ordersApi = api ?? remoteApi
+  const remote = useOrders(ordersApi, lang)
+  const baseRows = ordersApi ? remote.rows : []
   const orders = useMemo(() => baseRows.map((row) => ({ ...row })), [baseRows])
   const filteredOrders = useMemo(() => filterOrders(orders, {}, query), [orders, query])
   const unreadCount = t.notifications.items.filter((item) => item.unread).length

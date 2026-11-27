@@ -195,8 +195,8 @@ export const translations = {
     },
     chart: {
       title: 'مبيعات الأسبوع',
-      subtitle: 'إجمالي 71,260 ج.م هذا الأسبوع',
-      monthSubtitle: 'إجمالي 23,900 ج.م آخر 4 أسابيع',
+      subtitle: (total: string) => `إجمالي ${total} ج.م هذا الأسبوع`,
+      monthSubtitle: (total: string) => `إجمالي ${total} ج.م آخر 4 أسابيع`,
       week: 'أسبوع',
       month: 'شهر',
       days: ['الجمعة', 'الخميس', 'الأربعاء', 'الثلاثاء', 'الاثنين', 'الأحد', 'السبت'],
@@ -600,8 +600,8 @@ export const translations = {
     },
     chart: {
       title: 'Weekly Sales',
-      subtitle: 'Total EGP 71,260 this week',
-      monthSubtitle: 'Total EGP 23,900 in the last 4 weeks',
+      subtitle: (total: string) => `Total EGP ${total} this week`,
+      monthSubtitle: (total: string) => `Total EGP ${total} over the last 4 weeks`,
       week: 'Week',
       month: 'Month',
       days: ['Fri', 'Thu', 'Wed', 'Tue', 'Mon', 'Sun', 'Sat'],
