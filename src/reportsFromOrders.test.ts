@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { AdminOrderDetails, AdminOrderListItem } from './api/types'
 import {
+  bucketDays,
   buildBestSellers,
+  buildDailyRevenue,
+  buildHomeOverview,
+  percentChange,
   buildPayments,
   buildPeakHours,
   buildReportSummary,
@@ -185,5 +189,56 @@ describe('buildReportSummary', () => {
     const s = buildReportSummary('today', many, [], NOW)
     expect(s.orders).toBe(5000)
     expect(s.revenue).toBe(5500)
+  })
+})
+
+describe('home overview helpers', () => {
+  it('buildDailyRevenue puts each order in its local day, oldest first', () => {
+    const days = buildDailyRevenue([order({ total: 10 }), order({ total: 5, createdAtUtc: at(0, 8) }), order({ total: 7, createdAtUtc: at(2, 23) })], 3, NOW)
+    expect(days.map((d) => d.revenue)).toEqual([7, 0, 15])
+    expect(days[0].date).toEqual(new Date(2026, 10, 25))
+  })
+  it('buildDailyRevenue ignores orders outside the range and handles zero days', () => {
+    expect(buildDailyRevenue([order({ createdAtUtc: at(9, 10) })], 3, NOW).every((d) => d.revenue === 0)).toBe(true)
+    expect(buildDailyRevenue([order()], 0, NOW)).toEqual([])
+  })
+  it('percentChange is null without a usable previous value', () => {
+    expect(percentChange(5, 0)).toBeNull()
+    expect(percentChange(Number.NaN, 5)).toBeNull()
+    expect(percentChange(150, 100)).toBe(50)
+    expect(percentChange(50, 100)).toBe(-50)
+  })
+  it('bucketDays sums weeks and keeps a short last bucket', () => {
+    const days = Array.from({ length: 10 }, (_, i) => ({ date: new Date(2026, 10, 1 + i), revenue: 1 }))
+    expect(bucketDays(days, 7).map((b) => b.revenue)).toEqual([7, 3])
+    expect(bucketDays(days, 0)).toEqual([])
+    expect(bucketDays([], 7)).toEqual([])
+  })
+  it('buildHomeOverview counts new orders separately and distinct customers case-insensitively', () => {
+    const o = buildHomeOverview(
+      [
+        order({ customerName: 'Mona', total: 100 }),
+        order({ customerName: ' mona ', total: 50 }),
+        order({ customerName: null, total: 10 }),
+        order({ status: 0, total: 999, customerName: 'New One' }),
+        order({ status: 2, total: 999 }),
+        order({ total: 40, createdAtUtc: at(1, 12), customerName: 'Ali' }),
+      ],
+      [detail([['a', 'Antara', 3, 30]])],
+      NOW,
+    )
+    expect(o.salesToday).toBe(160)
+    expect(o.ordersToday).toBe(3)
+    expect(o.newOrders).toBe(1)
+    expect(o.customersToday).toBe(1)
+    expect(o.averageToday).toBe(53.33)
+    expect(o.salesDelta).toBe(300)
+    expect(o.topItems).toEqual([{ name: 'Antara', count: 3 }])
+    expect(o.week).toHaveLength(7)
+    expect(o.month).toHaveLength(28)
+  })
+  it('buildHomeOverview is safe with no orders', () => {
+    const o = buildHomeOverview([], [], NOW)
+    expect(o).toMatchObject({ salesToday: 0, ordersToday: 0, newOrders: 0, customersToday: 0, averageToday: 0, salesDelta: null, topItems: [] })
   })
 })
