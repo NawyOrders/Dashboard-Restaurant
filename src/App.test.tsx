@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { PERMISSIONS } from './authz'
 import { translations } from './i18n'
 import { staffLoginResponse, staffRefreshResponse } from './test/fixtures'
 
@@ -296,5 +297,48 @@ describe('development account defaults', () => {
     mount()
     expect(screen.queryByRole('group')).not.toBeInTheDocument()
     expect(screen.getByLabelText(ar.auth.password)).toHaveValue('')
+  })
+})
+
+describe('sidebar management shortcuts', () => {
+  async function signInWith(permissions: string[]) {
+    const response = staffLoginResponse('Owner')
+    response.data.permissions = permissions
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(response)))
+    fireEvent.change(screen.getByLabelText(ar.auth.email), { target: { value: 'staff@example.test' } })
+    fireEvent.change(screen.getByLabelText(ar.auth.password), { target: { value: 'test-only' } })
+    fireEvent.click(screen.getByRole('button', { name: ar.auth.submit }))
+    await screen.findByText(ar.auth.previewTitle)
+  }
+
+  it('shows permitted management links directly in the sidebar', async () => {
+    mount()
+    await signInWith([PERMISSIONS.menuView, PERMISSIONS.menuEdit, PERMISSIONS.offersView, PERMISSIONS.staffView])
+    const nav = screen.getAllByRole('navigation', { name: 'الإدارة' })[0]
+    expect(nav.querySelectorAll('button')).toHaveLength(3)
+  })
+
+  it('hides shortcuts the role has no permission for', async () => {
+    mount()
+    await signInWith([PERMISSIONS.offersView])
+    const nav = screen.getAllByRole('navigation', { name: 'الإدارة' })[0]
+    expect(nav.querySelectorAll('button')).toHaveLength(1)
+  })
+
+  it('shows no management section without any management permission', async () => {
+    mount()
+    await signInWith(['Orders.Read'])
+    expect(screen.queryAllByRole('navigation', { name: 'الإدارة' })).toHaveLength(0)
+  })
+
+  it('marks the open management page, not Settings, as current', async () => {
+    window.history.pushState({}, '', '/manage/offers')
+    mount()
+    await signInWith([PERMISSIONS.offersView])
+    const nav = screen.getAllByRole('navigation', { name: 'الإدارة' })[0]
+    expect(nav.querySelector('button[aria-current="page"]')).not.toBeNull()
+    const current = screen.queryAllByRole('button').filter((b) => b.getAttribute('aria-current') === 'page').map((b) => b.textContent)
+    expect(current).toEqual([expect.stringContaining('العروض')])
+    window.history.pushState({}, '', '/')
   })
 })
