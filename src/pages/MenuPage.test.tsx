@@ -20,7 +20,7 @@ describe('menu management', () => {
 
     await user.click(toggle)
 
-    await waitFor(() => expect(update).toHaveBeenCalledWith('m1', '00000000-0000-4000-8000-0000000000bb', true))
+    await waitFor(() => expect(update).toHaveBeenCalledWith('m1', '00000000-0000-7000-8000-0000000000b1', true))
     await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'))
     expect(onToast).toHaveBeenCalledWith(`ريش غنم مشوية — ${t.menuPage.available}`)
   })
