@@ -65,13 +65,13 @@ describe('deployment security headers', () => {
     expect(csp).not.toContain("'unsafe-eval'")
   })
 
-  it('loads no third-party scripts or styles besides Google Fonts', () => {
+  it('loads nothing from a third-party host (fonts are self-hosted)', () => {
     const html = readFileSync(process.cwd() + '/index.html', 'utf8')
     expect(html).not.toMatch(/<script[^>]+src=["']https?:/i)
     const hosts = [...html.matchAll(/(?:href|src)=["'](https?:\/\/[^"']+)/gi)].map(
       (match) => new URL(match[1]).host,
     )
-    expect([...new Set(hosts)].sort()).toEqual(['fonts.googleapis.com', 'fonts.gstatic.com'])
+    expect([...new Set(hosts)]).toEqual([])
   })
 })
 
