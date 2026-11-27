@@ -2,30 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --c-ink-900: 48 43 40;
+  --c-ink-700: 74 65 59;
+  --c-ink-500: 117 107 98;
+  --c-surface-muted: 253 248 241;
+  --c-surface-sunken: 246 238 228;
+  --c-line: 233 225 215;
+  --c-line-strong: 217 201 181;
+  --c-cream-50: 253 248 241;
+  --c-cream-100: 250 241 228;
+  --c-cream-200: 245 231 211;
+  --c-cream-300: 237 217 188;
+  --c-brand-50: 253 236 234;
+  --c-brand-100: 250 213 208;
+  --c-brand-200: 245 173 165;
+  --c-brand-300: 240 133 122;
+  --c-brand-400: 232 93 74;
+  --c-brand-500: 217 59 43;
+  --c-brand-600: 194 40 26;
+  --c-brand-700: 160 31 19;
+  --c-gold-50: 251 241 216;
+  --c-gold-200: 240 221 160;
+  --c-gold-300: 229 200 120;
+  --c-gold-400: 217 180 90;
+  --c-gold-500: 201 162 39;
+  --c-gold-600: 168 135 28;
+  --c-gold-800: 128 97 22;
+  --c-on-gold: 255 255 255;
+  --c-shadow: 160 31 19;
+}
+
+@font-face {
+  font-family: 'Alexandria';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('./assets/fonts/alexandria-arabic.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: 'Alexandria';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('./assets/fonts/alexandria-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Alexandria';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('./assets/fonts/alexandria-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+
 html {
-  font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+  font-family: 'Alexandria', system-ui, sans-serif;
   scroll-behavior: smooth;
 }
 
 body {
-  background-color: #fdf8f1;
+  background-color: rgb(var(--c-cream-50));
 }
 
 .dashboard-shell {
-  --dashboard-border: #e9e1d7;
+  --dashboard-border: rgb(var(--c-line));
   --dashboard-surface: #ffffff;
-  --dashboard-surface-muted: #fdf8f1;
-  --dashboard-surface-sunken: #f6eee4;
-  --dashboard-text: #302b28;
-  --dashboard-text-muted: #756b62;
-  --dashboard-accent: #c2281a;
-  --dashboard-gold: #c9a227;
+  --dashboard-surface-muted: rgb(var(--c-cream-50));
+  --dashboard-surface-sunken: rgb(var(--c-surface-sunken));
+  --dashboard-text: rgb(var(--c-ink-900));
+  --dashboard-text-muted: rgb(var(--c-ink-500));
+  --dashboard-accent: rgb(var(--c-brand-600));
+  --dashboard-gold: rgb(var(--c-gold-500));
   color: var(--dashboard-text);
-  font-family: 'Tajawal', 'Cairo', system-ui, sans-serif;
+  font-family: 'Alexandria', system-ui, sans-serif;
   overflow-wrap: anywhere;
   background-image:
-    radial-gradient(circle at 10% 0%, rgb(217 180 90 / 10%), transparent 30rem),
-    radial-gradient(circle at 100% 14%, rgb(194 40 26 / 5%), transparent 26rem);
+    radial-gradient(circle at 10% 0%, rgb(var(--c-gold-400) / 10%), transparent 30rem),
+    radial-gradient(circle at 100% 14%, rgb(var(--c-brand-600) / 5%), transparent 26rem);
   background-repeat: no-repeat;
 }
 
@@ -35,9 +92,9 @@ body {
   border: 1px solid var(--dashboard-border);
   border-radius: 24px;
   background:
-    radial-gradient(120% 140% at 100% 0%, rgb(217 180 90 / 22%), transparent 55%),
-    linear-gradient(135deg, #ffffff 0%, #fdf8f1 100%);
-  box-shadow: 0 24px 60px -40px rgb(160 31 19 / 55%);
+    radial-gradient(120% 140% at 100% 0%, rgb(var(--c-gold-400) / 22%), transparent 55%),
+    linear-gradient(135deg, #ffffff 0%, rgb(var(--c-cream-50)) 100%);
+  box-shadow: 0 24px 60px -40px rgb(var(--c-shadow) / 55%);
 }
 
 .dashboard-hero::before,
@@ -53,7 +110,7 @@ body {
   top: -5rem;
   width: 16rem;
   height: 16rem;
-  border: 1px solid rgb(201 162 39 / 35%);
+  border: 1px solid rgb(var(--c-gold-500) / 35%);
 }
 
 .dashboard-hero::after {
@@ -61,16 +118,16 @@ body {
   bottom: -6rem;
   width: 12rem;
   height: 12rem;
-  border: 1px dashed rgb(194 40 26 / 15%);
+  border: 1px dashed rgb(var(--c-brand-600) / 15%);
 }
 
 .dashboard-shell ::selection {
-  background: rgb(201 162 39 / 28%);
+  background: rgb(var(--c-gold-500) / 28%);
   color: var(--dashboard-text);
 }
 
 .dashboard-shell :is(h1, h2, h3) {
-  font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+  font-family: 'Alexandria', system-ui, sans-serif;
   text-wrap: balance;
 }
 
@@ -84,16 +141,16 @@ body {
   border: 1px solid var(--dashboard-border);
   border-radius: 18px;
   background: #fff;
-  box-shadow: 0 3px 12px rgb(48 43 40 / 2%);
+  box-shadow: 0 3px 12px rgb(var(--c-ink-900) / 2%);
 }
 
 .dashboard-shell :is(button, a, input, select):focus-visible {
-  outline: 2px solid #c2281a;
+  outline: 2px solid rgb(var(--c-brand-600));
   outline-offset: 3px;
 }
 
 .dashboard-shell .text-stone-400 {
-  color: #756d66;
+  color: rgb(var(--c-ink-500));
 }
 
 .dashboard-shell :is(input, select, textarea) {
@@ -117,11 +174,11 @@ textarea,
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #edd9bc;
+  background: rgb(var(--c-cream-300));
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #e5c878;
+  background: rgb(var(--c-gold-300));
 }
 
 @keyframes fade-in {
@@ -220,14 +277,14 @@ textarea,
 
 /* Login typography stays separate from the dashboard. */
 .login-page {
-  font-family: 'Tajawal', 'Cairo', system-ui, sans-serif;
+  font-family: 'Alexandria', system-ui, sans-serif;
   overflow-wrap: anywhere;
 }
 
 .login-page h1,
 .login-page h2,
 .login-page .login-brand-name {
-  font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+  font-family: 'Alexandria', system-ui, sans-serif;
 }
 
 /* Pop-ups only: softer fields, cards and buttons inside any modal. Existing palette. */
@@ -235,27 +292,27 @@ textarea,
 [data-modal-root] select,
 [data-modal-root] textarea {
   border-radius: 1rem;
-  border-color: #e9e1d7;
-  background-color: #fdf8f1;
-  box-shadow: inset 0 1px 2px rgba(48, 43, 40, 0.04);
+  border-color: rgb(var(--c-line));
+  background-color: rgb(var(--c-cream-50));
+  box-shadow: inset 0 1px 2px rgb(var(--c-ink-900) / 0.04);
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 [data-modal-root] input:not([type='checkbox']):not([type='radio']):not([type='file']):hover,
 [data-modal-root] select:hover,
 [data-modal-root] textarea:hover {
-  border-color: #e5c878;
+  border-color: rgb(var(--c-gold-300));
 }
 [data-modal-root] input:not([type='checkbox']):not([type='radio']):not([type='file']):focus,
 [data-modal-root] select:focus,
 [data-modal-root] textarea:focus {
   background-color: #ffffff;
-  border-color: #e85d4a;
-  box-shadow: 0 0 0 4px rgba(232, 93, 74, 0.14);
+  border-color: rgb(var(--c-brand-400));
+  box-shadow: 0 0 0 4px rgb(var(--c-brand-400) / 0.14);
   outline: none;
 }
 [data-modal-root] [class*='rounded-2xl'][class*='border'] {
-  border-color: #e9e1d7;
-  box-shadow: 0 1px 2px rgba(48, 43, 40, 0.04);
+  border-color: rgb(var(--c-line));
+  box-shadow: 0 1px 2px rgb(var(--c-ink-900) / 0.04);
 }
 [data-modal-root] [data-modal-footer] button {
   min-height: 48px;
@@ -270,8 +327,8 @@ textarea,
   transform: translateY(0) scale(0.97);
 }
 [data-modal-root] [data-modal-footer] button.bg-brand-600 {
-  background-image: linear-gradient(180deg, #d93b2b, #c2281a);
-  box-shadow: 0 10px 22px -10px rgba(160, 31, 19, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background-image: linear-gradient(180deg, rgb(var(--c-brand-500)), rgb(var(--c-brand-600)));
+  box-shadow: 0 10px 22px -10px rgb(var(--c-shadow) / 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 @media (prefers-reduced-motion: reduce) {
   [data-modal-root] [data-modal-footer] button:not(:disabled):hover,
