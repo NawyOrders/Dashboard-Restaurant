@@ -136,7 +136,7 @@ textarea,
 @keyframes modal-in {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.98);
+    transform: translateY(14px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -228,4 +228,39 @@ textarea,
 .login-page h2,
 .login-page .login-brand-name {
   font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+}
+
+/* Pop-ups only: softer fields and buttons inside any modal. Existing palette. */
+[data-modal-root] input:not([type='checkbox']):not([type='radio']):not([type='file']),
+[data-modal-root] select,
+[data-modal-root] textarea {
+  border-radius: 0.875rem;
+  background-color: #fffdfa;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+[data-modal-root] input:not([type='checkbox']):not([type='radio']):not([type='file']):hover,
+[data-modal-root] select:hover,
+[data-modal-root] textarea:hover {
+  border-color: #e5c878;
+}
+[data-modal-root] input:not([type='checkbox']):not([type='radio']):not([type='file']):focus,
+[data-modal-root] select:focus,
+[data-modal-root] textarea:focus {
+  background-color: #ffffff;
+  border-color: #e85d4a;
+}
+[data-modal-root] [data-modal-footer] button {
+  border-radius: 0.875rem;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+[data-modal-root] [data-modal-footer] button:not(:disabled):active {
+  transform: scale(0.97);
+}
+[data-modal-root] [data-modal-footer] button.bg-brand-600 {
+  box-shadow: 0 6px 16px -8px rgba(160, 31, 19, 0.55);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-modal-root] [data-modal-footer] button:not(:disabled):active {
+    transform: none;
+  }
 }
