@@ -1,8 +1,9 @@
 import type { T } from '../i18n'
 import { MoreIcon } from '../icons'
 
-export function TopItems({ t, onOpenDetails }: { t: T; onOpenDetails: () => void }) {
-  const { title, subtitle, items } = t.topItems
+export function TopItems({ t, onOpenDetails, items: realItems }: { t: T; onOpenDetails: () => void; items?: { name: string; count: number }[] }) {
+  const { title, subtitle } = t.topItems
+  const items = realItems ?? t.topItems.items
   const max = Math.max(...items.map((item) => item.count), 1)
   const rankedItems = [...items].sort((a, b) => b.count - a.count)
 

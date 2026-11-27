@@ -91,8 +91,11 @@ describe('authentication lifecycle', () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(staffRefreshResponse())))
     act(() => { window.dispatchEvent(new Event('focus')) })
     await waitFor(() => {
-      const [url, init] = fetchMock.mock.calls[1]
-      expect(url).toContain('/api/v1/auth/refresh')
+      // The Home page also loads its orders, so find the refresh call by URL.
+      const refreshCall = fetchMock.mock.calls.find(([target]) => String(target).includes('/api/v1/auth/refresh'))
+      expect(refreshCall).toBeDefined()
+      const [url, init] = refreshCall!
+      expect(String(url)).toContain('/api/v1/auth/refresh')
       expect(JSON.parse(init!.body as string)).toEqual({ refreshToken: 'test-refresh-token' })
     })
     expect(screen.getByText(ar.auth.previewTitle)).toBeInTheDocument()
@@ -261,8 +264,9 @@ describe('development account defaults', () => {
     expect(fetchMock).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: ar.auth.submit }))
     await screen.findByText(ar.auth.previewTitle)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ email: `${role}@example.test`, password: 'fixture-only' })
+    const loginCalls = fetchMock.mock.calls.filter(([target]) => String(target).includes('/auth/login'))
+    expect(loginCalls).toHaveLength(1)
+    expect(JSON.parse(String(loginCalls[0][1]?.body))).toEqual({ email: `${role}@example.test`, password: 'fixture-only' })
     expect(screen.getByText(ar.roles.staff)).toBeVisible()
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ isSuccess: true })))
     await userEvent.click(screen.getByRole('button', { name: ar.logout }))

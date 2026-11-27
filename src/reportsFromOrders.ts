@@ -132,3 +132,84 @@ export function buildReportSummary(
 }
 
 export const REPORT_DAY_MS = DAY_MS
+
+// Revenue per local day, oldest first, for the last `days` days including today.
+export function buildDailyRevenue(orders: AdminOrderListItem[], days: number, now: Date): { date: Date; revenue: number }[] {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1))
+  const buckets = Array.from({ length: Math.max(days, 0) }, (_, index) => ({
+    date: new Date(start.getFullYear(), start.getMonth(), start.getDate() + index),
+    revenue: 0,
+  }))
+  for (const order of ordersInWindow(orders, start, now)) {
+    const time = new Date(order.createdAtUtc)
+    const index = Math.round((new Date(time.getFullYear(), time.getMonth(), time.getDate()).getTime() - start.getTime()) / DAY_MS)
+    if (index >= 0 && index < buckets.length) buckets[index].revenue = round2(buckets[index].revenue + order.total)
+  }
+  return buckets
+}
+
+// Percent change as text input for the stat cards: null when there is nothing to compare with.
+export function percentChange(current: number, previous: number): number | null {
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous <= 0) return null
+  return round2(((current - previous) / previous) * 100)
+}
+
+export type HomeOverview = {
+  salesToday: number
+  ordersToday: number
+  newOrders: number
+  customersToday: number
+  averageToday: number
+  salesDelta: number | null
+  ordersDelta: number | null
+  customersDelta: number | null
+  averageDelta: number | null
+  week: { date: Date; revenue: number }[]
+  month: { date: Date; revenue: number }[]
+  topItems: { name: string; count: number }[]
+}
+
+function distinctCustomers(orders: AdminOrderListItem[]): number {
+  return new Set(orders.map((o) => (o.customerName ?? '').trim().toLowerCase()).filter(Boolean)).size
+}
+
+export function buildHomeOverview(allOrders: AdminOrderListItem[], details: AdminOrderDetails[], now: Date): HomeOverview {
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterdayStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), todayStart.getDate() - 1)
+  const today = ordersInWindow(allOrders, todayStart, now)
+  const yesterday = ordersInWindow(allOrders, yesterdayStart, new Date(todayStart.getTime() - 1))
+  const sum = (list: AdminOrderListItem[]) => round2(list.reduce((s, o) => s + o.total, 0))
+  const avg = (list: AdminOrderListItem[]) => (list.length === 0 ? 0 : round2(sum(list) / list.length))
+  const seen = new Set<string>()
+  const newOrders = allOrders.filter((o) => {
+    const t = timeOf(o)
+    if (o.status !== 0 || Number.isNaN(t) || t < todayStart.getTime() || t > now.getTime() || seen.has(o.orderId)) return false
+    seen.add(o.orderId)
+    return true
+  }).length
+  return {
+    salesToday: sum(today),
+    ordersToday: today.length,
+    newOrders,
+    customersToday: distinctCustomers(today),
+    averageToday: avg(today),
+    salesDelta: percentChange(sum(today), sum(yesterday)),
+    ordersDelta: percentChange(today.length, yesterday.length),
+    customersDelta: percentChange(distinctCustomers(today), distinctCustomers(yesterday)),
+    averageDelta: percentChange(avg(today), avg(yesterday)),
+    week: buildDailyRevenue(allOrders, 7, now),
+    month: buildDailyRevenue(allOrders, 28, now),
+    topItems: buildBestSellers(details).map((s) => ({ name: s.nameEn || s.nameAr, count: s.units })),
+  }
+}
+
+// Sums consecutive days into buckets of `size` (the month chart uses 4 weeks).
+export function bucketDays(days: { date: Date; revenue: number }[], size: number): { date: Date; revenue: number }[] {
+  if (size <= 0) return []
+  const out: { date: Date; revenue: number }[] = []
+  for (let index = 0; index < days.length; index += size) {
+    const slice = days.slice(index, index + size)
+    out.push({ date: slice[0].date, revenue: round2(slice.reduce((s, d) => s + d.revenue, 0)) })
+  }
+  return out
+}
