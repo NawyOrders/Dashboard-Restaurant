@@ -355,7 +355,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                   }
                 />
                 <Route path="/orders" element={<OrdersPage t={t} lang={lang} api={remoteApi ?? featureApi} ordersHub={ordersHub} permissions={session.user.permissions} onToast={showToast} />} />
-                <Route path="/menu" element={<MenuPage t={t} lang={lang} api={featureApi} onToast={showToast} />} />
+                <Route path="/menu" element={<MenuPage t={t} lang={lang} api={remoteApi ?? featureApi} onToast={showToast} />} />
                 <Route path="/reports" element={<ReportsPage t={t} lang={lang} api={featureApi} onToast={showToast} />} />
                 <Route path="/settings" element={<SettingsPage t={t} lang={lang} storageKey={settingsStorageKey} onToast={showToast} adminLinks={<SettingsAdminLinks lang={lang} dir={t.dir} permissions={session.user.permissions} onNavigate={quickNav.onNavigatePath} />} onOpenManage={canAny(session.user.permissions, ...MANAGE_MODULES.flatMap((module) => module.permissions)) ? () => navigate('/manage') : undefined} />} />
                 <Route path="/manage" element={<ManagePage lang={lang} dir={t.dir} permissions={session.user.permissions} />} />
