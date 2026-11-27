@@ -346,6 +346,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                       t={t}
                       lang={lang}
                       orders={filteredOrders}
+                      api={remoteApi}
                       state={api ? remote.state : 'ready'}
                       query={query}
                       onRetry={remote.reload}
