@@ -224,13 +224,13 @@ export function MobileDrawer({ open, onClose, ...props }: Props & { open: boolea
         tabIndex={-1}
         aria-label={props.t.actions.close}
         onClick={onClose}
-        className="absolute inset-0 h-full w-full cursor-default bg-stone-900/40"
+        className="absolute inset-0 h-full w-full cursor-default bg-ink-900/50 backdrop-blur-sm"
       />
       <aside
         role="dialog"
         aria-modal="true"
         aria-label={props.t.nav.label}
-        className="absolute inset-y-0 start-0 flex w-[280px] max-w-[85vw] animate-drawer-in flex-col gap-5 overflow-y-auto border-e border-line bg-white p-4 shadow-soft motion-reduce:animate-none"
+        className="absolute inset-y-0 start-0 flex w-[280px] max-w-[85vw] animate-drawer-in flex-col gap-5 overflow-y-auto rounded-e-3xl border-e border-line bg-white p-4 shadow-soft motion-reduce:animate-none"
       >
         <button
           type="button"
