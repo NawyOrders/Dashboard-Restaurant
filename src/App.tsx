@@ -18,6 +18,7 @@ import { MobileDrawer, MobileHeader, Sidebar } from './components/Sidebar'
 import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
+import { useBranding } from './useBranding'
 import { CheckIcon, CloseIcon, InfoIcon, SpinnerIcon } from './icons'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -212,7 +213,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   const orders = useMemo(() => baseRows.map((row) => ({ ...row })), [baseRows])
   const filteredOrders = useMemo(() => filterOrders(orders, {}, query), [orders, query])
   const unreadCount = t.notifications.items.filter((item) => item.unread).length
-  const brandName = t.brandName
+  const branding = useBranding(remoteApi, lang)
+  const brandName = branding.name ?? t.brandName
+  const brandLogoUrl = branding.logoUrl
   const settingsStorageKey = `nawy-preview-settings:${session.apiOrigin}:${session.user.id}`
 
   useEffect(() => {
@@ -274,6 +277,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           active={section}
           isOpen={isOpen}
           brandName={brandName}
+          brandLogoUrl={brandLogoUrl}
           brandSub={t.brandSub}
           orderBadge={t.nav.ordersBadge}
           unreadCount={unreadCount}
@@ -288,6 +292,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             active={section}
             isOpen={isOpen}
             brandName={brandName}
+            brandLogoUrl={brandLogoUrl}
             brandSub={t.brandSub}
             orderBadge={t.nav.ordersBadge}
             unreadCount={unreadCount}
@@ -382,6 +387,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
         active={section}
         isOpen={isOpen}
         brandName={brandName}
+        brandLogoUrl={brandLogoUrl}
         brandSub={t.brandSub}
         orderBadge={t.nav.ordersBadge}
         unreadCount={unreadCount}
