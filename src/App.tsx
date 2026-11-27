@@ -5,6 +5,7 @@ import { translations } from './i18n'
 import type { Session } from './auth'
 import { canAny } from './authz'
 import { MANAGE_MODULES } from './manage/modules'
+import { manageCopy } from './manage/text'
 import { API_BASE_URL, clearLegacySession, refreshSession, revokeSession } from './auth'
 import { createApi, isMockErrorRequested, isMockRequested } from './api'
 import type { OrdersHubConfig } from './realtime/ordersHub'
@@ -39,6 +40,9 @@ const PATH_BY_SECTION: Record<SectionKey, string> = {
   reports: '/reports',
   settings: '/settings',
 }
+
+// Management pages used day to day, shown directly in the sidebar.
+const QUICK_MANAGE_PATHS = ['/manage/menu-items', '/manage/offers', '/manage/staff']
 
 function sectionFromPath(pathname: string): SectionKey {
   if (pathname.startsWith('/orders')) return 'orders'
@@ -228,6 +232,17 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [navigate])
 
+  const quickLinks = QUICK_MANAGE_PATHS.flatMap((path) => {
+    const module = MANAGE_MODULES.find((item) => item.path === path)
+    return module && canAny(session.user.permissions, ...module.permissions) ? [{ path, label: module.title(lang) }] : []
+  })
+  const quickNav = {
+    quickLinks,
+    quickLinksLabel: manageCopy[lang].hubTitle,
+    currentPath: location.pathname,
+    onNavigatePath: (path: string) => { navigate(path); window.scrollTo({ top: 0, behavior: 'smooth' }) },
+  }
+
   const [drawerOpen, setDrawerOpen] = useState(false)
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
 
@@ -253,6 +268,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           unreadCount={unreadCount}
           onToggleOpen={toggleOpen}
           onNavigate={navigateSection}
+          {...quickNav}
         />
 
         <main id="dashboard-content" tabIndex={-1} className="dashboard-main min-w-0 flex-1 px-4 pt-4 pb-10 outline-none sm:px-6 sm:pt-6 lg:px-7 lg:pb-10 xl:px-8">
@@ -359,6 +375,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
         unreadCount={unreadCount}
         onToggleOpen={toggleOpen}
         onNavigate={navigateSection}
+        {...quickNav}
       />
 
       {toast && (
