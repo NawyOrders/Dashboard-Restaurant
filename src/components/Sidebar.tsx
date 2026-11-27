@@ -6,8 +6,11 @@ import {
   ChartIcon,
   ClipboardIcon,
   DotsIcon,
+  BowlIcon,
   GearIcon,
   HomeIcon,
+  StarIcon,
+  UsersIcon,
   UtensilsIcon,
 } from '../icons'
 import { BrandLogo } from './BrandLogo'
@@ -23,6 +26,18 @@ type Props = {
   onToggleOpen: () => void
   onNavigate: (key: SectionKey) => void
   onOpenNotifications?: () => void
+  quickLinks?: ReadonlyArray<QuickLink>
+  quickLinksLabel?: string
+  currentPath?: string
+  onNavigatePath?: (path: string) => void
+}
+
+export type QuickLink = { path: string; label: string }
+
+const QUICK_LINK_ICONS: Record<string, typeof HomeIcon> = {
+  '/manage/menu-items': BowlIcon,
+  '/manage/offers': StarIcon,
+  '/manage/staff': UsersIcon,
 }
 
 const NAV_ITEMS: { key: SectionKey; icon: typeof HomeIcon }[] = [
@@ -82,7 +97,13 @@ function SidebarBody({
   onToggleOpen,
   onNavigate,
   onClose,
+  quickLinks = [],
+  quickLinksLabel,
+  currentPath = '',
+  onNavigatePath,
 }: Props & { onClose?: () => void }) {
+  const activeQuickPath = quickLinks.find((link) => currentPath === link.path || currentPath.startsWith(`${link.path}/`))?.path
+  const settingsActive = active === 'settings' && !activeQuickPath
   const itemClass = (isActive: boolean) =>
     `flex min-h-12 w-full items-center gap-3 rounded-full px-4 py-3 text-sm font-bold transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${
       isActive ? 'bg-brand-600 text-white shadow-card' : 'text-stone-600 hover:bg-cream-50 hover:text-brand-700'
@@ -124,23 +145,46 @@ function SidebarBody({
         })}
       </nav>
 
+      {quickLinks.length > 0 && onNavigatePath && (
+        <nav className="flex flex-col gap-2" aria-label={quickLinksLabel}>
+          <p className="px-4 text-xs font-bold text-stone-500">{quickLinksLabel}</p>
+          {quickLinks.map((link) => {
+            const Icon = QUICK_LINK_ICONS[link.path] ?? GearIcon
+            const isActive = activeQuickPath === link.path
+            return (
+              <button
+                key={link.path}
+                type="button"
+                onClick={() => { onNavigatePath(link.path); onClose?.() }}
+                aria-current={isActive ? 'page' : undefined}
+                title={link.label}
+                className={itemClass(isActive)}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                <span className="min-w-0 flex-1 break-words text-start">{link.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+      )}
+
       <button
         type="button"
         onClick={() => { onNavigate('settings'); onClose?.() }}
-        aria-current={active === 'settings' ? 'page' : undefined}
+        aria-current={settingsActive ? 'page' : undefined}
         title={t.nav.settings}
         className={`mt-auto flex w-full items-center gap-3 rounded-2xl border p-3 text-start transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${
-          active === 'settings'
+          settingsActive
             ? 'border-brand-600 bg-brand-600 text-white shadow-card hover:bg-brand-700'
             : 'border-gold-300/60 bg-[#FBF1D8]/70 hover:bg-[#FBF1D8]'
         }`}
       >
-        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${active === 'settings' ? 'bg-white/15 text-white' : 'bg-gold-400/30 text-[#806116]'}`}>
+        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${settingsActive ? 'bg-white/15 text-white' : 'bg-gold-400/30 text-[#806116]'}`}>
           <GearIcon className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className={`block text-sm font-extrabold ${active === 'settings' ? 'text-white' : 'text-stone-800'}`}>{t.nav.settings}</span>
-          <span className={`mt-0.5 block text-xs ${active === 'settings' ? 'text-white/80' : 'text-stone-500'}`}>{t.nav.settingsSub}</span>
+          <span className={`block text-sm font-extrabold ${settingsActive ? 'text-white' : 'text-stone-800'}`}>{t.nav.settings}</span>
+          <span className={`mt-0.5 block text-xs ${settingsActive ? 'text-white/80' : 'text-stone-500'}`}>{t.nav.settingsSub}</span>
         </span>
       </button>
     </>
