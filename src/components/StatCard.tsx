@@ -24,7 +24,7 @@ export function StatCard({ label, value, suffix, delta, up, icon, iconClass, onC
     >
       <span className="flex w-full items-start justify-between gap-3">
         <span className="min-w-0 pt-1 text-xs font-semibold leading-5 text-stone-500 sm:text-sm">{label}</span>
-        <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white shadow-sm [&>svg]:h-6 [&>svg]:w-6 ${iconClass}`}>
+        <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl shadow-sm [&>svg]:h-6 [&>svg]:w-6 ${iconClass}`}>
           {icon}
         </span>
       </span>
