@@ -153,6 +153,7 @@ export type ChartSeries = { week: { values: number[]; labels: string[] }; month:
 export function SalesChart({ t, series }: { t: T; series?: ChartSeries }) {
   const [tab, setTab] = useState<'week' | 'month'>('week')
   const { title, subtitle, monthSubtitle, week, month, days, monthLabels, currency, chartLabel, pointLabel } = t.chart
+  const number = new Intl.NumberFormat(numberLocale(t.dir === 'rtl' ? 'ar' : 'en'), { maximumFractionDigits: 0 })
   const locale = numberLocale(t.dir === 'rtl' ? 'ar' : 'en')
   const active = series ? series[tab] : null
   const values = active ? active.values : []
@@ -163,7 +164,11 @@ export function SalesChart({ t, series }: { t: T; series?: ChartSeries }) {
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-base font-extrabold leading-7 text-stone-800 sm:text-lg">{title}</h3>
-          <p className="mt-1 text-xs leading-5 text-stone-500">{tab === 'week' ? subtitle : monthSubtitle}</p>
+          <p className="mt-1 text-xs leading-5 text-stone-500">
+            {tab === 'week'
+              ? subtitle(number.format((active?.values ?? []).reduce((sum, value) => sum + value, 0)))
+              : monthSubtitle(number.format((active?.values ?? []).reduce((sum, value) => sum + value, 0)))}
+          </p>
         </div>
         <div className="flex shrink-0 gap-1 rounded-xl bg-cream-50 p-1">
           {(
