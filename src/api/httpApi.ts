@@ -8,16 +8,12 @@ import {
   numberOrNull,
   stringOrNull,
   type AdminOrderListItem,
-  type BestSeller,
   type BrandingFetchResult,
   type ListOrdersQuery,
   type MenuCategory,
   type MenuItem,
   type MenuItemBranchAvailability,
   type PagedResult,
-  type PaymentBreakdown,
-  type PaymentMethodKey,
-  type PeakHourPoint,
   type ReportRange,
   type ReportsSummary,
   type RestaurantBranding,
@@ -314,66 +310,6 @@ function parsePublicMenuItem(value: unknown): MenuItem | null {
     imageUrl: stringOrNull(value.imageUrl) ?? stringOrNull(value.imageKey),
     categoryId: stringOrNull(value.categoryId) ?? '',
     branchAvailabilities,
-  }
-}
-
-const PAYMENT_KEYS: PaymentMethodKey[] = ['cash', 'instapay', 'wallet']
-
-function parsePayments(data: unknown): PaymentBreakdown[] {
-  if (!Array.isArray(data)) return []
-  return data.flatMap((value) => {
-    if (!isRecord(value)) return []
-    const key = stringOrNull(value.key)
-    if (!key || !PAYMENT_KEYS.includes(key as PaymentMethodKey)) return []
-    return [{
-      key: key as PaymentMethodKey,
-      percentage: numberOrNull(value.percentage) ?? 0,
-      count: numberOrNull(value.count) ?? 0,
-    }]
-  })
-}
-
-function parsePeakHours(data: unknown): PeakHourPoint[] {
-  if (!Array.isArray(data)) return []
-  return data.flatMap((value) => {
-    if (!isRecord(value)) return []
-    const hour = numberOrNull(value.hour)
-    const orders = numberOrNull(value.orders)
-    return hour == null || orders == null ? [] : [{ hour, orders }]
-  })
-}
-
-function parseBestSellers(data: unknown): BestSeller[] {
-  if (!Array.isArray(data)) return []
-  return data.flatMap((value) => {
-    if (!isRecord(value)) return []
-    const id = stringOrNull(value.id)
-    if (!id) return []
-    return [{
-      id,
-      nameAr: stringOrNull(value.nameAr) ?? '',
-      nameEn: stringOrNull(value.nameEn) ?? '',
-      units: numberOrNull(value.units) ?? 0,
-      revenue: numberOrNull(value.revenue) ?? 0,
-      emoji: stringOrNull(value.emoji) ?? '🍽️',
-    }]
-  })
-}
-
-function parseReports(data: unknown, range: ReportRange): ReportsSummary {
-  if (!isRecord(data)) throw new ApiError('invalidResponse')
-  return {
-    range,
-    revenue: numberOrNull(data.revenue) ?? 0,
-    deltaPercent: numberOrNull(data.deltaPercent) ?? 0,
-    orders: numberOrNull(data.orders) ?? 0,
-    averageOrder: numberOrNull(data.averageOrder) ?? 0,
-    netProfit: numberOrNull(data.netProfit) ?? 0,
-    dateFrom: stringOrNull(data.dateFrom) ?? '',
-    dateTo: stringOrNull(data.dateTo) ?? '',
-    payments: parsePayments(data.payments),
-    peakHours: parsePeakHours(data.peakHours),
-    bestSellers: parseBestSellers(data.bestSellers),
   }
 }
 
