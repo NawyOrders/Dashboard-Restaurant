@@ -309,7 +309,7 @@ export default function SettingsPage({ t, lang, storageKey, onToast, onOpenManag
               <ToggleRow
                 title={t.settingsPage.cash}
                 leading={<BanknoteIcon className="h-4 w-4" />}
-                leadingClass="bg-[#FBF1D8] text-[#806116]"
+                leadingClass="bg-gold-50 text-gold-800"
                 checked={settings.payments.cash}
                 onChange={() => patchPayments({ cash: !settings.payments.cash })}
               />
@@ -337,7 +337,7 @@ export default function SettingsPage({ t, lang, storageKey, onToast, onOpenManag
               <ToggleRow
                 title={t.settingsPage.wallets}
                 leading={<WalletIcon className="h-4 w-4" />}
-                leadingClass="bg-[#FBF1D8] text-[#806116]"
+                leadingClass="bg-gold-50 text-gold-800"
                 checked={settings.payments.wallets}
                 onChange={() => patchPayments({ wallets: !settings.payments.wallets })}
               />
