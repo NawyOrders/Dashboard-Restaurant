@@ -341,4 +341,15 @@ describe('sidebar management shortcuts', () => {
     expect(current).toEqual([expect.stringContaining('العروض')])
     window.history.pushState({}, '', '/')
   })
+
+  it('keeps Menu items highlighted on the Categories and Add-ons pages', async () => {
+    window.history.pushState({}, '', '/manage/categories')
+    mount()
+    await signInWith([PERMISSIONS.menuView, PERMISSIONS.menuEdit])
+    const nav = screen.getAllByRole('navigation', { name: 'الإدارة' })[0]
+    const current = nav.querySelector('button[aria-current="page"]')
+    expect(current).not.toBeNull()
+    expect(current?.textContent).toContain('أصناف القائمة')
+    window.history.pushState({}, '', '/')
+  })
 })
