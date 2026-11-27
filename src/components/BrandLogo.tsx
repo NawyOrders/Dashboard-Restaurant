@@ -35,7 +35,7 @@ export function BrandLogo({ size = 'md', className = '', logoUrl = null, name = 
   return (
     <span
       aria-hidden="true"
-      className={`grid shrink-0 place-items-center border border-gold-400/50 bg-brand-700 font-black uppercase leading-none text-[#F7E7C1] shadow-card ${sizes[size]} ${className}`}
+      className={`grid shrink-0 place-items-center border border-gold-400/50 bg-brand-700 font-black uppercase leading-none text-gold-200 shadow-card ${sizes[size]} ${className}`}
     >
       <span className="-mt-0.5">{initial}</span>
     </span>
