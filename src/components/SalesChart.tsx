@@ -31,7 +31,7 @@ function Chart({
   const PAD_X = 24
   const PAD_TOP = 20
   const PAD_BOTTOM = 28
-  const max = Math.ceil((Math.max(...values) * 1.15) / 4000) * 4000
+  const max = Math.max(Math.ceil((Math.max(...values, 0) * 1.15) / 4000) * 4000, 4000)
   const stepX = values.length > 1 ? (W - PAD_X * 2) / (values.length - 1) : 0
   const y = (value: number) => PAD_TOP + (1 - value / max) * (H - PAD_TOP - PAD_BOTTOM)
   const xFor = (index: number) => (rtl ? W - PAD_X - index * stepX : PAD_X + index * stepX)
@@ -151,11 +151,15 @@ function Chart({
   )
 }
 
-export function SalesChart({ t }: { t: T }) {
+export type ChartSeries = { week: { values: number[]; labels: string[] }; month: { values: number[]; labels: string[] } }
+
+// `series` replaces the built-in sample numbers with real data.
+export function SalesChart({ t, series }: { t: T; series?: ChartSeries }) {
   const [tab, setTab] = useState<'week' | 'month'>('week')
   const { title, subtitle, monthSubtitle, week, month, days, monthLabels, currency, chartLabel, pointLabel } = t.chart
   const locale = numberLocale(t.dir === 'rtl' ? 'ar' : 'en')
-  const values = tab === 'week' ? DATA.week : DATA.month
+  const active = series ? series[tab] : null
+  const values = active ? active.values : tab === 'week' ? DATA.week : DATA.month
 
   return (
     <section dir={t.dir} className="dashboard-panel flex h-full min-w-0 flex-col p-4 sm:p-5">
@@ -189,7 +193,7 @@ export function SalesChart({ t }: { t: T }) {
         <Chart
           key={tab}
           values={values}
-          labels={tab === 'week' ? days : monthLabels}
+          labels={active ? active.labels : tab === 'week' ? days : monthLabels}
           currency={currency}
           ariaLabel={chartLabel}
           pointLabel={pointLabel}
