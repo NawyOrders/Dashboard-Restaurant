@@ -136,7 +136,7 @@ textarea,
 @keyframes modal-in {
   from {
     opacity: 0;
-    transform: translateY(14px) scale(0.97);
+    transform: translateY(18px) scale(0.96);
   }
   to {
     opacity: 1;
@@ -230,12 +230,14 @@ textarea,
   font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
 }
 
-/* Pop-ups only: softer fields and buttons inside any modal. Existing palette. */
+/* Pop-ups only: softer fields, cards and buttons inside any modal. Existing palette. */
 [data-modal-root] input:not([type='checkbox']):not([type='radio']):not([type='file']),
 [data-modal-root] select,
 [data-modal-root] textarea {
-  border-radius: 0.875rem;
-  background-color: #fffdfa;
+  border-radius: 1rem;
+  border-color: #e9e1d7;
+  background-color: #fdf8f1;
+  box-shadow: inset 0 1px 2px rgba(48, 43, 40, 0.04);
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 [data-modal-root] input:not([type='checkbox']):not([type='radio']):not([type='file']):hover,
@@ -248,18 +250,31 @@ textarea,
 [data-modal-root] textarea:focus {
   background-color: #ffffff;
   border-color: #e85d4a;
+  box-shadow: 0 0 0 4px rgba(232, 93, 74, 0.14);
+  outline: none;
+}
+[data-modal-root] [class*='rounded-2xl'][class*='border'] {
+  border-color: #e9e1d7;
+  box-shadow: 0 1px 2px rgba(48, 43, 40, 0.04);
 }
 [data-modal-root] [data-modal-footer] button {
-  border-radius: 0.875rem;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  min-height: 48px;
+  border-radius: 1rem;
+  padding-inline: 1.375rem;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+}
+[data-modal-root] [data-modal-footer] button:not(:disabled):hover {
+  transform: translateY(-1px);
 }
 [data-modal-root] [data-modal-footer] button:not(:disabled):active {
-  transform: scale(0.97);
+  transform: translateY(0) scale(0.97);
 }
 [data-modal-root] [data-modal-footer] button.bg-brand-600 {
-  box-shadow: 0 6px 16px -8px rgba(160, 31, 19, 0.55);
+  background-image: linear-gradient(180deg, #d93b2b, #c2281a);
+  box-shadow: 0 10px 22px -10px rgba(160, 31, 19, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 @media (prefers-reduced-motion: reduce) {
+  [data-modal-root] [data-modal-footer] button:not(:disabled):hover,
   [data-modal-root] [data-modal-footer] button:not(:disabled):active {
     transform: none;
   }
