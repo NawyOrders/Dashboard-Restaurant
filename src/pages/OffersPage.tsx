@@ -189,7 +189,7 @@ export default function OffersPage({ t, lang, api, permissions, uploadsEnabled, 
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {offers.map((offer) => (
             <li key={offer.id} className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-card">
-              <div className="relative aspect-[16/9] bg-[#FBF1D8]">
+              <div className="relative aspect-[16/9] bg-gold-50">
                 {uploadsEnabled && offer.imageUrl && <img src={offer.imageUrl} alt="" className="h-full w-full object-cover" />}
                 <span className="absolute start-3 top-3"><Pill tone={TONES[offer.status]}>{o.statuses[offer.status]}</Pill></span>
               </div>
