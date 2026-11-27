@@ -47,6 +47,7 @@ export function OrderDetails({
       closeLabel={t.actions.close}
       title={`${t.orderDetails.title} · ${order.id}`}
       subtitle={order.customer}
+      icon={<ReceiptIcon className="h-6 w-6" />}
       size="md"
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

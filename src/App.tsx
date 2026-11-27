@@ -19,6 +19,7 @@ import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
 import { useBranding } from './useBranding'
+import { BrandContext } from './brandContext'
 import { applyFavicon, faviconHref } from './favicon'
 import { CheckIcon, CloseIcon, InfoIcon, SpinnerIcon } from './icons'
 
@@ -217,6 +218,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   const branding = useBranding(remoteApi, lang)
   const brandName = branding.name ?? t.brandName
   const brandLogoUrl = branding.logoUrl
+  const brandInfo = useMemo(() => ({ logoUrl: brandLogoUrl, name: brandName }), [brandLogoUrl, brandName])
   const settingsStorageKey = `nawy-preview-settings:${session.apiOrigin}:${session.user.id}`
 
   useEffect(() => {
@@ -272,6 +274,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   }
 
   return (
+    <BrandContext.Provider value={brandInfo}>
     <div className="dashboard-shell min-h-screen bg-cream-50">
       <a href="#dashboard-content" className="sr-only z-[70] rounded-lg bg-white p-3 font-bold text-brand-700 focus:not-sr-only focus:fixed focus:start-4 focus:top-4">
         {t.dashboard.skip}
@@ -410,5 +413,6 @@ function Dashboard({ session, lang, setLang, onLogout }: {
         </div>
       )}
     </div>
+    </BrandContext.Provider>
   )
 }
