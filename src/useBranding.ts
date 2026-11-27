@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { Api } from './api/Api'
 import type { Lang } from './i18n'
+import { pickThemeColors, type ThemeColors } from './theme'
 
-export type TenantBrand = { name: string | null; logoUrl: string | null }
+export type TenantBrand = { name: string | null; logoUrl: string | null; theme: ThemeColors | null }
 
-export const NO_BRAND: TenantBrand = { name: null, logoUrl: null }
+export const NO_BRAND: TenantBrand = { name: null, logoUrl: null, theme: null }
 
 // Only https images are shown; anything else (javascript:, data:, http:) is dropped.
 export function safeLogoUrl(value: string | null | undefined): string | null {
@@ -23,12 +24,23 @@ function clean(value: string | null | undefined): string | null {
 }
 
 export function pickBrand(
-  branding: { nameAr: string | null; nameEn: string | null; logoUrl: string | null },
+  branding: {
+    nameAr: string | null
+    nameEn: string | null
+    logoUrl: string | null
+    primaryColor?: string | null
+    secondaryColor?: string | null
+    accentColor?: string | null
+  },
   lang: Lang,
 ): TenantBrand {
   const ar = clean(branding.nameAr)
   const en = clean(branding.nameEn)
-  return { name: lang === 'ar' ? (ar ?? en) : (en ?? ar), logoUrl: safeLogoUrl(branding.logoUrl) }
+  return {
+    name: lang === 'ar' ? (ar ?? en) : (en ?? ar),
+    logoUrl: safeLogoUrl(branding.logoUrl),
+    theme: pickThemeColors({ primary: branding.primaryColor, secondary: branding.secondaryColor, accent: branding.accentColor }),
+  }
 }
 
 // The restaurant's own name and logo from its public branding. Without an api
