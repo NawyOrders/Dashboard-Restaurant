@@ -20,6 +20,7 @@ type Props = {
   active: SectionKey
   isOpen: boolean
   brandName: string
+  brandLogoUrl?: string | null
   brandSub: string
   orderBadge: number
   unreadCount: number
@@ -92,6 +93,7 @@ function SidebarBody({
   active,
   isOpen,
   brandName,
+  brandLogoUrl,
   brandSub,
   orderBadge,
   onToggleOpen,
@@ -112,7 +114,7 @@ function SidebarBody({
   return (
     <>
       <div className="flex items-center gap-3">
-        <BrandLogo />
+        <BrandLogo name={brandName} logoUrl={brandLogoUrl} />
         <div className="min-w-0">
           <p className="truncate text-lg font-extrabold leading-tight text-stone-800" title={brandName}>{brandName}</p>
           <p className="mt-0.5 truncate text-xs text-stone-500" title={brandSub}>{brandSub}</p>
@@ -250,6 +252,7 @@ export function MobileHeader({
   t,
   isOpen,
   brandName,
+  brandLogoUrl,
   brandSub,
   unreadCount,
   onToggleOpen,
@@ -270,7 +273,7 @@ export function MobileHeader({
       >
         <DotsIcon className="h-5 w-5" />
       </button>
-      <BrandLogo size="sm" />
+      <BrandLogo size="sm" name={brandName} logoUrl={brandLogoUrl} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-extrabold leading-tight text-stone-800" title={brandName}>{brandName}</p>
         <p className="mt-0.5 truncate text-xs text-stone-500" title={brandSub}>{brandSub}</p>
