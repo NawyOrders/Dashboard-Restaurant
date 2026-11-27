@@ -30,8 +30,8 @@ type HomeStat = {
   label: string
   value: string
   suffix?: string
-  delta: string
-  up: boolean
+  delta?: string
+  up?: boolean
   icon: ReactNode
   iconClass: string
 }
