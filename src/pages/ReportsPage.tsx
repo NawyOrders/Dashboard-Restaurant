@@ -191,7 +191,7 @@ export default function ReportsPage({ t, lang, api, onToast }: ReportsPageProps)
 
               <div className="grid w-full max-w-md grid-cols-3 divide-x divide-line overflow-hidden rounded-2xl border border-line bg-white shadow-sm rtl:divide-x-reverse sm:w-auto">
                 <HeroMetric icon={<ReceiptIcon className="h-4 w-4" />} iconClass="bg-brand-50 text-brand-600" label={t.reports.orders} value={formatNumber(summary.orders, lang)} />
-                <HeroMetric icon={<CalendarIcon className="h-4 w-4" />} iconClass="bg-[#FBF1D8] text-[#806116]" label={t.reports.avgOrder} value={formatNumber(summary.averageOrder, lang, 1)} />
+                <HeroMetric icon={<CalendarIcon className="h-4 w-4" />} iconClass="bg-gold-50 text-gold-800" label={t.reports.avgOrder} value={formatNumber(summary.averageOrder, lang, 1)} />
                 <HeroMetric icon={<ChartIcon className="h-4 w-4" />} iconClass="bg-mint-100 text-[#176B4B]" label={t.reports.netProfit} value={formatNumber(summary.netProfit, lang)} />
               </div>
             </div>
@@ -285,7 +285,7 @@ function PaymentDonut({ payments, t, lang }: { payments: PaymentBreakdown[]; t: 
     <div className="flex flex-col items-center gap-4">
       <div className="relative h-40 w-40 shrink-0">
         <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#F2EAE0" strokeWidth="16" />
+          <circle cx="50" cy="50" r="40" fill="none" className="stroke-cream-200" strokeWidth="16" />
           {payments.map((payment) => {
             const circle = (
               <circle
@@ -366,8 +366,8 @@ function PeakChart({ points, t, lang }: { points: PeakHourPoint[]; t: T; lang: L
           <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="block h-full w-full" role="img" aria-label={t.reports.peakLabel}>
             <defs>
               <linearGradient id="peak-area" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#C2281A" stopOpacity="0.16" />
-                <stop offset="100%" stopColor="#C2281A" stopOpacity="0.01" />
+                <stop offset="0%" style={{ stopColor: 'rgb(var(--c-brand-600))' }} stopOpacity="0.16" />
+                <stop offset="100%" style={{ stopColor: 'rgb(var(--c-brand-600))' }} stopOpacity="0.01" />
               </linearGradient>
             </defs>
             {ticks.map((tick) => (
@@ -377,16 +377,16 @@ function PeakChart({ points, t, lang }: { points: PeakHourPoint[]; t: T; lang: L
                 x2={width - padX}
                 y1={padTop + (1 - tick / max) * chartHeight}
                 y2={padTop + (1 - tick / max) * chartHeight}
-                stroke="#E9E1D7"
+                className="stroke-line"
                 strokeWidth="1"
                 strokeDasharray={tick === 0 ? undefined : '3 5'}
                 vectorEffect="non-scaling-stroke"
               />
             ))}
             <path d={area} fill="url(#peak-area)" />
-            <path d={line} fill="none" stroke="#C2281A" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-            <line x1={peakX} x2={peakX} y1={padTop} y2={height - padBottom} stroke="#D9B45A" strokeWidth="1" strokeDasharray="4 5" vectorEffect="non-scaling-stroke" />
-            <circle cx={peakX} cy={peakY} r="4" fill="#C2281A" stroke="#FFFFFF" strokeWidth="2" />
+            <path d={line} fill="none" className="stroke-brand-600" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+            <line x1={peakX} x2={peakX} y1={padTop} y2={height - padBottom} className="stroke-gold-400" strokeWidth="1" strokeDasharray="4 5" vectorEffect="non-scaling-stroke" />
+            <circle cx={peakX} cy={peakY} r="4" className="fill-brand-600" stroke="#FFFFFF" strokeWidth="2" />
           </svg>
 
           <div
@@ -434,7 +434,7 @@ function BestSellers({ summary, t, lang }: { summary: ReportsSummary; t: T; lang
               </span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-cream-100">
-              <span className={`block h-full rounded-full ${index === 0 ? 'bg-brand-600' : 'bg-[#F07A6E]'}`} style={{ width: `${percentage}%` }} />
+              <span className={`block h-full rounded-full ${index === 0 ? 'bg-brand-600' : 'bg-brand-400'}`} style={{ width: `${percentage}%` }} />
             </div>
           </li>
         )
