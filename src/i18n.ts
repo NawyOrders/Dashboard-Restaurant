@@ -170,9 +170,9 @@ const enSettingsDefaults: RestaurantSettings = {
 export const translations = {
   ar: {
     dir: 'rtl' as const,
-    brandName: 'كرم الشام',
+    brandName: 'المطعم',
     brandSub: 'لوحة الإدارة',
-    greeting: 'أهلاً، كرم الشام',
+    greeting: 'أهلاً',
     greetingSub: 'مفتوح الآن – نظرة عامة على أداء اليوم',
     greetingClosed: 'مغلق الآن – راجع ملخص أداء اليوم',
     searchPlaceholder: 'ابحث عن طلب، صنف، أو عميل...',
@@ -574,9 +574,9 @@ export const translations = {
   },
   en: {
     dir: 'ltr' as const,
-    brandName: 'Karam Al-Sham',
+    brandName: 'Restaurant',
     brandSub: 'Admin Panel',
-    greeting: 'Hello, Karam Al-Sham',
+    greeting: 'Hello',
     greetingSub: 'Open now – overview of today’s performance',
     greetingClosed: 'Closed now – here is today’s performance summary',
     searchPlaceholder: 'Search for an order, item, or customer...',
