@@ -57,6 +57,21 @@ describe('Modal', () => {
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 
+  it('shows the optional icon tile only when given, hidden from screen readers', () => {
+    const { container, unmount } = renderModal({ icon: <svg data-testid="ic" /> })
+    expect(container.querySelector('[data-modal-icon]')?.getAttribute('aria-hidden')).toBe('true')
+    expect(screen.getByTestId('ic')).toBeTruthy()
+    unmount()
+    const again = renderModal()
+    expect(again.container.querySelector('[data-modal-icon]')).toBeNull()
+  })
+
+  it('keeps the title readable as the dialog name with the red header band', () => {
+    const { container } = renderModal()
+    expect(container.querySelector('[data-modal-header]')?.className).toContain('from-brand-700')
+    expect(screen.getByRole('heading', { name: 'Details' })).toBeTruthy()
+  })
+
   it.each(['sm', 'md', 'lg'] as const)('supports size %s', (size) => {
     renderModal({ size })
     expect(screen.getByRole('dialog')).toBeTruthy()
