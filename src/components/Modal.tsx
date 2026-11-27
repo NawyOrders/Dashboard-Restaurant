@@ -1,4 +1,6 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useContext, useEffect, useId, useRef, type ReactNode } from 'react'
+import { BrandContext } from '../brandContext'
+import { BrandLogo } from './BrandLogo'
 import { CloseIcon } from '../icons'
 
 type Props = {
@@ -23,6 +25,7 @@ export function Modal({ open, onClose, title, subtitle, closeLabel, children, fo
   const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const onCloseRef = useRef(onClose)
+  const brand = useContext(BrandContext)
   const titleId = useId()
   const subtitleId = useId()
   onCloseRef.current = onClose
@@ -93,10 +96,16 @@ export function Modal({ open, onClose, title, subtitle, closeLabel, children, fo
             <span className="h-1.5 w-11 rounded-full bg-white/40" />
           </div>
           <div className="relative flex items-start gap-4">
-            {icon && (
-              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-gold-300 to-gold-500 text-brand-700 shadow-lg ring-4 ring-white/20" aria-hidden="true" data-modal-icon>
-                {icon}
+            {brand.logoUrl ? (
+              <span className="shrink-0 rounded-2xl p-0.5 shadow-lg ring-4 ring-white/20" data-modal-logo>
+                <BrandLogo size="lg" logoUrl={brand.logoUrl} name={brand.name} />
               </span>
+            ) : (
+              icon && (
+                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-gold-300 to-gold-500 text-brand-700 shadow-lg ring-4 ring-white/20" aria-hidden="true" data-modal-icon>
+                  {icon}
+                </span>
+              )
             )}
             <div className="min-w-0 flex-1 pt-0.5">
               <h2 id={titleId} className="text-xl font-black leading-snug tracking-tight sm:text-2xl">
