@@ -8,16 +8,12 @@ import {
   numberOrNull,
   stringOrNull,
   type AdminOrderListItem,
-  type BestSeller,
   type BrandingFetchResult,
   type ListOrdersQuery,
   type MenuCategory,
   type MenuItem,
   type MenuItemBranchAvailability,
   type PagedResult,
-  type PaymentBreakdown,
-  type PaymentMethodKey,
-  type PeakHourPoint,
   type ReportRange,
   type ReportsSummary,
   type RestaurantBranding,
@@ -92,10 +88,16 @@ import {
   type ListAddOnsQuery,
   type UpdateAddOnInput,
 } from './addOns'
+import { buildReportSummary, ordersInWindow, reportWindow } from '../reportsFromOrders'
 import { parsePaged, requireId, validatePaging } from './shared'
 import { parsePaymentMethod, validatePaymentMethodUpdate } from './paymentMethods'
 
 const DEFAULT_TIMEOUT_MS = 15_000
+
+const REPORT_PAGE_SIZE = 100
+const REPORT_MAX_PAGES = 20
+const REPORT_DETAIL_LIMIT = 40
+const REPORT_DETAIL_BATCH = 5
 
 export type HttpApiOptions = {
   baseUrl: string
@@ -311,66 +313,6 @@ function parsePublicMenuItem(value: unknown): MenuItem | null {
   }
 }
 
-const PAYMENT_KEYS: PaymentMethodKey[] = ['cash', 'instapay', 'wallet']
-
-function parsePayments(data: unknown): PaymentBreakdown[] {
-  if (!Array.isArray(data)) return []
-  return data.flatMap((value) => {
-    if (!isRecord(value)) return []
-    const key = stringOrNull(value.key)
-    if (!key || !PAYMENT_KEYS.includes(key as PaymentMethodKey)) return []
-    return [{
-      key: key as PaymentMethodKey,
-      percentage: numberOrNull(value.percentage) ?? 0,
-      count: numberOrNull(value.count) ?? 0,
-    }]
-  })
-}
-
-function parsePeakHours(data: unknown): PeakHourPoint[] {
-  if (!Array.isArray(data)) return []
-  return data.flatMap((value) => {
-    if (!isRecord(value)) return []
-    const hour = numberOrNull(value.hour)
-    const orders = numberOrNull(value.orders)
-    return hour == null || orders == null ? [] : [{ hour, orders }]
-  })
-}
-
-function parseBestSellers(data: unknown): BestSeller[] {
-  if (!Array.isArray(data)) return []
-  return data.flatMap((value) => {
-    if (!isRecord(value)) return []
-    const id = stringOrNull(value.id)
-    if (!id) return []
-    return [{
-      id,
-      nameAr: stringOrNull(value.nameAr) ?? '',
-      nameEn: stringOrNull(value.nameEn) ?? '',
-      units: numberOrNull(value.units) ?? 0,
-      revenue: numberOrNull(value.revenue) ?? 0,
-      emoji: stringOrNull(value.emoji) ?? '🍽️',
-    }]
-  })
-}
-
-function parseReports(data: unknown, range: ReportRange): ReportsSummary {
-  if (!isRecord(data)) throw new ApiError('invalidResponse')
-  return {
-    range,
-    revenue: numberOrNull(data.revenue) ?? 0,
-    deltaPercent: numberOrNull(data.deltaPercent) ?? 0,
-    orders: numberOrNull(data.orders) ?? 0,
-    averageOrder: numberOrNull(data.averageOrder) ?? 0,
-    netProfit: numberOrNull(data.netProfit) ?? 0,
-    dateFrom: stringOrNull(data.dateFrom) ?? '',
-    dateTo: stringOrNull(data.dateTo) ?? '',
-    payments: parsePayments(data.payments),
-    peakHours: parsePeakHours(data.peakHours),
-    bestSellers: parseBestSellers(data.bestSellers),
-  }
-}
-
 function parseSettings(data: unknown): RestaurantSettings {
   if (!isRecord(data)) throw new ApiError('invalidResponse')
   const notifications = isRecord(data.notifications) ? data.notifications : {}
@@ -485,7 +427,7 @@ export function createHttpApi(options: HttpApiOptions): Api {
     }
   }
 
-  return {
+  const api: Api = {
     async listOrders(query: ListOrdersQuery = {}, signal?: AbortSignal) {
       const response = await request('/api/v1/admin/orders', {
         query: {
@@ -897,13 +839,28 @@ export function createHttpApi(options: HttpApiOptions): Api {
       })
     },
 
+    // The backend has no reports endpoint, so the report is computed from the
+    // real orders of the current and the previous window (see reportsFromOrders).
     async getReportsSummary(range: ReportRange, signal?: AbortSignal): Promise<ReportsSummary> {
-      // TODO: confirm endpoint with backend
-      const response = await request('/api/v1/admin/reports/summary', {
-        query: { range },
-        signal,
-      })
-      return parseReports(readEnvelopeData(response.body), range)
+      const now = new Date()
+      const window = reportWindow(range, now)
+      const orders: AdminOrderListItem[] = []
+      for (let pageNumber = 1; pageNumber <= REPORT_MAX_PAGES; pageNumber += 1) {
+        const page = await api.listOrders(
+          { fromDate: window.previousFrom.toISOString(), toDate: now.toISOString(), pageNumber, pageSize: REPORT_PAGE_SIZE },
+          signal,
+        )
+        orders.push(...page.items)
+        if (!page.hasNextPage || page.items.length === 0) break
+      }
+      const counted = ordersInWindow(orders, window.from, window.to).slice(0, REPORT_DETAIL_LIMIT)
+      const details: AdminOrderDetails[] = []
+      for (let index = 0; index < counted.length; index += REPORT_DETAIL_BATCH) {
+        const batch = counted.slice(index, index + REPORT_DETAIL_BATCH)
+        const results = await Promise.allSettled(batch.map((order) => api.getOrderDetails(order.orderId, signal)))
+        for (const result of results) if (result.status === 'fulfilled') details.push(result.value)
+      }
+      return buildReportSummary(range, orders, details, now)
     },
 
     async getRestaurantSettings(signal?: AbortSignal): Promise<RestaurantSettings> {
@@ -922,4 +879,5 @@ export function createHttpApi(options: HttpApiOptions): Api {
       })
     },
   }
+  return api
 }
