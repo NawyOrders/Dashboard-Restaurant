@@ -26,6 +26,8 @@ export type SettingsPageProps = {
   onToast: (message: string) => void
   // Opens the management hub (offers and the other admin modules).
   onOpenManage?: () => void
+  // Set-up pages (branches, payments, roles) shown above the settings cards.
+  adminLinks?: ReactNode
 }
 
 const INPUT = 'min-h-11 w-full rounded-xl border border-line bg-white px-3 text-sm text-stone-800 placeholder:text-stone-400 focus:border-brand-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
@@ -58,7 +60,7 @@ function readSettings(storageKey: string, fallback: RestaurantSettings): Restaur
   }
 }
 
-export default function SettingsPage({ t, lang, storageKey, onToast, onOpenManage }: SettingsPageProps) {
+export default function SettingsPage({ t, lang, storageKey, onToast, onOpenManage, adminLinks }: SettingsPageProps) {
   const [settings, setSettings] = useState<RestaurantSettings>(() =>
     readSettings(storageKey, t.settingsPage.defaults),
   )
@@ -114,6 +116,8 @@ export default function SettingsPage({ t, lang, storageKey, onToast, onOpenManag
           </>
         }
       />
+
+      {adminLinks}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-4">
