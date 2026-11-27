@@ -65,6 +65,7 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
     [onToast, t],
   )
   const { state, orders: remoteOrders, reload } = useLiveOrders(api, lang, orderPlaced, announceOrderPlaced)
+  const activeCount = remoteOrders.filter((order) => order.status !== 'delivered').length
   const [overrides, setOverrides] = useState<Record<string, number>>({})
   const [rejected, setRejected] = useState<string[]>([])
   const [paymentOverrides, setPaymentOverrides] = useState<Record<string, number>>({})
@@ -222,11 +223,11 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
               {t.liveOrders.connected}
             </span>
           </div>
-          <p className="mt-1 text-sm text-stone-500">{t.liveOrders.subtitle}</p>
+          <p className="mt-1 text-sm text-stone-500">{t.liveOrders.subtitle(activeCount)}</p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-xs font-bold text-stone-600">
           <span className="h-2 w-2 rounded-full bg-brand-600" aria-hidden="true" />
-          {orders.length} {t.liveOrders.items}
+          {t.liveOrders.ordersCount(orders.length)}
         </span>
       </div>
 

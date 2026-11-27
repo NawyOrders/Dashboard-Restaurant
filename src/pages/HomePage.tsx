@@ -36,8 +36,10 @@ type HomeStat = {
   iconClass: string
 }
 
-function formatDelta(value: number | null, fallback: string): { text: string; up: boolean } {
-  if (value === null) return { text: fallback, up: true }
+// No delta is shown until the server has a previous period to compare with:
+// an invented percentage is worse than no percentage.
+function formatDelta(value: number | null): { text: string; up: boolean } | null {
+  if (value === null) return null
   return { text: `${Math.abs(value)}%`, up: value >= 0 }
 }
 
@@ -69,46 +71,46 @@ export default function HomePage({ t, lang, orders, state, query, onRetry, onVie
 
   const number = new Intl.NumberFormat(numberLocale(lang), { maximumFractionDigits: 0 })
   const real = overview !== null
-  const sales = formatDelta(real ? overview.salesDelta : null, t.home.deltas.salesToday)
-  const newOrdersDelta = formatDelta(real ? overview.ordersDelta : null, t.home.deltas.newOrders)
-  const customersDelta = formatDelta(real ? overview.customersDelta : null, t.home.deltas.customers)
-  const averageDelta = formatDelta(real ? overview.averageDelta : null, t.home.deltas.avgOrder)
+  const sales = formatDelta(real ? overview.salesDelta : null)
+  const newOrdersDelta = formatDelta(real ? overview.ordersDelta : null)
+  const customersDelta = formatDelta(real ? overview.customersDelta : null)
+  const averageDelta = formatDelta(real ? overview.averageDelta : null)
   const stats: HomeStat[] = [
     {
       key: 'salesToday',
       label: t.stats.salesToday,
-      value: real ? number.format(overview.salesToday) : t.home.values.salesToday,
+      value: real ? number.format(overview.salesToday) : '0',
       suffix: t.reports.currency,
-      delta: sales.text,
-      up: sales.up,
+      delta: sales?.text,
+      up: sales?.up,
       icon: <CoinsIcon />,
       iconClass: 'bg-gradient-to-br from-gold-300 to-gold-500 text-on-gold',
     },
     {
       key: 'newOrders',
       label: t.stats.newOrders,
-      value: real ? number.format(overview.newOrders) : t.home.values.newOrders,
-      delta: newOrdersDelta.text,
-      up: newOrdersDelta.up,
+      value: real ? number.format(overview.newOrders) : '0',
+      delta: newOrdersDelta?.text,
+      up: newOrdersDelta?.up,
       icon: <BagIcon />,
       iconClass: 'bg-gradient-to-br from-brand-400 to-brand-600 text-white',
     },
     {
       key: 'customers',
       label: t.stats.customers ?? t.stats.employees,
-      value: real ? number.format(overview.customersToday) : t.home.values.customers,
-      delta: customersDelta.text,
-      up: customersDelta.up,
+      value: real ? number.format(overview.customersToday) : '0',
+      delta: customersDelta?.text,
+      up: customersDelta?.up,
       icon: <UsersIcon />,
       iconClass: 'bg-gradient-to-br from-brand-300 to-brand-500 text-white',
     },
     {
       key: 'avgOrder',
       label: t.stats.avgOrder,
-      value: real ? number.format(overview.averageToday) : t.home.values.avgOrder,
+      value: real ? number.format(overview.averageToday) : '0',
       suffix: t.reports.currency,
-      delta: averageDelta.text,
-      up: averageDelta.up,
+      delta: averageDelta?.text,
+      up: averageDelta?.up,
       icon: <StarIcon />,
       iconClass: 'bg-gradient-to-br from-gold-300 to-gold-500 text-on-gold',
     },
@@ -138,7 +140,7 @@ export default function HomePage({ t, lang, orders, state, query, onRetry, onVie
           <SalesChart t={t} series={real ? buildSeries(overview, lang) : undefined} />
         </div>
         <div className="min-w-0 xl:col-span-2">
-          <TopItems t={t} items={real && overview.topItems.length > 0 ? overview.topItems : undefined} onOpenDetails={() => onToast(t.topItems.subtitle)} />
+          <TopItems t={t} items={real ? overview.topItems : undefined} onOpenDetails={() => onToast(t.topItems.subtitle)} />
         </div>
       </div>
 

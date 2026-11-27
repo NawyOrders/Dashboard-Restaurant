@@ -5,8 +5,8 @@ type Props = {
   label: string
   value: string
   suffix?: string
-  delta: string
-  up: boolean
+  delta?: string
+  up?: boolean
   icon: ReactNode
   iconClass: string
   onClick: () => void
@@ -32,10 +32,12 @@ export function StatCard({ label, value, suffix, delta, up, icon, iconClass, onC
         <bdi>{value}</bdi>
         {suffix && <span className="text-xs font-semibold tracking-normal text-stone-500 sm:text-sm">{suffix}</span>}
       </span>
-      <span className={`mt-3 inline-flex w-fit items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold tabular-nums ${up ? 'bg-mint-100 text-[#176B4B]' : 'bg-brand-50 text-brand-700'}`}>
-        {up ? <ArrowUpIcon className="h-3 w-3" /> : <ArrowDownIcon className="h-3 w-3" />}
-        <bdi>{delta}</bdi>
-      </span>
+      {delta ? (
+        <span className={`mt-3 inline-flex w-fit items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold tabular-nums ${up ? 'bg-mint-100 text-[#176B4B]' : 'bg-brand-50 text-brand-700'}`}>
+          {up ? <ArrowUpIcon className="h-3 w-3" /> : <ArrowDownIcon className="h-3 w-3" />}
+          <bdi>{delta}</bdi>
+        </span>
+      ) : null}
     </button>
   )
 }

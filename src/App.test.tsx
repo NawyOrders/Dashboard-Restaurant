@@ -30,7 +30,7 @@ async function signIn(role = 'Owner') {
   fireEvent.change(screen.getByLabelText(ar.auth.email), { target: { value: 'staff@example.test' } })
   fireEvent.change(screen.getByLabelText(ar.auth.password), { target: { value: 'test-only' } })
   fireEvent.click(screen.getByRole('button', { name: ar.auth.submit }))
-  await screen.findByText(ar.auth.previewTitle)
+  await screen.findByText(ar.auth.liveTitle)
 }
 
 describe('authentication lifecycle', () => {
@@ -61,7 +61,7 @@ describe('authentication lifecycle', () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ isSuccess: true })))
     fireEvent.click(screen.getByRole('button', { name: ar.logout }))
     expect(await screen.findByLabelText(ar.auth.password)).toHaveValue('')
-    expect(screen.queryByText(ar.auth.previewTitle)).not.toBeInTheDocument()
+    expect(screen.queryByText(ar.auth.liveTitle)).not.toBeInTheDocument()
     expect(consoleError).not.toHaveBeenCalled()
   })
 
@@ -98,7 +98,7 @@ describe('authentication lifecycle', () => {
       expect(String(url)).toContain('/api/v1/auth/refresh')
       expect(JSON.parse(init!.body as string)).toEqual({ refreshToken: 'test-refresh-token' })
     })
-    expect(screen.getByText(ar.auth.previewTitle)).toBeInTheDocument()
+    expect(screen.getByText(ar.auth.liveTitle)).toBeInTheDocument()
     expect(screen.queryByLabelText(ar.auth.password)).not.toBeInTheDocument()
   })
 
@@ -141,7 +141,7 @@ describe('authentication lifecycle', () => {
     fireEvent.click(screen.getByRole('button', { name: ar.logout }))
     await signIn('Staff')
     await act(async () => { rejectRevoke(new TypeError('offline')) })
-    expect(screen.getByText(ar.auth.previewTitle)).toBeVisible()
+    expect(screen.getByText(ar.auth.liveTitle)).toBeVisible()
     expect(screen.queryByText(ar.auth.revokeFailed)).not.toBeInTheDocument()
   })
 
@@ -150,7 +150,7 @@ describe('authentication lifecycle', () => {
     vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => { throw new Error('blocked') })
     mount()
     await signIn()
-    expect(screen.getByText(ar.auth.previewTitle)).toBeVisible()
+    expect(screen.getByText(ar.auth.liveTitle)).toBeVisible()
   })
 
   it('resetting authentication clears dashboard search state', async () => {
@@ -263,7 +263,7 @@ describe('development account defaults', () => {
     fireEvent.change(screen.getByLabelText(ar.auth.email), { target: { value: `${role}@example.test` } })
     expect(fetchMock).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: ar.auth.submit }))
-    await screen.findByText(ar.auth.previewTitle)
+    await screen.findByText(ar.auth.liveTitle)
     const loginCalls = fetchMock.mock.calls.filter(([target]) => String(target).includes('/auth/login'))
     expect(loginCalls).toHaveLength(1)
     expect(JSON.parse(String(loginCalls[0][1]?.body))).toEqual({ email: `${role}@example.test`, password: 'fixture-only' })
@@ -279,7 +279,7 @@ describe('development account defaults', () => {
     mount()
     await userEvent.click(screen.getByRole('button', { name: ar.auth.submit }))
     expect(await screen.findByRole('alert')).toHaveTextContent(ar.auth.error)
-    expect(screen.queryByText(ar.auth.previewTitle)).not.toBeInTheDocument()
+    expect(screen.queryByText(ar.auth.liveTitle)).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText(ar.auth.email), { target: { value: 'custom@example.test' } })
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByLabelText(ar.auth.password)).toHaveAttribute('type', 'password')
@@ -312,7 +312,7 @@ describe('sidebar management shortcuts', () => {
     fireEvent.change(screen.getByLabelText(ar.auth.email), { target: { value: 'staff@example.test' } })
     fireEvent.change(screen.getByLabelText(ar.auth.password), { target: { value: 'test-only' } })
     fireEvent.click(screen.getByRole('button', { name: ar.auth.submit }))
-    await screen.findByText(ar.auth.previewTitle)
+    await screen.findByText(ar.auth.liveTitle)
   }
 
   it('shows permitted management links directly in the sidebar', async () => {

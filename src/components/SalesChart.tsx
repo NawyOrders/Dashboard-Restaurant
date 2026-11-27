@@ -2,11 +2,6 @@ import { useId, useState } from 'react'
 import type { T } from '../i18n'
 import { numberLocale } from '../orders'
 
-const DATA = {
-  week: [12480, 10800, 9200, 10100, 8900, 9700, 10080],
-  month: [6200, 5800, 6500, 5400],
-}
-
 function Chart({
   values,
   labels,
@@ -153,13 +148,15 @@ function Chart({
 
 export type ChartSeries = { week: { values: number[]; labels: string[] }; month: { values: number[]; labels: string[] } }
 
-// `series` replaces the built-in sample numbers with real data.
+// `series` carries the real revenue numbers; without it the panel says there is
+// nothing to chart yet instead of drawing sample values.
 export function SalesChart({ t, series }: { t: T; series?: ChartSeries }) {
   const [tab, setTab] = useState<'week' | 'month'>('week')
   const { title, subtitle, monthSubtitle, week, month, days, monthLabels, currency, chartLabel, pointLabel } = t.chart
   const locale = numberLocale(t.dir === 'rtl' ? 'ar' : 'en')
   const active = series ? series[tab] : null
-  const values = active ? active.values : tab === 'week' ? DATA.week : DATA.month
+  const values = active ? active.values : []
+  const hasData = values.length > 0 && values.some((value) => value > 0)
 
   return (
     <section dir={t.dir} className="dashboard-panel flex h-full min-w-0 flex-col p-4 sm:p-5">
@@ -190,16 +187,20 @@ export function SalesChart({ t, series }: { t: T; series?: ChartSeries }) {
         </div>
       </div>
       <div className="flex min-w-0 flex-1 items-end">
-        <Chart
-          key={tab}
-          values={values}
-          labels={active ? active.labels : tab === 'week' ? days : monthLabels}
-          currency={currency}
-          ariaLabel={chartLabel}
-          pointLabel={pointLabel}
-          locale={locale}
-          rtl={t.dir === 'rtl'}
-        />
+        {hasData ? (
+          <Chart
+            key={tab}
+            values={values}
+            labels={active ? active.labels : tab === 'week' ? days : monthLabels}
+            currency={currency}
+            ariaLabel={chartLabel}
+            pointLabel={pointLabel}
+            locale={locale}
+            rtl={t.dir === 'rtl'}
+          />
+        ) : (
+          <p className="m-auto py-10 text-sm font-semibold text-stone-500">{t.home.noSales}</p>
+        )}
       </div>
     </section>
   )
