@@ -15,6 +15,7 @@ import { SetPassword, SET_PASSWORD_PATH } from './components/SetPassword'
 import type { SectionKey } from './types'
 import { filterOrders } from './orders'
 import { MobileDrawer, MobileHeader, Sidebar } from './components/Sidebar'
+import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { Topbar } from './components/Topbar'
 import { CheckIcon, CloseIcon, InfoIcon, SpinnerIcon } from './icons'
 
@@ -234,7 +235,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
 
   const quickLinks = QUICK_MANAGE_PATHS.flatMap((path) => {
     const module = MANAGE_MODULES.find((item) => item.path === path)
-    return module && canAny(session.user.permissions, ...module.permissions) ? [{ path, label: module.title(lang) }] : []
+    return module && canAny(session.user.permissions, ...module.permissions) ? [{ path, label: module.title(lang), alsoActiveOn: path === '/manage/menu-items' ? ['/manage/categories', '/manage/addons'] : [] }] : []
   })
   const quickNav = {
     quickLinks,
@@ -243,6 +244,15 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     onNavigatePath: (path: string) => { navigate(path); window.scrollTo({ top: 0, behavior: 'smooth' }) },
   }
 
+  const menuTabs = (
+    <MenuSectionTabs
+      lang={lang}
+      permissions={session.user.permissions}
+      currentPath={location.pathname}
+      onNavigate={quickNav.onNavigatePath}
+      label={manageCopy[lang].items.title}
+    />
+  )
   const [drawerOpen, setDrawerOpen] = useState(false)
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
 
@@ -353,9 +363,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                 <Route path="/manage/payments" element={<PaymentsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="/manage/staff" element={<StaffPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
                 <Route path="/manage/roles" element={<RolesPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
-                <Route path="/manage/categories" element={<CategoriesPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
-                <Route path="/manage/menu-items" element={<MenuItemsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} uploadsEnabled={Boolean(remoteApi)} onToast={showToast} />} />
-                <Route path="/manage/addons" element={<AddOnsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} />} />
+                <Route path="/manage/categories" element={<>{menuTabs}<CategoriesPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} /></>} />
+                <Route path="/manage/menu-items" element={<>{menuTabs}<MenuItemsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} uploadsEnabled={Boolean(remoteApi)} onToast={showToast} /></>} />
+                <Route path="/manage/addons" element={<>{menuTabs}<AddOnsPage t={t} lang={lang} api={remoteApi ?? featureApi} permissions={session.user.permissions} onToast={showToast} /></>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
