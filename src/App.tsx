@@ -19,6 +19,7 @@ import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
 import { useBranding } from './useBranding'
+import { applyFavicon, faviconHref } from './favicon'
 import { CheckIcon, CloseIcon, InfoIcon, SpinnerIcon } from './icons'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -223,6 +224,10 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     document.documentElement.dir = t.dir
     document.title = `${brandName} — ${t.brandSub}`
   }, [lang, t, brandName])
+
+  useEffect(() => {
+    applyFavicon(document, faviconHref(branding.name, branding.logoUrl))
+  }, [branding.name, branding.logoUrl])
 
   useEffect(() => {
     if (!toast) return
