@@ -304,8 +304,8 @@ function parsePublicMenuItem(value: unknown): MenuItem | null {
     nameAr: stringOrNull(value.nameAr) ?? '',
     nameEn: stringOrNull(value.nameEn) ?? '',
     price: price ?? 0,
-    available: true,
-    imageUrl: stringOrNull(value.imageUrl),
+    available: value.isAvailable !== false,
+    imageUrl: stringOrNull(value.imageUrl) ?? stringOrNull(value.imageKey),
     categoryId: stringOrNull(value.categoryId) ?? '',
     branchAvailabilities,
   }
@@ -855,30 +855,36 @@ export function createHttpApi(options: HttpApiOptions): Api {
     // items grouped client-side. Items hidden from customers (isVisibleToCustomers
     // false) are simply not returned by the public read.
     async listMenu(signal?: AbortSignal): Promise<MenuCategory[]> {
-      const [categoriesResponse, itemsResponse] = await Promise.all([
-        request('/api/v1/menu/categories', { signal }),
-        request('/api/v1/menu/items', { signal }),
-      ])
-      const rawCategories = readEnvelopeData(categoriesResponse.body)
-      if (!Array.isArray(rawCategories)) throw new ApiError('invalidResponse')
-      const rawItems = readEnvelopeData(itemsResponse.body)
-      const items = (Array.isArray(rawItems) ? rawItems : []).flatMap((value) => {
-        const item = parsePublicMenuItem(value)
-        return item ? [item] : []
-      })
-      return rawCategories.flatMap((value) => {
+      const categoriesResponse = await request('/api/v1/menu/categories', { signal })
+      const rawCategories = readEnvelopeList(categoriesResponse.body)
+      const categories = rawCategories.flatMap((value) => {
         if (!isRecord(value)) return []
         const id = stringOrNull(value.id)
-        if (!id) return []
-        const categoryItems = items.filter((item) => item.categoryId === id)
-        return [{
-          id,
-          nameAr: stringOrNull(value.nameAr) ?? '',
-          nameEn: stringOrNull(value.nameEn) ?? '',
-          count: numberOrNull(value.itemCount) ?? categoryItems.length,
-          items: categoryItems,
-        }]
+        return id ? [{ id, value }] : []
       })
+      // The public items read is paged ({ items, totalCount, ... }) and its items
+      // carry no categoryId, so read each category's items on its own.
+      return Promise.all(
+        categories.map(async ({ id, value }) => {
+          const itemsResponse = await request('/api/v1/menu/items', {
+            query: { categoryId: id, pageSize: 100 },
+            signal,
+          })
+          const data = readEnvelopeData(itemsResponse.body) as Record<string, unknown>
+          const rawItems = Array.isArray(data.items) ? data.items : []
+          const items = rawItems.flatMap((raw) => {
+            const item = parsePublicMenuItem(raw)
+            return item ? [{ ...item, categoryId: id }] : []
+          })
+          return {
+            id,
+            nameAr: stringOrNull(value.nameAr) ?? '',
+            nameEn: stringOrNull(value.nameEn) ?? '',
+            count: numberOrNull(value.itemCount) ?? items.length,
+            items,
+          }
+        }),
+      )
     },
 
     // Availability is per branch: PATCH .../items/{itemId}/branches/{branchId}/availability.
