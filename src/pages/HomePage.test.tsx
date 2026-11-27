@@ -33,9 +33,11 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers())
 
 describe('HomePage data source', () => {
-  it('shows the placeholder numbers without an api (mock mode)', () => {
+  it('shows zeros, not sample numbers, without an api', () => {
     render(<HomePage {...baseProps} />)
-    expect(screen.getAllByText(translations.en.home.values.salesToday).length).toBeGreaterThan(0)
+    expect(screen.queryByText('12,480')).not.toBeInTheDocument()
+    expect(screen.queryByText('148')).not.toBeInTheDocument()
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0)
   })
 
   it('shows real numbers, replaces the sample top items and survives failed detail calls', async () => {
@@ -47,14 +49,15 @@ describe('HomePage data source', () => {
     })
     render(<HomePage {...baseProps} api={api} />)
     await waitFor(() => expect(screen.getByText('1,300')).toBeInTheDocument())
-    expect(screen.queryAllByText(translations.en.home.values.salesToday)).toHaveLength(0)
+    expect(screen.queryByText('12,480')).not.toBeInTheDocument()
   })
 
-  it('keeps the page and placeholders when the orders request fails', async () => {
+  it('keeps the page on zeros when the orders request fails', async () => {
     const api = fakeApi({ listOrders: vi.fn(async () => Promise.reject(new Error('401'))) })
     render(<HomePage {...baseProps} api={api} />)
     await waitFor(() => expect(api.listOrders).toHaveBeenCalled())
-    expect(screen.getAllByText(translations.en.home.values.salesToday).length).toBeGreaterThan(0)
+    expect(screen.queryByText('12,480')).not.toBeInTheDocument()
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0)
   })
 
   it('does not call the api when it is null', () => {

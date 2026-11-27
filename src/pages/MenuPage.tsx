@@ -153,7 +153,15 @@ export default function MenuPage({ t, lang, api, onToast }: MenuPageProps) {
     <div>
       <PageHeading
         title={t.menuPage.title}
-        subtitle={t.menuPage.subtitle}
+        subtitle={
+          categories
+            ? t.menuPage.subtitle(
+                categories.reduce((sum, category) => sum + category.items.length, 0),
+                categories.length,
+                categories.reduce((sum, category) => sum + category.items.filter((entry) => !entry.available).length, 0),
+              )
+            : t.dashboard.loadingPage
+        }
         action={
           <button
             type="button"

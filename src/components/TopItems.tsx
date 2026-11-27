@@ -3,7 +3,7 @@ import { MoreIcon } from '../icons'
 
 export function TopItems({ t, onOpenDetails, items: realItems }: { t: T; onOpenDetails: () => void; items?: { name: string; count: number }[] }) {
   const { title, subtitle } = t.topItems
-  const items = realItems ?? t.topItems.items
+  const items = realItems ?? []
   const max = Math.max(...items.map((item) => item.count), 1)
   const rankedItems = [...items].sort((a, b) => b.count - a.count)
 
@@ -25,6 +25,9 @@ export function TopItems({ t, onOpenDetails, items: realItems }: { t: T; onOpenD
         </button>
       </div>
 
+      {items.length === 0 ? (
+        <p className="m-auto py-10 text-sm font-semibold text-stone-500">{t.home.noTopItems}</p>
+      ) : (
       <ol className="mt-2 flex flex-1 flex-col justify-center gap-3">
         {rankedItems.map((item) => (
           <li key={item.name} className="min-w-0">
@@ -41,6 +44,7 @@ export function TopItems({ t, onOpenDetails, items: realItems }: { t: T; onOpenD
           </li>
         ))}
       </ol>
+      )}
     </section>
   )
 }

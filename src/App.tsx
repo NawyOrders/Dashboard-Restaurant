@@ -13,7 +13,7 @@ import { useOrders } from './useOrders'
 import { Login } from './components/Login'
 import { SetPassword, SET_PASSWORD_PATH } from './components/SetPassword'
 import type { SectionKey } from './types'
-import { filterOrders } from './orders'
+import { filterOrders, mapLiveOrder } from './orders'
 import { MobileDrawer, MobileHeader, Sidebar } from './components/Sidebar'
 import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
@@ -197,6 +197,27 @@ function Dashboard({ session, lang, setLang, onLogout }: {
         : null,
     [remoteApi, session],
   )
+  // Sidebar badge: the number of orders still open on the server. It reads the
+  // same list endpoint the board uses and refreshes whenever the section
+  // changes, so the badge never shows a made-up number.
+  const [activeOrders, setActiveOrders] = useState(0)
+  useEffect(() => {
+    if (!remoteApi) {
+      setActiveOrders(0)
+      return undefined
+    }
+    const controller = new AbortController()
+    remoteApi
+      .listOrders({ pageNumber: 1, pageSize: 100 }, controller.signal)
+      .then((page) => {
+        if (controller.signal.aborted) return
+        setActiveOrders(page.items.map((item) => mapLiveOrder(item, lang)).filter((order) => order.status !== 'delivered').length)
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setActiveOrders(0)
+      })
+    return () => controller.abort()
+  }, [remoteApi, lang, section])
   // Preview pages use the local adapter until their endpoints are confirmed.
   const featureApi = useMemo(
     () =>
@@ -295,7 +316,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           brandName={brandName}
           brandLogoUrl={brandLogoUrl}
           brandSub={t.brandSub}
-          orderBadge={t.nav.ordersBadge}
+          orderBadge={activeOrders}
           unreadCount={unreadCount}
           onToggleOpen={toggleOpen}
           onNavigate={navigateSection}
@@ -310,7 +331,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             brandName={brandName}
             brandLogoUrl={brandLogoUrl}
             brandSub={t.brandSub}
-            orderBadge={t.nav.ordersBadge}
+            orderBadge={activeOrders}
             unreadCount={unreadCount}
             onToggleOpen={toggleOpen}
             onNavigate={navigateSection}
@@ -336,13 +357,13 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           />
 
           {!modeDismissed && (
-            <aside aria-label={api ? t.auth.mockTitle : t.auth.previewTitle} className="mt-4 flex items-start gap-3 rounded-2xl border border-gold-300/60 bg-gradient-to-r from-gold-50/80 to-white px-4 py-3 text-stone-600 shadow-card">
+            <aside aria-label={api ? t.auth.mockTitle : t.auth.liveTitle} className="mt-4 flex items-start gap-3 rounded-2xl border border-gold-300/60 bg-gradient-to-r from-gold-50/80 to-white px-4 py-3 text-stone-600 shadow-card">
               <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold-50 text-gold-800">
                 <InfoIcon className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-gold-800">{api ? t.auth.mockTitle : t.auth.previewTitle}</p>
-                <p className="mt-1 text-xs leading-relaxed">{api ? t.auth.mockHint : t.auth.previewHint}</p>
+                <p className="text-xs font-bold text-gold-800">{api ? t.auth.mockTitle : t.auth.liveTitle}</p>
+                <p className="mt-1 text-xs leading-relaxed">{api ? t.auth.mockHint : t.auth.liveHint}</p>
               </div>
               <button type="button" onClick={() => setModeDismissed(true)} aria-label={t.actions.close} title={t.actions.close} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-stone-500 transition-colors hover:bg-white hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200">
                 <CloseIcon className="h-4 w-4" />
@@ -405,7 +426,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
         brandName={brandName}
         brandLogoUrl={brandLogoUrl}
         brandSub={t.brandSub}
-        orderBadge={t.nav.ordersBadge}
+        orderBadge={activeOrders}
         unreadCount={unreadCount}
         onToggleOpen={toggleOpen}
         onNavigate={navigateSection}
