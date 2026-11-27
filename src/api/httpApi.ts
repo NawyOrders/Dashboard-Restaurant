@@ -92,10 +92,16 @@ import {
   type ListAddOnsQuery,
   type UpdateAddOnInput,
 } from './addOns'
+import { buildReportSummary, ordersInWindow, reportWindow } from '../reportsFromOrders'
 import { parsePaged, requireId, validatePaging } from './shared'
 import { parsePaymentMethod, validatePaymentMethodUpdate } from './paymentMethods'
 
 const DEFAULT_TIMEOUT_MS = 15_000
+
+const REPORT_PAGE_SIZE = 100
+const REPORT_MAX_PAGES = 20
+const REPORT_DETAIL_LIMIT = 40
+const REPORT_DETAIL_BATCH = 5
 
 export type HttpApiOptions = {
   baseUrl: string
@@ -485,7 +491,7 @@ export function createHttpApi(options: HttpApiOptions): Api {
     }
   }
 
-  return {
+  const api: Api = {
     async listOrders(query: ListOrdersQuery = {}, signal?: AbortSignal) {
       const response = await request('/api/v1/admin/orders', {
         query: {
@@ -897,13 +903,28 @@ export function createHttpApi(options: HttpApiOptions): Api {
       })
     },
 
+    // The backend has no reports endpoint, so the report is computed from the
+    // real orders of the current and the previous window (see reportsFromOrders).
     async getReportsSummary(range: ReportRange, signal?: AbortSignal): Promise<ReportsSummary> {
-      // TODO: confirm endpoint with backend
-      const response = await request('/api/v1/admin/reports/summary', {
-        query: { range },
-        signal,
-      })
-      return parseReports(readEnvelopeData(response.body), range)
+      const now = new Date()
+      const window = reportWindow(range, now)
+      const orders: AdminOrderListItem[] = []
+      for (let pageNumber = 1; pageNumber <= REPORT_MAX_PAGES; pageNumber += 1) {
+        const page = await api.listOrders(
+          { fromDate: window.previousFrom.toISOString(), toDate: now.toISOString(), pageNumber, pageSize: REPORT_PAGE_SIZE },
+          signal,
+        )
+        orders.push(...page.items)
+        if (!page.hasNextPage || page.items.length === 0) break
+      }
+      const counted = ordersInWindow(orders, window.from, window.to).slice(0, REPORT_DETAIL_LIMIT)
+      const details: AdminOrderDetails[] = []
+      for (let index = 0; index < counted.length; index += REPORT_DETAIL_BATCH) {
+        const batch = counted.slice(index, index + REPORT_DETAIL_BATCH)
+        const results = await Promise.allSettled(batch.map((order) => api.getOrderDetails(order.orderId, signal)))
+        for (const result of results) if (result.status === 'fulfilled') details.push(result.value)
+      }
+      return buildReportSummary(range, orders, details, now)
     },
 
     async getRestaurantSettings(signal?: AbortSignal): Promise<RestaurantSettings> {
@@ -922,4 +943,5 @@ export function createHttpApi(options: HttpApiOptions): Api {
       })
     },
   }
+  return api
 }
