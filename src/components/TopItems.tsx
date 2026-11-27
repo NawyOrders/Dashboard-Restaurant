@@ -34,7 +34,7 @@ export function TopItems({ t, onOpenDetails, items: realItems }: { t: T; onOpenD
             </div>
             <div aria-hidden="true" className="relative h-2.5 overflow-hidden rounded-full bg-cream-100">
               <div
-                className="absolute inset-y-0 rounded-full bg-gradient-to-r from-brand-600 to-[#F07A6E]"
+                className="absolute inset-y-0 rounded-full bg-gradient-to-r from-brand-600 to-brand-400"
                 style={{ width: `${(item.count / max) * 100}%`, insetInlineStart: 0 }}
               />
             </div>
