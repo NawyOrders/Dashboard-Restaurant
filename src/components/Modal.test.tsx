@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { BrandContext } from '../brandContext'
 import { Modal } from './Modal'
 
 const renderModal = (over: Partial<Parameters<typeof Modal>[0]> = {}) => {
@@ -70,6 +71,28 @@ describe('Modal', () => {
     const { container } = renderModal()
     expect(container.querySelector('[data-modal-header]')?.className).toContain('from-brand-700')
     expect(screen.getByRole('heading', { name: 'Details' })).toBeTruthy()
+  })
+
+  it("shows the restaurant's own logo in the header when it has one, instead of the icon tile", () => {
+    const { container } = render(
+      <BrandContext.Provider value={{ logoUrl: 'https://img.test/logo.jpg', name: 'Pablo' }}>
+        <Modal open onClose={() => undefined} title="Details" closeLabel="Close" icon={<svg data-testid="ic" />}>
+          <p>body</p>
+        </Modal>
+      </BrandContext.Provider>,
+    )
+    expect(container.querySelector('[data-modal-logo] img')?.getAttribute('src')).toBe('https://img.test/logo.jpg')
+    expect(container.querySelector('[data-modal-icon]')).toBeNull()
+  })
+
+  it('falls back to the icon tile, or nothing, when the restaurant has no logo', () => {
+    const a = renderModal({ icon: <svg data-testid="ic" /> })
+    expect(a.container.querySelector('[data-modal-logo]')).toBeNull()
+    expect(a.container.querySelector('[data-modal-icon]')).not.toBeNull()
+    a.unmount()
+    const b = renderModal()
+    expect(b.container.querySelector('[data-modal-logo]')).toBeNull()
+    expect(b.container.querySelector('[data-modal-icon]')).toBeNull()
   })
 
   it.each(['sm', 'md', 'lg'] as const)('supports size %s', (size) => {
