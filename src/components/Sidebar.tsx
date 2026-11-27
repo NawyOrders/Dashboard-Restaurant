@@ -32,7 +32,7 @@ type Props = {
   onNavigatePath?: (path: string) => void
 }
 
-export type QuickLink = { path: string; label: string }
+export type QuickLink = { path: string; label: string; alsoActiveOn?: readonly string[] }
 
 const QUICK_LINK_ICONS: Record<string, typeof HomeIcon> = {
   '/manage/menu-items': BowlIcon,
@@ -102,7 +102,7 @@ function SidebarBody({
   currentPath = '',
   onNavigatePath,
 }: Props & { onClose?: () => void }) {
-  const activeQuickPath = quickLinks.find((link) => currentPath === link.path || currentPath.startsWith(`${link.path}/`))?.path
+  const activeQuickPath = quickLinks.find((link) => [link.path, ...(link.alsoActiveOn ?? [])].some((path) => currentPath === path || currentPath.startsWith(`${path}/`)))?.path
   const settingsActive = active === 'settings' && !activeQuickPath
   const itemClass = (isActive: boolean) =>
     `flex min-h-12 w-full items-center gap-3 rounded-full px-4 py-3 text-sm font-bold transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${
