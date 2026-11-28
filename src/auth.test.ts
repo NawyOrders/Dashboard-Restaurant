@@ -200,6 +200,20 @@ describe('restaurant staff API adapter', () => {
     expect(loadStoredSession()).toBeNull()
     sessionStorage.setItem('nawy_dashboard_session', '{not json')
     expect(loadStoredSession()).toBeNull()
+    localStorage.setItem('nawy_dashboard_session', '{not json')
+    expect(loadStoredSession()).toBeNull()
+    clearStoredSession()
+  })
+
+  it('adopts a session an older build left in sessionStorage', async () => {
+    respond(staffLoginResponse())
+    const session = await login('staff@example.test', 'test')
+    sessionStorage.setItem('nawy_dashboard_session', JSON.stringify(session))
+    expect(loadStoredSession()).toEqual(session)
+    // The legacy copy moves to localStorage so a new tab keeps the session.
+    expect(localStorage.getItem('nawy_dashboard_session')).not.toBeNull()
+    expect(sessionStorage.getItem('nawy_dashboard_session')).toBeNull()
+    clearStoredSession()
   })
 })
 

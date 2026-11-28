@@ -311,10 +311,22 @@ export function clearLegacySession(): void {
   }
 }
 
-// Persisted session storage. sessionStorage is per-tab and clears when the
-// tab closes, so a reload or a direct link keeps the user signed in without
-// leaking the session to other tabs or to a later visit on a shared machine.
+// Persisted session storage. The session lives in localStorage so a reload, a
+// new tab and a browser restart all land back on the dashboard instead of the
+// login screen. The stored copy is validated on load (shape and tenant origin)
+// and every request still has to carry a token the API accepts, so a forged
+// entry reaches no data. Signing out clears it, and the access token still
+// expires after an hour and is rotated with a single-use refresh token.
 const SESSION_STORAGE_KEY = 'nawy_dashboard_session'
+
+function browserStorage(name: 'localStorage' | 'sessionStorage'): Storage | null {
+  try {
+    return typeof window === 'undefined' ? null : window[name]
+  } catch {
+    // Some browsers throw on access when storage is blocked.
+    return null
+  }
+}
 
 function isStoredSession(value: unknown): value is Session {
   if (!isRecord(value) || !isRecord(value.user)) return false
@@ -330,9 +342,10 @@ function isStoredSession(value: unknown): value is Session {
   )
 }
 
-export function loadStoredSession(): Session | null {
+function readStored(store: Storage | null): Session | null {
+  if (!store) return null
   try {
-    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY)
+    const raw = store.getItem(SESSION_STORAGE_KEY)
     if (!raw) return null
     const parsed: unknown = JSON.parse(raw)
     // A session minted for another API origin (tenant host) is not ours.
@@ -343,18 +356,42 @@ export function loadStoredSession(): Session | null {
   }
 }
 
+export function loadStoredSession(): Session | null {
+  const stored = readStored(browserStorage('localStorage'))
+  if (stored) return stored
+  // An older build kept the session in sessionStorage; adopt one that is still
+  // in this tab so an open tab does not have to sign in again.
+  const legacy = readStored(browserStorage('sessionStorage'))
+  if (legacy) {
+    saveStoredSession(legacy)
+    try {
+      browserStorage('sessionStorage')?.removeItem(SESSION_STORAGE_KEY)
+    } catch {
+      // Nothing to clean up when storage is disabled.
+    }
+  }
+  return legacy
+}
+
 export function saveStoredSession(session: Session): void {
   try {
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
+    const store = browserStorage('localStorage')
+    const existing = readStored(store)
+    // Another tab may already hold a fresher copy of this session; never
+    // overwrite it with an older one.
+    if (existing && existing.user.id === session.user.id && existing.expiresAt > session.expiresAt) return
+    store?.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
   } catch {
     // Storage disabled: the tab keeps working until it reloads.
   }
 }
 
 export function clearStoredSession(): void {
-  try {
-    sessionStorage.removeItem(SESSION_STORAGE_KEY)
-  } catch {
-    // Storage disabled: nothing to clear.
+  for (const name of ['localStorage', 'sessionStorage'] as const) {
+    try {
+      browserStorage(name)?.removeItem(SESSION_STORAGE_KEY)
+    } catch {
+      // Storage disabled: nothing to clear.
+    }
   }
 }

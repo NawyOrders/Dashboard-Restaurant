@@ -73,14 +73,36 @@ describe('authentication lifecycle', () => {
     expect(consoleError).not.toHaveBeenCalled()
   })
 
-  it('a fresh tab without the stored session asks for the password again', async () => {
+  it('a new tab opens straight into the signed-in session', async () => {
     const view = mount()
     await signIn()
     view.unmount()
-    // sessionStorage is per-tab: a new tab starts empty and stays signed out.
+    // A new tab starts with an empty sessionStorage but shares localStorage, so
+    // the stored session must bring the dashboard back without a password.
     sessionStorage.clear()
     mount()
-    expect(screen.getByLabelText(ar.auth.password)).toBeVisible()
+    expect(await screen.findByText(ar.auth.liveTitle)).toBeInTheDocument()
+    expect(screen.queryByLabelText(ar.auth.password)).not.toBeInTheDocument()
+  })
+
+  it('adopts a fresher session another tab stored instead of refreshing twice', async () => {
+    mount()
+    await signIn()
+    const key = 'nawy_dashboard_session'
+    const stored = JSON.parse(localStorage.getItem(key)!) as { expiresAt: number }
+    // A second tab rotates the session first and writes the newer copy.
+    const fresher = { ...stored, accessToken: 'rotated-access-token', refreshToken: 'rotated-refresh-token', expiresAt: stored.expiresAt + 1_800_000 }
+    localStorage.setItem(key, JSON.stringify(fresher))
+    fetchMock.mockClear()
+    vi.spyOn(Date, 'now').mockReturnValue(stored.expiresAt + 1_000)
+    act(() => { window.dispatchEvent(new Event('focus')) })
+    await waitFor(() => {
+      expect((JSON.parse(localStorage.getItem(key)!) as { accessToken: string }).accessToken).toBe('rotated-access-token')
+    })
+    // The single-use refresh token belongs to the other tab; spending it here
+    // would have the API revoke the whole session family.
+    expect(fetchMock.mock.calls.find(([target]) => String(target).includes('/api/v1/auth/refresh'))).toBeUndefined()
+    expect(screen.getByText(ar.auth.liveTitle)).toBeInTheDocument()
   })
 
   it('signs out when expiry is checked on tab focus', async () => {
