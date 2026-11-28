@@ -18,6 +18,10 @@ import { MobileDrawer, MobileHeader, Sidebar } from './components/Sidebar'
 import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
+import { LiveAlertToast, NotificationsDrawer } from './components/NotificationsDrawer'
+import { readMuted, unlockAudio, writeMuted } from './notifications/chime'
+import { useNotifications } from './notifications/useNotifications'
+import type { NotificationItem } from './api/notifications'
 import { NO_BRAND, useBranding } from './useBranding'
 import { useLoginBranding } from './loginBranding'
 import { setMediaBase } from './media'
@@ -273,7 +277,36 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   const baseRows = ordersApi ? remote.rows : []
   const orders = useMemo(() => baseRows.map((row) => ({ ...row })), [baseRows])
   const filteredOrders = useMemo(() => filterOrders(orders, {}, query), [orders, query])
-  const unreadCount = t.notifications.items.filter((item) => item.unread).length
+  // Staff notifications: the bell reads the real inbox, the hub pushes new
+  // orders and payment proofs, and the same event opens the alert toast.
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [muted, setMuted] = useState(() => readMuted())
+  const [liveAlert, setLiveAlert] = useState<NotificationItem | null>(null)
+  const notifications = useNotifications({
+    api: ordersApi ?? null,
+    hub: ordersHub,
+    muted,
+    onAlert: (item) => setLiveAlert(item),
+    onResolved: () => setLiveAlert(null),
+  })
+  const unreadCount = notifications.state.unreadCount
+  const toggleMuted = useCallback(() => {
+    setMuted((current) => {
+      const next = !current
+      writeMuted(next)
+      return next
+    })
+  }, [])
+  useEffect(() => {
+    // Browsers keep audio locked until the first gesture; the chime needs one.
+    const unlock = () => unlockAudio()
+    window.addEventListener('pointerdown', unlock, { once: true })
+    window.addEventListener('keydown', unlock, { once: true })
+    return () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
+  }, [])
   const branding = useBranding(remoteApi, lang)
   const brandName = branding.name ?? t.brandName
   const brandLogoUrl = branding.logoUrl
@@ -310,6 +343,25 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   }, [toast])
 
   const showToast = useCallback((message: string) => setToast({ id: Date.now(), message }), [])
+
+  const settleAlert = useCallback(
+    (item: NotificationItem, action: 'accept' | 'reject') => {
+      if (!ordersApi) return
+      const call =
+        action === 'accept'
+          ? ordersApi.acceptOrder(item.orderId)
+          : ordersApi.rejectOrder(item.orderId, t.notifications.rejectReason)
+      void call
+        .then(() => {
+          notifications.markRead(item.notificationId)
+          setLiveAlert(null)
+          setOrdersVersion((current) => current + 1)
+          showToast(`${action === 'accept' ? t.notifications.accept : t.notifications.reject} ✓`)
+        })
+        .catch(() => showToast(t.notifications.actionFailed))
+    },
+    [notifications, ordersApi, showToast, t],
+  )
 
   const navigateSection = useCallback((key: SectionKey) => {
     navigate(PATH_BY_SECTION[key])
@@ -378,7 +430,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             unreadCount={unreadCount}
             onToggleOpen={toggleOpen}
             onNavigate={navigateSection}
-            onOpenNotifications={() => showToast(t.notifications.subtitle)}
+            onOpenNotifications={() => setNotificationsOpen(true)}
             menuOpen={drawerOpen}
             onOpenMenu={() => setDrawerOpen((previous) => !previous)}
           />
@@ -396,7 +448,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
             onSearchSubmit={() => navigateSection('home')}
             onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')}
             onLogout={onLogout}
-            onOpenNotifications={() => showToast(t.notifications.subtitle)}
+            onOpenNotifications={() => setNotificationsOpen(true)}
           />
 
           {!modeDismissed && (
@@ -475,6 +527,44 @@ function Dashboard({ session, lang, setLang, onLogout }: {
         onNavigate={navigateSection}
         {...quickNav}
       />
+
+      <NotificationsDrawer
+        t={t}
+        lang={lang}
+        open={notificationsOpen}
+        state={notifications.state}
+        status={notifications.status}
+        loading={notifications.loading}
+        muted={muted}
+        permissions={session.user.permissions}
+        onClose={() => setNotificationsOpen(false)}
+        onMarkRead={notifications.markRead}
+        onMarkAllRead={notifications.markAllRead}
+        onLoadMore={notifications.loadMore}
+        onOpenOrder={(item) => {
+          notifications.markRead(item.notificationId)
+          setNotificationsOpen(false)
+          navigateSection('orders')
+        }}
+        onToggleMuted={toggleMuted}
+      />
+
+      {liveAlert && (
+        <LiveAlertToast
+          t={t}
+          lang={lang}
+          item={liveAlert}
+          permissions={session.user.permissions}
+          onDismiss={() => setLiveAlert(null)}
+          onView={() => {
+            notifications.markRead(liveAlert.notificationId)
+            setLiveAlert(null)
+            navigateSection('orders')
+          }}
+          onAccept={() => settleAlert(liveAlert, 'accept')}
+          onReject={() => settleAlert(liveAlert, 'reject')}
+        />
+      )}
 
       {toast && (
         <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4">

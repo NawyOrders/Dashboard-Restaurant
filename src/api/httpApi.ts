@@ -91,6 +91,7 @@ import {
 } from './addOns'
 import { buildReportSummary, ordersInWindow, reportWindow } from '../reportsFromOrders'
 import { parsePaged, requireId, validatePaging } from './shared'
+import { parseNotificationFeed, type NotificationListQuery } from './notifications'
 import { parsePaymentMethod, validatePaymentMethodUpdate } from './paymentMethods'
 
 const DEFAULT_TIMEOUT_MS = 15_000
@@ -877,6 +878,32 @@ export function createHttpApi(options: HttpApiOptions): Api {
         for (const result of results) if (result.status === 'fulfilled') details.push(result.value)
       }
       return buildReportSummary(range, orders, details, now)
+    },
+
+    async listNotifications(query: NotificationListQuery = {}, signal?: AbortSignal) {
+      const response = await request('/api/v1/admin/notifications', {
+        query: {
+          cursor: query.cursor,
+          pageSize: query.pageSize,
+          unreadOnly: query.unreadOnly ? 'true' : undefined,
+          branchId: query.branchId,
+          sinceUtc: query.sinceUtc,
+        },
+        signal,
+      })
+      return parseNotificationFeed(readEnvelopeData(response.body))
+    },
+
+    async markNotificationRead(notificationId: string, signal?: AbortSignal) {
+      if (!requireId(notificationId)) throw new ApiError('validation')
+      await request(`/api/v1/admin/notifications/${encodeURIComponent(notificationId)}/read`, {
+        method: 'POST',
+        signal,
+      })
+    },
+
+    async markAllNotificationsRead(signal?: AbortSignal) {
+      await request('/api/v1/admin/notifications/read-all', { method: 'POST', signal })
     },
 
     async getRestaurantSettings(signal?: AbortSignal): Promise<RestaurantSettings> {

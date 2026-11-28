@@ -1,4 +1,5 @@
 import type { Api } from './Api'
+import type { NotificationFeed } from './notifications'
 import {
   validateCreateAddOn,
   validateUpdateAddOn,
@@ -1300,6 +1301,16 @@ export function createMockApi(options: MockApiOptions = {}): Api {
       if (!(range in reports)) throw new ApiError('validation')
       return cloneReport(reports[range])
     },
+
+    // Mock mode has no inbox: an empty feed is the honest answer, and the bell
+    // stays at zero instead of showing made-up orders.
+    async listNotifications(): Promise<NotificationFeed> {
+      return { items: [], unreadCount: 0, nextCursor: null, hasMore: false, timeZoneId: null }
+    },
+
+    async markNotificationRead(): Promise<void> {},
+
+    async markAllNotificationsRead(): Promise<void> {},
 
     async getRestaurantSettings(signal?: AbortSignal): Promise<RestaurantSettings> {
       await guard(signal)

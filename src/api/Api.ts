@@ -31,6 +31,7 @@ import type {
   PromotionalOffer,
   UpdateOfferInput,
 } from './offers'
+import type { NotificationFeed, NotificationListQuery } from './notifications'
 import type {
   AdminOrderDetails,
   AdminOrderListItem,
@@ -111,4 +112,8 @@ export interface Api {
   getReportsSummary(range: ReportRange, signal?: AbortSignal): Promise<ReportsSummary>
   getRestaurantSettings(signal?: AbortSignal): Promise<RestaurantSettings>
   updateRestaurantSettings(settings: RestaurantSettings, signal?: AbortSignal): Promise<void>
+  // Staff notifications (order alerts and payment proofs), newest first.
+  listNotifications(query?: NotificationListQuery, signal?: AbortSignal): Promise<NotificationFeed>
+  markNotificationRead(notificationId: string, signal?: AbortSignal): Promise<void>
+  markAllNotificationsRead(signal?: AbortSignal): Promise<void>
 }
