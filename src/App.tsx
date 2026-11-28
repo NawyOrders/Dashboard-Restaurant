@@ -18,8 +18,17 @@ import { MobileDrawer, MobileHeader, Sidebar } from './components/Sidebar'
 import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
-import { LiveAlertToast, NotificationsDrawer } from './components/NotificationsDrawer'
-import { readMuted, unlockAudio, writeMuted } from './notifications/chime'
+import { NotificationsDrawer, NotificationsToasts } from './components/NotificationsDrawer'
+import { playChime, readMuted, unlockAudio, writeMuted } from './notifications/chime'
+import { acknowledgeOrder, dismissAlert, enqueueAlert, shouldShowSystemNotification, titleWithUnread } from './notifications/alerts'
+import {
+  readSystemEnabled,
+  requestSystemPermission,
+  showSystemNotification,
+  systemPermission,
+  writeSystemEnabled,
+  type SystemPermission,
+} from './notifications/systemNotifications'
 import { useNotifications } from './notifications/useNotifications'
 import type { NotificationItem } from './api/notifications'
 import { NO_BRAND, useBranding } from './useBranding'
@@ -281,13 +290,15 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   // orders and payment proofs, and the same event opens the alert toast.
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [muted, setMuted] = useState(() => readMuted())
-  const [liveAlert, setLiveAlert] = useState<NotificationItem | null>(null)
+  const [alerts, setAlerts] = useState<NotificationItem[]>([])
+  const [systemEnabled, setSystemEnabled] = useState(() => readSystemEnabled())
+  const [systemState, setSystemState] = useState<SystemPermission>(() => systemPermission())
   const notifications = useNotifications({
     api: ordersApi ?? null,
     hub: ordersHub,
     muted,
-    onAlert: (item) => setLiveAlert(item),
-    onResolved: () => setLiveAlert(null),
+    onAlert: (item) => setAlerts((current) => enqueueAlert(current, item)),
+    onResolved: (orderId) => setAlerts((current) => acknowledgeOrder(current, orderId)),
   })
   const unreadCount = notifications.state.unreadCount
   const toggleMuted = useCallback(() => {
@@ -307,6 +318,15 @@ function Dashboard({ session, lang, setLang, onLogout }: {
       window.removeEventListener('keydown', unlock)
     }
   }, [])
+
+  // An unacknowledged alert repeats every 30 seconds until someone acts on it:
+  // one chime is easy to miss in a busy restaurant.
+  useEffect(() => {
+    if (!alerts.length || muted) return
+    const timer = window.setInterval(() => playChime(), 30_000)
+    return () => window.clearInterval(timer)
+  }, [alerts.length, muted])
+
   const branding = useBranding(remoteApi, lang)
   const brandName = branding.name ?? t.brandName
   const brandLogoUrl = branding.logoUrl
@@ -316,8 +336,9 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   useEffect(() => {
     document.documentElement.lang = lang
     document.documentElement.dir = t.dir
-    document.title = `${brandName} — ${t.brandSub}`
-  }, [lang, t, brandName])
+    // The unread count in the title is what a background tab shows.
+    document.title = titleWithUnread(unreadCount, `${brandName} — ${t.brandSub}`)
+  }, [lang, t, brandName, unreadCount])
 
   useEffect(() => {
     // NO_BRAND means branding has not loaded: keep whatever was painted from the cache.
@@ -343,6 +364,29 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   }, [toast])
 
   const showToast = useCallback((message: string) => setToast({ id: Date.now(), message }), [])
+  const announced = useRef<string | null>(null)
+  useEffect(() => {
+    const newest = alerts[alerts.length - 1]
+    if (!newest || announced.current === newest.eventId) return
+    announced.current = newest.eventId
+    if (!systemEnabled) return
+    if (!shouldShowSystemNotification(document.visibilityState ?? 'unknown', document.hasFocus())) return
+    showSystemNotification({
+      title: `${t.notifications.title} · ${newest.orderNumber}`,
+      body: `${newest.customerName} · ${newest.total} ${newest.currency}`,
+      tag: newest.eventId,
+      iconUrl: brandLogoUrl,
+    })
+  }, [alerts, systemEnabled, t, brandLogoUrl])
+
+  const enableSystemAlerts = useCallback(() => {
+    void requestSystemPermission().then((state) => {
+      setSystemState(state)
+      const next = state === 'granted' ? !systemEnabled : false
+      setSystemEnabled(next)
+      writeSystemEnabled(next)
+    })
+  }, [systemEnabled])
 
   const settleAlert = useCallback(
     (item: NotificationItem, action: 'accept' | 'reject') => {
@@ -354,7 +398,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
       void call
         .then(() => {
           notifications.markRead(item.notificationId)
-          setLiveAlert(null)
+          setAlerts((current) => dismissAlert(current, item.notificationId))
           setOrdersVersion((current) => current + 1)
           showToast(`${action === 'accept' ? t.notifications.accept : t.notifications.reject} ✓`)
         })
@@ -547,24 +591,30 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           navigateSection('orders')
         }}
         onToggleMuted={toggleMuted}
+        onTestSound={() => {
+          unlockAudio()
+          playChime()
+        }}
+        systemPermission={systemState}
+        systemEnabled={systemEnabled}
+        onEnableSystem={enableSystemAlerts}
       />
 
-      {liveAlert && (
-        <LiveAlertToast
-          t={t}
-          lang={lang}
-          item={liveAlert}
-          permissions={session.user.permissions}
-          onDismiss={() => setLiveAlert(null)}
-          onView={() => {
-            notifications.markRead(liveAlert.notificationId)
-            setLiveAlert(null)
-            navigateSection('orders')
-          }}
-          onAccept={() => settleAlert(liveAlert, 'accept')}
-          onReject={() => settleAlert(liveAlert, 'reject')}
-        />
-      )}
+      <NotificationsToasts
+        t={t}
+        lang={lang}
+        alerts={alerts}
+        permissions={session.user.permissions}
+        onDismiss={(notificationId) => setAlerts((current) => dismissAlert(current, notificationId))}
+        onView={(item) => {
+          notifications.markRead(item.notificationId)
+          setAlerts((current) => dismissAlert(current, item.notificationId))
+          navigateSection('orders')
+        }}
+        onAccept={(item) => settleAlert(item, 'accept')}
+        onReject={(item) => settleAlert(item, 'reject')}
+        onOpenAll={() => setNotificationsOpen(true)}
+      />
 
       {toast && (
         <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4">
