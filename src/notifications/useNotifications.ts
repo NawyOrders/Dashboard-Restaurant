@@ -40,6 +40,8 @@ export type UseNotificationsOptions = {
 export type UseNotificationsResult = {
   state: NotificationState
   status: NotificationsStatus
+  /** Restaurant time zone from the feed; null until the first page loads. */
+  timeZoneId: string | null
   loading: boolean
   markRead: (notificationId: string) => void
   markAllRead: () => void
@@ -59,6 +61,7 @@ export function useNotifications({ api, hub, muted, onAlert, onResolved }: UseNo
   const [state, setState] = useState<NotificationState>(emptyNotifications)
   const [status, setStatus] = useState<NotificationsStatus>('offline')
   const [loading, setLoading] = useState(false)
+  const [timeZoneId, setTimeZoneId] = useState<string | null>(null)
   const stateRef = useRef(state)
   const mutedRef = useRef(muted)
   const alertRef = useRef(onAlert)
@@ -102,6 +105,7 @@ export function useNotifications({ api, hub, muted, onAlert, onResolved }: UseNo
         const next = hydrateNotifications(feed)
         stateRef.current = next
         setState(next)
+        setTimeZoneId(feed.timeZoneId ?? null)
       })
       .catch(() => {
         // An unreachable inbox leaves the bell empty; the hub may still deliver.
@@ -232,5 +236,5 @@ export function useNotifications({ api, hub, muted, onAlert, onResolved }: UseNo
       .finally(() => setLoading(false))
   }, [api, loading])
 
-  return { state, status, loading, markRead, markAllRead, loadMore }
+  return { state, status, timeZoneId, loading, markRead, markAllRead, loadMore }
 }
