@@ -28,6 +28,10 @@ export type OrdersPageProps = {
   // Action buttons the user is not entitled to are hidden; the backend still
   // enforces the same permissions server-side.
   permissions?: readonly string[]
+  // Called after any successful order mutation (accept, reject, status
+  // transition, payment proof decision) so the shell can refresh the sidebar
+  // badge immediately instead of waiting for the next poll.
+  onOrdersChanged?: () => void
 }
 
 const COLUMNS: LiveOrderStatus[] = ['new', 'preparing', 'ready', 'delivered']
@@ -50,7 +54,7 @@ function PaymentIcon({ method, className }: { method: LiveOrderPayment; classNam
   return <WalletIcon className={className} />
 }
 
-export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, permissions = [] }: OrdersPageProps) {
+export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, permissions = [], onOrdersChanged }: OrdersPageProps) {
   const canAccept = can(permissions, PERMISSIONS.ordersAccept)
   const canReject = can(permissions, PERMISSIONS.ordersReject)
   const canUpdateStatus = can(permissions, PERMISSIONS.ordersStatusUpdate)
@@ -61,11 +65,12 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
   const announceOrderPlaced = useCallback(
     (payload: OrderPlacedNotificationPayload) => {
       onToast(`${t.liveOrders.newOrder} · ${payload.orderNumber}`)
+      // A new order raises the sidebar badge too.
+      onOrdersChanged?.()
     },
-    [onToast, t],
+    [onToast, onOrdersChanged, t],
   )
   const { state, orders: remoteOrders, reload } = useLiveOrders(api, lang, orderPlaced, announceOrderPlaced)
-  const activeCount = remoteOrders.filter((order) => order.status !== 'delivered').length
   const [overrides, setOverrides] = useState<Record<string, number>>({})
   const [rejected, setRejected] = useState<string[]>([])
   const [paymentOverrides, setPaymentOverrides] = useState<Record<string, number>>({})
@@ -122,6 +127,10 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
     [remoteOrders, overrides, rejected, paymentOverrides, details],
   )
 
+  // Count from the merged board (optimistic overrides included) so the
+  // subtitle drops as soon as an order moves on, not after the next reload.
+  const activeCount = orders.filter((order) => order.status !== 'delivered').length
+
   const grouped = useMemo(() => {
     const groups: Record<LiveOrderStatus, LiveOrder[]> = { new: [], preparing: [], ready: [], delivered: [] }
     for (const order of orders) groups[order.status].push(order)
@@ -134,6 +143,7 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
     try {
       await action()
       apply()
+      onOrdersChanged?.()
       onToast(toast)
     } catch {
       setError(t.liveOrders.transitionError)

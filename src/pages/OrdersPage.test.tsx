@@ -58,6 +58,21 @@ describe('live orders board', () => {
     expect(onToast).toHaveBeenCalledWith(t.liveOrders.moved)
   })
 
+  it('notifies the shell after a successful mutation so the sidebar badge refreshes', async () => {
+    const api = createMockApi({ latencyMs: 0 })
+    const onOrdersChanged = vi.fn()
+    const user = userEvent.setup()
+    render(<OrdersPage t={t} lang="ar" api={api} permissions={ORDER_STAFF_PERMISSIONS} onToast={vi.fn()} onOrdersChanged={onOrdersChanged} />)
+
+    const newColumn = screen.getByRole('region', { name: t.liveOrders.columns.new })
+    const card = (await within(newColumn).findByRole('heading', { name: 'منى عبد الله' })).closest('article')
+    expect(card).not.toBeNull()
+    if (!card) return
+
+    await user.click(within(card).getByRole('button', { name: t.liveOrders.accept }))
+    await waitFor(() => expect(onOrdersChanged).toHaveBeenCalled())
+  })
+
   it('rejects a new order with a reason through the reject endpoint', async () => {
     const { api, onToast, user } = setup()
     const rejectOrder = vi.spyOn(api, 'rejectOrder')

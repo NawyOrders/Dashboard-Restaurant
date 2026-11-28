@@ -197,27 +197,36 @@ function Dashboard({ session, lang, setLang, onLogout }: {
         : null,
     [remoteApi, session],
   )
-  // Sidebar badge: the number of orders still open on the server. It reads the
-  // same list endpoint the board uses and refreshes whenever the section
-  // changes, so the badge never shows a made-up number.
+  // Sidebar badge: the number of NEW orders waiting for a decision. It reads
+  // the same list endpoint the board uses and refreshes whenever the section
+  // changes, when the board reports a mutation (ordersVersion), and on a
+  // 60-second poll so changes from other sessions show up too.
   const [activeOrders, setActiveOrders] = useState(0)
+  const [ordersVersion, setOrdersVersion] = useState(0)
   useEffect(() => {
     if (!remoteApi) {
       setActiveOrders(0)
       return undefined
     }
     const controller = new AbortController()
-    remoteApi
-      .listOrders({ pageNumber: 1, pageSize: 100 }, controller.signal)
-      .then((page) => {
-        if (controller.signal.aborted) return
-        setActiveOrders(page.items.map((item) => mapLiveOrder(item, lang)).filter((order) => order.status !== 'delivered').length)
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setActiveOrders(0)
-      })
-    return () => controller.abort()
-  }, [remoteApi, lang, section])
+    const refresh = () => {
+      remoteApi
+        .listOrders({ pageNumber: 1, pageSize: 100 }, controller.signal)
+        .then((page) => {
+          if (controller.signal.aborted) return
+          setActiveOrders(page.items.map((item) => mapLiveOrder(item, lang)).filter((order) => order.status === 'new').length)
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setActiveOrders(0)
+        })
+    }
+    refresh()
+    const interval = window.setInterval(refresh, 60_000)
+    return () => {
+      controller.abort()
+      window.clearInterval(interval)
+    }
+  }, [remoteApi, lang, section, ordersVersion])
   // Preview pages use the local adapter until their endpoints are confirmed.
   const featureApi = useMemo(
     () =>
@@ -400,7 +409,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                     />
                   }
                 />
-                <Route path="/orders" element={<OrdersPage t={t} lang={lang} api={remoteApi ?? featureApi} ordersHub={ordersHub} permissions={session.user.permissions} onToast={showToast} />} />
+                <Route path="/orders" element={<OrdersPage t={t} lang={lang} api={remoteApi ?? featureApi} ordersHub={ordersHub} permissions={session.user.permissions} onToast={showToast} onOrdersChanged={() => setOrdersVersion((current) => current + 1)} />} />
                 <Route path="/menu" element={<MenuPage t={t} lang={lang} api={remoteApi ?? featureApi} onToast={showToast} />} />
                 <Route path="/reports" element={<ReportsPage t={t} lang={lang} api={remoteApi ?? featureApi} onToast={showToast} />} />
                 <Route path="/settings" element={<SettingsPage t={t} lang={lang} storageKey={settingsStorageKey} onToast={showToast} adminLinks={<SettingsAdminLinks lang={lang} dir={t.dir} permissions={session.user.permissions} onNavigate={quickNav.onNavigatePath} />} onOpenManage={canAny(session.user.permissions, ...MANAGE_MODULES.flatMap((module) => module.permissions)) ? () => navigate('/manage') : undefined} />} />
