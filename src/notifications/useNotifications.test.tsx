@@ -92,8 +92,12 @@ describe('useNotifications', () => {
 
     await waitFor(() => expect(result.current.state.items).toHaveLength(2))
     expect(result.current.state.unreadCount).toBe(2)
-    await waitFor(() => expect(result.current.status).toBe('reconnecting'))
+    // The dot turns live as soon as the hub handshake lands, without waiting for
+    // the first event to arrive.
+    await waitFor(() => expect(result.current.status).toBe('live'))
 
+    act(() => captured.handlers.onStateChange('reconnecting'))
+    expect(result.current.status).toBe('reconnecting')
     act(() => captured.handlers.onStateChange('live'))
     expect(result.current.status).toBe('live')
   })
@@ -189,6 +193,17 @@ describe('useNotifications', () => {
     await waitFor(() => expect(result.current.state.items).toHaveLength(2))
     expect(listNotifications).toHaveBeenLastCalledWith({ cursor: 'c-2', pageSize: 20 })
     expect(result.current.state.items[1].notificationId).toBe('ntf-0')
+  })
+
+  it('retries a failed handshake instead of going straight to offline', async () => {
+    const { api } = makeApi(feed([]))
+    start.mockRejectedValueOnce(new Error('negotiate failed'))
+    const { result } = renderHook(() => useNotifications({ api, hub: hubConfig, muted: true }))
+    await waitFor(() => expect(start).toHaveBeenCalledTimes(1))
+    // Still trying, not given up.
+    expect(result.current.status).toBe('reconnecting')
+    await waitFor(() => expect(result.current.status).toBe('live'), { timeout: 6000 })
+    expect(start).toHaveBeenCalledTimes(2)
   })
 
   it('keeps the bell empty when the inbox request fails', async () => {
