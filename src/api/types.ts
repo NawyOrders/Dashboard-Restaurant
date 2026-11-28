@@ -237,7 +237,12 @@ export type ApiErrorCode =
 // Errors carry a stable code only; server messages are never surfaced verbatim
 // so sensitive backend detail cannot leak into the UI.
 export class ApiError extends Error {
-  constructor(public readonly code: ApiErrorCode) {
+  constructor(
+    public readonly code: ApiErrorCode,
+    // Per-field messages from the API's `errors` map, keyed by the API's own
+    // field names. Forms use the keys to name the exact field that failed.
+    public readonly fieldErrors: Record<string, string> = {},
+  ) {
     super(code)
     this.name = 'ApiError'
   }

@@ -412,7 +412,22 @@ export function createHttpApi(options: HttpApiOptions): Api {
           throw new ApiError('invalidResponse')
         }
       }
-      if (!response.ok) throw statusToError(response.status)
+      if (!response.ok) {
+        // The API answers validation failures with an `errors` map. Keep it so a
+        // form can point at the field instead of showing one generic failure.
+        const fieldErrors: Record<string, string> = {}
+        try {
+          const failure: unknown = await response.json()
+          if (isRecord(failure) && isRecord(failure.errors)) {
+            for (const [key, value] of Object.entries(failure.errors)) {
+              if (typeof value === 'string' && value.trim()) fieldErrors[key] = value
+            }
+          }
+        } catch {
+          // A body-less failure: the status code alone decides the error.
+        }
+        throw new ApiError(statusToError(response.status).code, fieldErrors)
+      }
       return { status: response.status, body: payload, etag }
     } catch (error) {
       if (external?.aborted) throw new DOMException('Request cancelled', 'AbortError')

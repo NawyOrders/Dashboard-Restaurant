@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createMockApi } from '../api/mockApi'
+import { ApiError } from '../api/types'
 import { PERMISSIONS } from '../authz'
 import { translations } from '../i18n'
 import { manageCopy } from '../manage/text'
@@ -60,15 +61,34 @@ describe('offers screen', () => {
     await waitFor(() => expect(setStatus).toHaveBeenCalledWith(expect.any(String), { isActive: false }))
   })
 
-  it('shows a save error when the price is not below the original', async () => {
-    const { user } = setup()
+  it('names the price rule before sending a request that would fail', async () => {
+    const { api, user } = setup()
     await user.click(await screen.findByRole('button', { name: o.add }))
     const dialog = await screen.findByRole('dialog')
     await user.type(within(dialog).getByLabelText(o.titleAr), 'ع')
     await user.type(within(dialog).getByLabelText(o.titleEn), 'E')
     await user.type(within(dialog).getByLabelText(o.price), '5000')
     await user.upload(within(dialog).getByLabelText(o.image), new File(['x'], 'a.png', { type: 'image/png' }))
+    const create = vi.spyOn(api, 'createOffer')
     await user.click(within(dialog).getByRole('button', { name: manageCopy.en.save }))
-    expect(await within(dialog).findByText(manageCopy.en.saveError)).toBeInTheDocument()
+    const priceRule = o.priceTooHigh.split('{original}')[0].trim()
+    expect(await within(dialog).findByText((content) => content.startsWith(priceRule))).toBeInTheDocument()
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it("names the field the API rejected instead of one generic failure", async () => {
+    const { api, user } = setup()
+    vi.spyOn(api, 'createOffer').mockRejectedValue(
+      new ApiError('validation', { 'Offer.OfferPriceMustBeLessThanOriginal': 'Offer sale price must be greater than 0 and strictly less than the original price.' }),
+    )
+    await user.click(await screen.findByRole('button', { name: o.add }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText(o.titleAr), 'ع')
+    await user.type(within(dialog).getByLabelText(o.titleEn), 'E')
+    await user.type(within(dialog).getByLabelText(o.price), '10')
+    await user.upload(within(dialog).getByLabelText(o.image), new File(['x'], 'a.png', { type: 'image/png' }))
+    await user.click(within(dialog).getByRole('button', { name: manageCopy.en.save }))
+    const priceRule = o.priceTooHigh.split('{original}')[0].trim()
+    expect(await within(dialog).findByText((content) => content.startsWith(priceRule))).toBeInTheDocument()
   })
 })

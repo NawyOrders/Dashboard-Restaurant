@@ -191,6 +191,22 @@ describe('HTTP API adapter', () => {
     expect(headerOf(init, 'If-None-Match')).toBe('"v1"')
   })
 
+  it('keeps the API field errors on a validation failure', async () => {
+    respond(
+      {
+        statusCode: 422,
+        isSuccess: false,
+        data: null,
+        errors: { 'Offer.OfferPriceMustBeLessThanOriginal': 'Offer sale price must be greater than 0 and strictly less than the original price.' },
+      },
+      422,
+    )
+    await expect(api().getBranding()).rejects.toMatchObject({
+      code: 'validation',
+      fieldErrors: { 'Offer.OfferPriceMustBeLessThanOriginal': 'Offer sale price must be greater than 0 and strictly less than the original price.' },
+    })
+  })
+
   it('parses branding and prefers the response ETag', async () => {
     respond(
       {
