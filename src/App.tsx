@@ -307,7 +307,6 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     branch: statusBranch,
     timeZoneId: notifications.timeZoneId,
     socket: notifications.status,
-    restaurantOpen: isOpen,
     t,
     lang,
   })

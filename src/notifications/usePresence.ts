@@ -53,19 +53,17 @@ function formatWeekday(dayIndex: number, lang: Lang): string {
 }
 
 /**
- * Pure mapping used by the hook and the tests. `restaurantOpen` is the local
- * sidebar switch: turning it off only changes the dot, nothing is sent.
+ * Pure mapping used by the hook and the tests. The sidebar open/closed switch
+ * is untouched and does not feed the dot: status comes from the schedule.
  */
 export function describePresence(
   presence: BranchPresence,
   socket: NotificationsStatus,
-  restaurantOpen: boolean,
   t: T,
   lang: Lang,
 ): Presence {
   const labels = t.notifications
   const closed = () => ({ tone: 'off' as const, label: labels.presenceClosed })
-  if (!restaurantOpen) return closed()
   if (presence.kind === 'closed') {
     const next = presence.reopens
     if (!next) return closed()
@@ -88,11 +86,10 @@ export function usePresence(args: {
   branch: BranchDetails | null
   timeZoneId: string | null
   socket: NotificationsStatus
-  restaurantOpen: boolean
   t: T
   lang: Lang
 }): Presence {
-  const { branch, timeZoneId, socket, restaurantOpen, t, lang } = args
+  const { branch, timeZoneId, socket, t, lang } = args
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     const tick = () => setNow(new Date())
@@ -104,5 +101,5 @@ export function usePresence(args: {
     }
   }, [])
   const presence = useMemo(() => branchPresence(branch, now, timeZoneId), [branch, now, timeZoneId])
-  return describePresence(presence, socket, restaurantOpen, t, lang)
+  return describePresence(presence, socket, t, lang)
 }

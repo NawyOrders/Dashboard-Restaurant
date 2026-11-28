@@ -82,20 +82,17 @@ describe('pickStatusBranch', () => {
 describe('describePresence', () => {
   const t = translations.ar
   it('open + live socket is green, open + dead socket is amber', () => {
-    expect(describePresence({ kind: 'open' }, 'live', true, t, 'ar')).toEqual({ tone: 'live', label: t.notifications.presenceOpenLive })
-    expect(describePresence({ kind: 'open' }, 'offline', true, t, 'ar').tone).toBe('warn')
-    expect(describePresence({ kind: 'open' }, 'reconnecting', true, t, 'ar').tone).toBe('warn')
+    expect(describePresence({ kind: 'open' }, 'live', t, 'ar')).toEqual({ tone: 'live', label: t.notifications.presenceOpenLive })
+    expect(describePresence({ kind: 'open' }, 'offline', t, 'ar').tone).toBe('warn')
+    expect(describePresence({ kind: 'open' }, 'reconnecting', t, 'ar').tone).toBe('warn')
   })
   it('closed stays grey even with a live socket, and says when it reopens', () => {
-    const result = describePresence({ kind: 'closed', reopens: { daysAhead: 1, minutes: 600, dayIndex: 0 } }, 'live', true, t, 'ar')
+    const result = describePresence({ kind: 'closed', reopens: { daysAhead: 1, minutes: 600, dayIndex: 0 } }, 'live', t, 'ar')
     expect(result.tone).toBe('off')
     expect(result.label).toContain(t.notifications.presenceTomorrow)
   })
-  it('the local sidebar switch only turns the dot grey', () => {
-    expect(describePresence({ kind: 'open' }, 'live', false, t, 'ar')).toEqual({ tone: 'off', label: t.notifications.presenceClosed })
-  })
   it('falls back to the connection state with no schedule', () => {
-    expect(describePresence({ kind: 'unknown' }, 'live', true, t, 'ar').label).toBe(t.notifications.live)
-    expect(describePresence({ kind: 'unknown' }, 'offline', true, t, 'ar').label).toBe(t.notifications.offline)
+    expect(describePresence({ kind: 'unknown' }, 'live', t, 'ar').label).toBe(t.notifications.live)
+    expect(describePresence({ kind: 'unknown' }, 'offline', t, 'ar').label).toBe(t.notifications.offline)
   })
 })
