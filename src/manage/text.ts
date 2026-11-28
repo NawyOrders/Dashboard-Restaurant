@@ -81,6 +81,8 @@ export type ManageCopy = {
     resend: string
     resent: string
     invited: string
+    emailTaken: string
+    roleOrBranch: string
     changeRole: string
     invalid: string
     owner: string
@@ -180,6 +182,7 @@ export type ManageCopy = {
     image: string
     imageHint: string
     imageRequired: string
+    priceTooHigh: string
     uploadError: string
     items: string
     addItem: string
@@ -276,6 +279,8 @@ const ar: ManageCopy = {
     resend: 'إعادة إرسال الدعوة',
     resent: 'تمت إعادة إرسال الدعوة',
     invited: 'تم إرسال الدعوة',
+    emailTaken: 'في موظف مسجل بنفس الإيميل ده بالفعل.',
+    roleOrBranch: 'راجع الدور والفروع المختارة للموظف.',
     changeRole: 'تغيير الدور',
     invalid: 'تحقق من الحقول: الاسم والبريد صحيحان واختر الدور وفرعاً واحداً على الأقل.',
     owner: 'المالك',
@@ -375,6 +380,7 @@ const ar: ManageCopy = {
     image: 'صورة العرض',
     imageHint: 'JPEG أو PNG أو WebP حتى 5 ميجابايت',
     imageRequired: 'اختر صورة للعرض.',
+    priceTooHigh: 'سعر العرض لازم يكون أقل من السعر الأصلي ({original} ج.م).',
     uploadError: 'تعذر رفع الصورة.',
     items: 'الأصناف',
     addItem: 'إضافة صنف',
@@ -471,6 +477,8 @@ const en: ManageCopy = {
     resend: 'Resend invitation',
     resent: 'Invitation resent',
     invited: 'Invitation sent',
+    emailTaken: 'A staff member already uses this email.',
+    roleOrBranch: 'Check the selected role and branches.',
     changeRole: 'Change role',
     invalid: 'Check the fields: valid name and email, pick a role and at least one branch.',
     owner: 'Owner',
@@ -570,6 +578,7 @@ const en: ManageCopy = {
     image: 'Offer image',
     imageHint: 'JPEG, PNG or WebP up to 5 MB',
     imageRequired: 'Choose an image for the offer.',
+    priceTooHigh: 'The offer price must be below the original price ({original} EGP).',
     uploadError: 'Could not upload the image.',
     items: 'Items',
     addItem: 'Add item',

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Api } from '../api'
+import { ApiError } from '../api/types'
 import type { BranchDetails } from '../api/branches'
 import type { RoleSummary } from '../api/roles'
 import type { StaffUser } from '../api/staff'
@@ -186,8 +187,8 @@ function InviteForm({ t, lang, api, roles, branches, onClose, onDone }: {
     try {
       await api.inviteStaff({ fullName: fullName.trim(), email: email.trim(), phone: phone.trim() || null, roleId, branchIds })
       onDone()
-    } catch {
-      setError(c.saveError)
+    } catch (cause) {
+      setError(inviteMessage(cause, s, c.saveError))
       setSaving(false)
     }
   }
@@ -240,3 +241,13 @@ function InviteForm({ t, lang, api, roles, branches, onClose, onDone }: {
     </Modal>
   )
                       }
+
+// Names the field the API rejected instead of one generic failure. Unknown keys
+// keep the generic message.
+function inviteMessage(cause: unknown, s: { emailTaken: string; roleOrBranch: string; invalid: string }, fallback: string): string {
+  const fields = cause instanceof ApiError ? Object.keys(cause.fieldErrors) : []
+  if (fields.some((key) => /email/i.test(key))) return s.emailTaken
+  if (fields.some((key) => /role|branch/i.test(key))) return s.roleOrBranch
+  if (fields.some((key) => /name|phone/i.test(key))) return s.invalid
+  return fallback
+}

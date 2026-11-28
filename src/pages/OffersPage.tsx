@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Api } from '../api'
+import { ApiError } from '../api/types'
 import type { MenuItem } from '../api/types'
 import type { CreateOfferInput, OfferKind, OfferStatus, PromotionalOffer, UpdateOfferInput } from '../api/offers'
 import { OFFER_IMAGE_TYPES, OFFER_KINDS, OFFER_STATUSES } from '../api/offers'
@@ -274,6 +275,16 @@ function OfferForm({ t, lang, api, offer, menuItems, uploadsEnabled, onClose, on
       return
     }
     const items = draft.rows.filter((row) => row.menuItemId).map((row) => ({ menuItemId: offerItemId(row.menuItemId), quantity: Number(row.quantity) }))
+    // The API refuses an offer price that is not below the items' original
+    // price, so say that here instead of sending a request that will fail.
+    const originalTotal = draft.rows.reduce((sum, row) => {
+      const item = menuItems.find((entry) => entry.id === row.menuItemId)
+      return sum + (item ? item.price * (Number(row.quantity) || 0) : 0)
+    }, 0)
+    if (originalTotal > 0 && price >= originalTotal) {
+      setError(o.priceTooHigh.replace('{original}', String(Math.round(originalTotal))))
+      return
+    }
     const common = {
       kind: draft.kind,
       titleAr: draft.titleAr.trim(),
@@ -312,8 +323,8 @@ function OfferForm({ t, lang, api, offer, menuItems, uploadsEnabled, onClose, on
         await api.createOffer(input)
       }
       onDone(c.saved)
-    } catch {
-      setError(c.saveError)
+    } catch (cause) {
+      setError(offerSaveMessage(cause, o, c.saveError, originalTotal))
     } finally {
       setSaving(false)
     }
@@ -433,4 +444,21 @@ function OfferForm({ t, lang, api, offer, menuItems, uploadsEnabled, onClose, on
       </form>
     </Modal>
   )
+}
+
+// Maps the API's validation keys to the message that names the failing field.
+// Unknown keys fall back to the generic save failure.
+function offerSaveMessage(
+  cause: unknown,
+  o: { imageRequired: string; priceTooHigh: string; invalid: string },
+  fallback: string,
+  originalTotal: number,
+): string {
+  const fields = cause instanceof ApiError ? Object.keys(cause.fieldErrors) : []
+  if (fields.some((key) => /imagekey/i.test(key))) return o.imageRequired
+  if (fields.some((key) => /offerprice/i.test(key))) {
+    return originalTotal > 0 ? o.priceTooHigh.replace('{original}', String(Math.round(originalTotal))) : o.invalid
+  }
+  if (fields.some((key) => /title|description/i.test(key))) return o.invalid
+  return fallback
 }
