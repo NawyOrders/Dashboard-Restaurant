@@ -28,6 +28,10 @@ export function notificationTitle(item: NotificationItem, labels: Labels): strin
   return item.type === 'PaymentProofSubmitted' ? labels.proofSubmitted : labels.orderPlaced
 }
 
+export function fulfilmentLabel(item: NotificationItem, t: T): string {
+  return item.fulfilmentType === 'Pickup' ? t.liveOrders.pickup : t.liveOrders.delivery
+}
+
 export function notificationBody(item: NotificationItem): string {
   const parts = [item.customerName, item.branchName, `${item.total} ${item.currency}`]
   return parts.filter(Boolean).join(' · ')
@@ -268,7 +272,7 @@ export function AlertToastCard({ t, lang, item, permissions, onDismiss, onView, 
             {notificationBody(item)}
           </p>
           <p className="mt-1 text-[11px] text-stone-500">
-            {item.paymentMethod} · {item.distinctItemsCount} {labels.itemsCount} · {relativeTime(item.createdAtUtc, lang)}
+            {fulfilmentLabel(item, t)} · {item.paymentMethod} · {item.distinctItemsCount} {labels.itemsCount} · {relativeTime(item.createdAtUtc, lang)}
           </p>
         </div>
         <button type="button" onClick={onDismiss} aria-label={labels.close} className="rounded-lg p-1 hover:bg-cream-50">

@@ -8,7 +8,7 @@ import {
   type OrderPlacedNotificationPayload,
   type OrdersHubConfig,
 } from '../realtime/ordersHub'
-import { playChime } from './chime'
+import { chimeKindFor, playChime } from './chime'
 import {
   appendNotifications,
   emptyNotifications,
@@ -71,7 +71,7 @@ export function useNotifications({ api, hub, muted, onAlert, onResolved }: UseNo
 
   const announce = useCallback((added: NotificationItem[]) => {
     if (!added.length) return
-    if (!mutedRef.current) playChime()
+    if (!mutedRef.current) playChime(chimeKindFor(added[0].type))
     alertRef.current?.(added[0])
   }, [])
 

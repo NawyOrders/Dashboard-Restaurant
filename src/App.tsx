@@ -19,7 +19,7 @@ import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
 import { NotificationsDrawer, NotificationsToasts } from './components/NotificationsDrawer'
-import { playChime, readMuted, unlockAudio, writeMuted } from './notifications/chime'
+import { chimeKindFor, playChime, readMuted, unlockAudio, writeMuted } from './notifications/chime'
 import { acknowledgeOrder, dismissAlert, enqueueAlert, shouldShowSystemNotification, titleWithUnread } from './notifications/alerts'
 import {
   readSystemEnabled,
@@ -323,9 +323,10 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   // one chime is easy to miss in a busy restaurant.
   useEffect(() => {
     if (!alerts.length || muted) return
-    const timer = window.setInterval(() => playChime(), 30_000)
+    const kind = chimeKindFor(alerts[0].type)
+    const timer = window.setInterval(() => playChime(kind), 30_000)
     return () => window.clearInterval(timer)
-  }, [alerts.length, muted])
+  }, [alerts, muted])
 
   const branding = useBranding(remoteApi, lang)
   const brandName = branding.name ?? t.brandName

@@ -8,7 +8,7 @@ const hubMock = vi.hoisted(() => ({
   createOrdersHub: vi.fn(),
 }))
 vi.mock('../realtime/ordersHub', () => ({ createOrdersHub: hubMock.createOrdersHub }))
-vi.mock('./chime', () => ({ playChime: vi.fn(), unlockAudio: vi.fn(), readMuted: () => false, writeMuted: vi.fn() }))
+vi.mock('./chime', () => ({ playChime: vi.fn(), chimeKindFor: (type: string) => (type === 'PaymentProofSubmitted' ? 'proof' : 'order'), unlockAudio: vi.fn(), readMuted: () => false, writeMuted: vi.fn() }))
 
 type Captured = {
   onOrderPlaced: (payload: unknown) => void
@@ -133,6 +133,7 @@ describe('useNotifications', () => {
     await waitFor(() => expect(hubMock.createOrdersHub).toHaveBeenCalled())
     act(() => captured.handlers.onPaymentProof({ eventId: 'evt-proof', orderId: 'ord-proof', submittedAtUtc: '2026-11-28T12:30:00Z' }))
     await waitFor(() => expect(playChime).toHaveBeenCalledTimes(1))
+    expect(playChime).toHaveBeenCalledWith('proof')
   })
 
   it('marks a resolved order read and tells the caller', async () => {
