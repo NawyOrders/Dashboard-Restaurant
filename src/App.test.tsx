@@ -102,6 +102,45 @@ describe('authentication lifecycle', () => {
     expect(screen.queryByLabelText(ar.auth.password)).not.toBeInTheDocument()
   })
 
+  it('counts only new orders in the sidebar badge, not every open order', async () => {
+    const order = (status: number, suffix: string) => ({
+      orderId: `00000000-0000-4000-8000-0000000000${suffix}`,
+      orderNumber: `T-${suffix}`,
+      status,
+      fulfilmentType: 1,
+      branchId: 'branch-1',
+      customerName: 'Test Customer',
+      total: 100,
+      vatAmount: null,
+      createdAtUtc: new Date().toISOString(),
+      paymentMethod: 0,
+      paymentStatus: null,
+    })
+    fetchMock.mockImplementation(async (input) => {
+      if (String(input).includes('/api/v1/admin/orders')) {
+        return new Response(JSON.stringify({
+          statusCode: 200,
+          isSuccess: true,
+          errors: null,
+          data: {
+            items: [order(0, '01'), order(0, '02'), order(3, '03'), order(6, '04')],
+            totalCount: 4,
+            page: 1,
+            pageSize: 100,
+            totalPages: 1,
+            hasPreviousPage: false,
+            hasNextPage: false,
+          },
+        }))
+      }
+      return new Response(JSON.stringify({}), { status: 404 })
+    })
+    mount()
+    await signIn()
+    // Two of the four orders are New (status 0); the badge must show 2, not 3.
+    expect(await screen.findByRole('button', { name: /الطلبات\s*2/ })).toBeInTheDocument()
+  })
+
   it('signs out when token refresh fails', async () => {
     mount()
     await signIn()
