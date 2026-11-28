@@ -5,7 +5,9 @@ import type { AuthErrorCode, Session } from '../auth'
 import { isMockRequested } from '../api'
 import type { MockRole } from '../mockAuth'
 import type { T } from '../i18n'
-import { EyeIcon, SpinnerIcon, UtensilsIcon } from '../icons'
+import { EyeIcon, SpinnerIcon } from '../icons'
+import { BrandLogo } from './BrandLogo'
+import type { TenantBrand } from '../useBranding'
 
 const DEMO_ROLES: MockRole[] = ['Owner', 'Manager', 'Staff']
 
@@ -15,6 +17,9 @@ type Props = {
   onToggleLang: () => void
   onSuccess: (session: Session) => void
   initialNotice?: string
+  // The restaurant's own name and logo from its public branding. Without it the
+  // screen keeps the neutral defaults.
+  brand?: TenantBrand
 }
 
 type FieldErrors = {
@@ -22,7 +27,9 @@ type FieldErrors = {
   password?: 'passwordRequired'
 }
 
-export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }: Props) {
+export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice, brand }: Props) {
+  const brandName = brand?.name ?? t.auth.brandTitle
+  const brandLogoUrl = brand?.logoUrl ?? null
   const env = import.meta.env
   const defaultEmail = env.DEV
     ? env.VITE_LOGIN_OWNER_EMAIL ?? env.VITE_DEV_LOGIN_OWNER_EMAIL ?? ''
@@ -158,11 +165,11 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
           className="pointer-events-none absolute inset-7 rounded-b-2xl rounded-t-[12rem] border border-gold-400/60"
         />
         <div className="relative w-full max-w-xs">
-          <span aria-hidden="true" className="mb-8 inline-flex text-gold-400">
-            <UtensilsIcon className="h-9 w-9" />
-          </span>
+          <div className="mb-8 inline-flex" data-login-logo>
+            <BrandLogo size="lg" logoUrl={brandLogoUrl} name={brandName} />
+          </div>
           <h2 className="text-4xl font-extrabold leading-relaxed xl:text-5xl">
-            <bdi>{t.auth.brandTitle}</bdi>
+            <bdi>{brandName}</bdi>
           </h2>
           <div aria-hidden="true" className="mx-auto my-7 h-px w-12 bg-gold-400" />
           <p className="text-lg leading-relaxed">{t.auth.brandSubtitle}</p>
@@ -172,12 +179,12 @@ export function Login({ t, langToggle, onToggleLang, onSuccess, initialNotice }:
       <div className="flex min-w-0 flex-1 flex-col px-5 sm:px-10 lg:px-12 xl:px-20">
         <header className="flex min-w-0 items-center justify-between gap-3 py-4 lg:justify-end lg:py-7">
           <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
-            <span aria-hidden="true" className="shrink-0 text-brand-600">
-              <UtensilsIcon className="h-6 w-6" />
+            <span className="shrink-0" data-login-logo>
+              <BrandLogo size="sm" logoUrl={brandLogoUrl} name={brandName} />
             </span>
             <div className="min-w-0">
               <p className="login-brand-name text-base font-extrabold leading-snug text-brand-600">
-                <bdi>{t.auth.brandTitle}</bdi>
+                <bdi>{brandName}</bdi>
               </p>
               <p className="mt-1 text-xs leading-snug text-ink-500">{t.auth.brandSubtitle}</p>
             </div>
