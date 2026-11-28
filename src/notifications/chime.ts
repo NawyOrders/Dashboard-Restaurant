@@ -7,6 +7,24 @@
 const MUTE_KEY = 'nawy-notifications-muted'
 
 let context: AudioContext | null = null
+const listeners = new Set<() => void>()
+
+function notify(): void {
+  for (const listener of listeners) listener()
+}
+
+/** True when this browser can play audio but has not been allowed to yet. */
+export function isAudioLocked(): boolean {
+  if (!audioCtor()) return false
+  return !context || context.state !== 'running'
+}
+
+export function subscribeAudioState(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
 
 type AudioContextCtor = typeof AudioContext
 
@@ -21,8 +39,12 @@ export function unlockAudio(): void {
   const Ctor = audioCtor()
   if (!Ctor) return
   try {
-    context ??= new Ctor()
-    if (context.state === 'suspended') void context.resume()
+    if (!context) {
+      context = new Ctor()
+      context.addEventListener?.('statechange', notify)
+    }
+    if (context.state === 'suspended') void context.resume().then(notify, notify)
+    notify()
   } catch {
     context = null
   }
@@ -33,11 +55,11 @@ export type ChimeKind = 'order' | 'proof'
 // A new order rises (two sine notes); a payment proof falls (three softer
 // triangle notes), so the cashier can tell them apart without looking.
 export const CHIME_NOTES: Record<ChimeKind, { type: OscillatorType; frequencies: number[]; step: number; peak: number }> = {
-  order: { type: 'sine', frequencies: [880, 1320], step: 0.18, peak: 0.16 },
-  proof: { type: 'triangle', frequencies: [988, 784, 659], step: 0.16, peak: 0.14 },
+  order: { type: 'sine', frequencies: [880, 1320], step: 0.18, peak: 0.7 },
+  proof: { type: 'triangle', frequencies: [988, 784, 659], step: 0.16, peak: 0.6 },
 }
 
-/** Short notes, quiet enough for a busy counter. */
+/** Short notes at a high but unclipped level, so a busy counter hears them. */
 export function playChime(kind: ChimeKind = 'order'): void {
   if (!context || context.state !== 'running') return
   const now = context.currentTime

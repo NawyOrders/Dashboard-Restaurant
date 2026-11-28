@@ -19,9 +19,10 @@ import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
 import { usePresence, useStatusBranch } from './notifications/usePresence'
+import { AudioLockBanner, useAudioLocked } from './components/AudioLockBanner'
 import { NotificationsDrawer, NotificationsToasts } from './components/NotificationsDrawer'
 import { chimeKindFor, playChime, readMuted, unlockAudio, writeMuted } from './notifications/chime'
-import { acknowledgeOrder, dismissAlert, enqueueAlert, shouldShowSystemNotification, titleWithUnread } from './notifications/alerts'
+import { acknowledgeOrder, dismissAlert, enqueueAlert, shouldShowSystemNotification, flashTitle } from './notifications/alerts'
 import {
   readSystemEnabled,
   requestSystemPermission,
@@ -302,6 +303,8 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     onResolved: (orderId) => setAlerts((current) => acknowledgeOrder(current, orderId)),
   })
   const unreadCount = notifications.state.unreadCount
+  const [titleFlash, setTitleFlash] = useState(false)
+  const audioLocked = useAudioLocked()
   const statusBranch = useStatusBranch(ordersApi ?? null, Boolean(ordersApi))
   const presence = usePresence({
     branch: statusBranch,
@@ -347,8 +350,18 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     document.documentElement.lang = lang
     document.documentElement.dir = t.dir
     // The unread count in the title is what a background tab shows.
-    document.title = titleWithUnread(unreadCount, `${brandName} — ${t.brandSub}`)
-  }, [lang, t, brandName, unreadCount])
+    document.title = flashTitle(`${brandName} — ${t.brandSub}`, unreadCount, t.notifications.newOrderTitle, titleFlash)
+  }, [lang, t, brandName, unreadCount, titleFlash])
+
+  // A waiting alert in a hidden tab makes the title blink until someone acts.
+  useEffect(() => {
+    if (!alerts.length) {
+      setTitleFlash(false)
+      return
+    }
+    const timer = window.setInterval(() => setTitleFlash((on) => (document.visibilityState === 'hidden' ? !on : false)), 1000)
+    return () => window.clearInterval(timer)
+  }, [alerts.length])
 
   useEffect(() => {
     // NO_BRAND means branding has not loaded: keep whatever was painted from the cache.
@@ -454,6 +467,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   return (
     <BrandContext.Provider value={brandInfo}>
     <div className="dashboard-shell min-h-screen bg-cream-50">
+      <AudioLockBanner t={t} visible={audioLocked && !muted} />
       <a href="#dashboard-content" className="sr-only z-[70] rounded-lg bg-white p-3 font-bold text-brand-700 focus:not-sr-only focus:fixed focus:start-4 focus:top-4">
         {t.dashboard.skip}
       </a>
