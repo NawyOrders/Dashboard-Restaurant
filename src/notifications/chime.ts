@@ -28,23 +28,37 @@ export function unlockAudio(): void {
   }
 }
 
-/** Two short notes, quiet enough for a busy counter. */
-export function playChime(): void {
+export type ChimeKind = 'order' | 'proof'
+
+// A new order rises (two sine notes); a payment proof falls (three softer
+// triangle notes), so the cashier can tell them apart without looking.
+export const CHIME_NOTES: Record<ChimeKind, { type: OscillatorType; frequencies: number[]; step: number; peak: number }> = {
+  order: { type: 'sine', frequencies: [880, 1320], step: 0.18, peak: 0.16 },
+  proof: { type: 'triangle', frequencies: [988, 784, 659], step: 0.16, peak: 0.14 },
+}
+
+/** Short notes, quiet enough for a busy counter. */
+export function playChime(kind: ChimeKind = 'order'): void {
   if (!context || context.state !== 'running') return
   const now = context.currentTime
-  for (const [index, frequency] of [880, 1320].entries()) {
+  const { type, frequencies, step, peak } = CHIME_NOTES[kind]
+  for (const [index, frequency] of frequencies.entries()) {
     const oscillator = context.createOscillator()
     const gain = context.createGain()
-    oscillator.type = 'sine'
+    oscillator.type = type
     oscillator.frequency.value = frequency
-    const start = now + index * 0.18
+    const start = now + index * step
     gain.gain.setValueAtTime(0.0001, start)
-    gain.gain.exponentialRampToValueAtTime(0.16, start + 0.02)
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.16)
+    gain.gain.exponentialRampToValueAtTime(peak, start + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + step - 0.02)
     oscillator.connect(gain).connect(context.destination)
     oscillator.start(start)
-    oscillator.stop(start + 0.18)
+    oscillator.stop(start + step)
   }
+}
+
+export function chimeKindFor(type: string): ChimeKind {
+  return type === 'PaymentProofSubmitted' ? 'proof' : 'order'
 }
 
 export function readMuted(storage: Storage | undefined = typeof window === 'undefined' ? undefined : window.localStorage): boolean {
