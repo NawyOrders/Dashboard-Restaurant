@@ -1,3 +1,4 @@
+import { resolveItemImageUrl } from '../media'
 import { ApiError, isRecord, numberOrNull, stringOrNull } from './types'
 import { isUuid } from './shared'
 import {
@@ -111,7 +112,7 @@ export function parseManagedMenuItem(value: unknown): ManagedMenuItem {
     descriptionAr: stringOrNull(value.descriptionAr),
     descriptionEn: stringOrNull(value.descriptionEn),
     imageKey: stringOrNull(value.imageKey),
-    imageUrl: stringOrNull(value.imageUrl),
+    imageUrl: resolveItemImageUrl(stringOrNull(value.imageKey), stringOrNull(value.imageUrl)),
     basePrice: numberOrNull(value.basePrice) ?? 0,
     sortOrder: numberOrNull(value.sortOrder) ?? 0,
     isActive: value.isActive !== false,
