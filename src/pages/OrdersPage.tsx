@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AdminOrderDetails, Api } from '../api'
 import { can, PERMISSIONS } from '../authz'
 import type { Lang, T } from '../i18n'
+import type { Presence } from '../notifications/usePresence'
 import type { LiveOrder, LiveOrderPayment, LiveOrderStatus } from '../types'
 import { formatOrderTotal, mapLiveOrderStatus, transitionCodeFor } from '../orders'
 import { useOrdersHub, type OrdersHubConfig, type OrderPlacedNotificationPayload } from '../realtime/ordersHub'
@@ -24,6 +25,8 @@ export type OrdersPageProps = {
   onToast: (message: string) => void
   // SignalR hub settings for live "OrderPlaced" events; null in mock mode.
   ordersHub?: OrdersHubConfig | null
+  /** Hours-aware status badge; falls back to a plain connected badge when absent. */
+  presence?: Presence
   // Permission keys from the signed-in session (API reference section 5).
   // Action buttons the user is not entitled to are hidden; the backend still
   // enforces the same permissions server-side.
@@ -54,7 +57,7 @@ function PaymentIcon({ method, className }: { method: LiveOrderPayment; classNam
   return <WalletIcon className={className} />
 }
 
-export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, permissions = [], onOrdersChanged }: OrdersPageProps) {
+export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, presence, permissions = [], onOrdersChanged }: OrdersPageProps) {
   const canAccept = can(permissions, PERMISSIONS.ordersAccept)
   const canReject = can(permissions, PERMISSIONS.ordersReject)
   const canUpdateStatus = can(permissions, PERMISSIONS.ordersStatusUpdate)
@@ -228,10 +231,23 @@ export default function OrdersPage({ t, lang, api, onToast, ordersHub = null, pe
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-extrabold leading-tight text-stone-800 sm:text-3xl">{t.liveOrders.title}</h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-mint-100 px-2.5 py-1 text-[11px] font-bold text-[#176B4B]">
-              <span className="h-2 w-2 rounded-full bg-mint-600" aria-hidden="true" />
-              {t.liveOrders.connected}
-            </span>
+            {presence ? (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                  presence.tone === 'live'
+                    ? 'bg-mint-100 text-[#176B4B]'
+                    : presence.tone === 'warn'
+                      ? 'bg-gold-50 text-gold-800'
+                      : 'bg-cream-50 text-stone-500'
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${presence.tone === 'live' ? 'bg-mint-600' : presence.tone === 'warn' ? 'bg-gold-500' : 'bg-stone-400'}`}
+                  aria-hidden="true"
+                />
+                {presence.label}
+              </span>
+            ) : null}
           </div>
           <p className="mt-1 text-sm text-stone-500">{t.liveOrders.subtitle(activeCount)}</p>
         </div>

@@ -18,6 +18,7 @@ import { MobileDrawer, MobileHeader, Sidebar } from './components/Sidebar'
 import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
+import { usePresence, useStatusBranch } from './notifications/usePresence'
 import { NotificationsDrawer, NotificationsToasts } from './components/NotificationsDrawer'
 import { playChime, readMuted, unlockAudio, writeMuted } from './notifications/chime'
 import { acknowledgeOrder, dismissAlert, enqueueAlert, shouldShowSystemNotification, titleWithUnread } from './notifications/alerts'
@@ -301,6 +302,15 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     onResolved: (orderId) => setAlerts((current) => acknowledgeOrder(current, orderId)),
   })
   const unreadCount = notifications.state.unreadCount
+  const statusBranch = useStatusBranch(ordersApi ?? null, Boolean(ordersApi))
+  const presence = usePresence({
+    branch: statusBranch,
+    timeZoneId: notifications.timeZoneId,
+    socket: notifications.status,
+    restaurantOpen: isOpen,
+    t,
+    lang,
+  })
   const toggleMuted = useCallback(() => {
     setMuted((current) => {
       const next = !current
@@ -536,7 +546,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
                     />
                   }
                 />
-                <Route path="/orders" element={<OrdersPage t={t} lang={lang} api={remoteApi ?? featureApi} ordersHub={ordersHub} permissions={session.user.permissions} onToast={showToast} onOrdersChanged={() => setOrdersVersion((current) => current + 1)} />} />
+                <Route path="/orders" element={<OrdersPage t={t} lang={lang} presence={presence} api={remoteApi ?? featureApi} ordersHub={ordersHub} permissions={session.user.permissions} onToast={showToast} onOrdersChanged={() => setOrdersVersion((current) => current + 1)} />} />
                 <Route path="/menu" element={<MenuPage t={t} lang={lang} api={remoteApi ?? featureApi} onToast={showToast} />} />
                 <Route path="/reports" element={<ReportsPage t={t} lang={lang} api={remoteApi ?? featureApi} onToast={showToast} />} />
                 <Route path="/settings" element={<SettingsPage t={t} lang={lang} storageKey={settingsStorageKey} onToast={showToast} adminLinks={<SettingsAdminLinks lang={lang} dir={t.dir} permissions={session.user.permissions} onNavigate={quickNav.onNavigatePath} />} onOpenManage={canAny(session.user.permissions, ...MANAGE_MODULES.flatMap((module) => module.permissions)) ? () => navigate('/manage') : undefined} />} />
@@ -578,6 +588,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
         open={notificationsOpen}
         state={notifications.state}
         status={notifications.status}
+        presence={presence}
         loading={notifications.loading}
         muted={muted}
         permissions={session.user.permissions}

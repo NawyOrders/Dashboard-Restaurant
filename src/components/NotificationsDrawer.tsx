@@ -4,6 +4,7 @@ import type { T } from '../i18n'
 import { can, PERMISSIONS } from '../authz'
 import { BellIcon, CheckCircleIcon, CloseIcon, ReceiptIcon } from '../icons'
 import type { NotificationState } from '../notifications/model'
+import type { Presence } from '../notifications/usePresence'
 import type { NotificationsStatus } from '../notifications/useNotifications'
 import { hiddenAlertCount, visibleAlerts } from '../notifications/alerts'
 import type { SystemPermission } from '../notifications/systemNotifications'
@@ -39,6 +40,8 @@ type DrawerProps = {
   open: boolean
   state: NotificationState
   status: NotificationsStatus
+  /** Hours-aware status; when absent the connection state is shown. */
+  presence?: Presence
   loading: boolean
   muted: boolean
   permissions: readonly string[]
@@ -60,6 +63,7 @@ export function NotificationsDrawer({
   open,
   state,
   status,
+  presence,
   loading,
   muted,
   permissions,
@@ -90,8 +94,9 @@ export function NotificationsDrawer({
 
   if (!open) return null
 
+  const tone = presence?.tone ?? (status === 'live' ? 'live' : status === 'reconnecting' ? 'warn' : 'off')
   const statusLabel =
-    status === 'live' ? labels.live : status === 'reconnecting' ? labels.reconnecting : labels.offline
+    presence?.label ?? (status === 'live' ? labels.live : status === 'reconnecting' ? labels.reconnecting : labels.offline)
 
   return (
     <div className="fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label={labels.title}>
@@ -107,7 +112,7 @@ export function NotificationsDrawer({
             <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-stone-500">
               <span
                 className={`inline-block h-1.5 w-1.5 rounded-full ${
-                  status === 'live' ? 'bg-mint-600' : status === 'reconnecting' ? 'bg-gold-500' : 'bg-stone-400'
+                  tone === 'live' ? 'bg-mint-600' : tone === 'warn' ? 'bg-gold-500' : 'bg-stone-400'
                 }`}
                 aria-hidden="true"
               />
