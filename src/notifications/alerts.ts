@@ -31,6 +31,11 @@ export function hiddenAlertCount(alerts: NotificationItem[], max = MAX_VISIBLE_A
 }
 
 /** The tab title carries the unread count so a background tab still shows it. */
+/** While an alert waits in a hidden tab the title alternates with this attention text. */
+export function flashTitle(base: string, unread: number, label: string, on: boolean): string {
+  return on ? `🔔 ${label}` : titleWithUnread(unread, base)
+}
+
 export function titleWithUnread(unread: number, base: string): string {
   return unread > 0 ? `(${unread}) ${base}` : base
 }

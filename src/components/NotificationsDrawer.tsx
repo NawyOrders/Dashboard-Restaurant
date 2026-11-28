@@ -55,10 +55,7 @@ type DrawerProps = {
   onLoadMore: () => void
   onOpenOrder: (item: NotificationItem) => void
   onToggleMuted: () => void
-  onTestSound: () => void
   systemPermission: SystemPermission
-  systemEnabled: boolean
-  onEnableSystem: () => void
 }
 
 export function NotificationsDrawer({
@@ -77,10 +74,7 @@ export function NotificationsDrawer({
   onLoadMore,
   onOpenOrder,
   onToggleMuted,
-  onTestSound,
   systemPermission,
-  systemEnabled,
-  onEnableSystem,
 }: DrawerProps) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const labels = t.notifications
@@ -138,28 +132,9 @@ export function NotificationsDrawer({
         </header>
 
         <div className="flex flex-wrap items-center gap-2 border-b border-cream-50 px-4 py-2">
-          <button
-            type="button"
-            onClick={onTestSound}
-            className="rounded-lg border border-cream-200 px-2 py-1 text-[11px] font-bold text-stone-600 hover:bg-cream-50"
-          >
-            {labels.testSound}
-          </button>
-          {systemPermission === 'unsupported' ? null : (
-            <button
-              type="button"
-              onClick={onEnableSystem}
-              aria-pressed={systemEnabled && systemPermission === 'granted'}
-              disabled={systemPermission === 'denied'}
-              className="rounded-lg border border-cream-200 px-2 py-1 text-[11px] font-bold text-stone-600 hover:bg-cream-50 disabled:opacity-50"
-            >
-              {systemPermission === 'denied'
-                ? labels.systemBlocked
-                : systemEnabled && systemPermission === 'granted'
-                  ? labels.systemOn
-                  : labels.systemOff}
-            </button>
-          )}
+          {systemPermission === 'denied' ? (
+            <span className="text-[11px] font-semibold text-stone-500">{labels.systemBlocked}</span>
+          ) : null}
         </div>
 
         {state.unreadCount > 0 ? (
