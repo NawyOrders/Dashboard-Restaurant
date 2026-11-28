@@ -19,6 +19,7 @@ import { MenuSectionTabs } from './components/MenuSectionTabs'
 import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
 import { NO_BRAND, useBranding } from './useBranding'
+import { useLoginBranding } from './loginBranding'
 import { BrandContext } from './brandContext'
 import { applyTheme, saveThemeCache } from './theme'
 import { applyFavicon, faviconHref } from './favicon'
@@ -64,6 +65,9 @@ export default function App() {
   const [notice, setNotice] = useState<'sessionExpired' | 'loggedOut' | 'revokeFailed' | null>(null)
   const sessionVersion = useRef(0)
   const t = translations[lang]
+  // The signed-out screens show the restaurant's own name and logo.
+  const loginBrand = useLoginBranding(lang, !session)
+  const loginBrandName = loginBrand.name ?? t.auth.brandTitle
 
   useEffect(() => { clearLegacySession() }, [])
 
@@ -78,8 +82,8 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = lang
     document.documentElement.dir = t.dir
-    if (!session) document.title = `${t.auth.welcome} — Nawy Orders`
-  }, [lang, t, session])
+    if (!session) document.title = `${t.auth.welcome} — ${loginBrandName}`
+  }, [lang, t, session, loginBrandName])
 
   useEffect(() => {
     if (!session) return
@@ -158,7 +162,7 @@ export default function App() {
           onDone={() => window.location.assign('/')}
         />
       ) : (
-        <Login t={t} langToggle={t.nav.langToggle} onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')} onSuccess={handleSuccess} initialNotice={notice ? t.auth[notice] : undefined} />
+        <Login t={t} langToggle={t.nav.langToggle} onToggleLang={() => setLang((previous) => previous === 'ar' ? 'en' : 'ar')} onSuccess={handleSuccess} initialNotice={notice ? t.auth[notice] : undefined} brand={loginBrand} />
       )}
     </BrowserRouter>
   )

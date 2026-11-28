@@ -7,6 +7,14 @@ import { PERMISSIONS } from './authz'
 import { translations } from './i18n'
 import { staffLoginResponse, staffRefreshResponse } from './test/fixtures'
 
+// The signed-out screens read the restaurant's public branding over the same
+// fetch. That request is covered in loginBranding.test.ts; these tests assert
+// what the login form itself sends, so the hook stays neutral here.
+vi.mock('./loginBranding', () => ({
+  useLoginBranding: () => ({ name: null, logoUrl: null, theme: null }),
+  fetchLoginBrand: async () => ({ name: null, logoUrl: null, theme: null }),
+}))
+
 const fetchMock = vi.fn<typeof fetch>()
 const ar = translations.ar
 const en = translations.en
