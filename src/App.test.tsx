@@ -10,6 +10,15 @@ import { staffLoginResponse, staffRefreshResponse } from './test/fixtures'
 // The signed-out screens read the restaurant's public branding over the same
 // fetch. That request is covered in loginBranding.test.ts; these tests assert
 // what the login form itself sends, so the hook stays neutral here.
+// The orders hub is transport, not app logic, and jsdom has no transport: a
+// real connection would fail negotiation and log through console.error, which
+// the sign-in tests below use to catch conditional-hook errors.
+vi.mock('./realtime/ordersHub', () => ({
+  createOrdersHub: () => ({ on: () => {}, start: async () => {}, stop: async () => {} }),
+  createOrderPlacedSource: () => ({ subscribe: () => () => {}, emit: () => {} }),
+  useOrdersHub: () => ({ subscribe: () => () => {} }),
+}))
+
 vi.mock('./loginBranding', () => ({
   useLoginBranding: () => ({ name: null, logoUrl: null, theme: null }),
   fetchLoginBrand: async () => ({ name: null, logoUrl: null, theme: null }),

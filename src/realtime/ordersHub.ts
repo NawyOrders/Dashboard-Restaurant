@@ -49,6 +49,7 @@ export function createOrdersHub(
   baseUrl: string,
   getAccessToken: () => string | undefined,
   onOrderPlaced: (payload: OrderPlacedNotificationPayload) => void,
+  handlers: OrdersHubHandlers = {},
 ): signalR.HubConnection {
   const connection = new signalR.HubConnectionBuilder()
     .withUrl(`${baseUrl.replace(/\/+$/, '')}/hubs/orders`, {
@@ -58,7 +59,59 @@ export function createOrdersHub(
     .configureLogging(signalR.LogLevel.Warning)
     .build()
   connection.on('OrderPlaced', onOrderPlaced)
+  if (handlers.onPaymentProof) connection.on('OrderPaymentProofSubmitted', handlers.onPaymentProof)
+  if (handlers.onAlertResolved) connection.on('OrderAlertResolved', handlers.onAlertResolved)
+  if (handlers.onStateChange || handlers.onReconnected) {
+    connection.onreconnecting(() => handlers.onStateChange?.('reconnecting'))
+    connection.onreconnected(() => {
+      handlers.onStateChange?.('live')
+      handlers.onReconnected?.()
+    })
+    connection.onclose(() => handlers.onStateChange?.('offline'))
+  }
   return connection
+}
+
+// Payment proof event (section 4.3) and the resolution signal (4.4). Both are
+// delivered on the same hub as OrderPlaced.
+export type OrderPaymentProofPayload = {
+  notificationId?: string
+  eventId: string
+  orderId: string
+  orderNumber?: string
+  displayOrderNumber?: string
+  branchId?: string
+  branchNameAr?: string
+  branchNameEn?: string
+  customerName?: string
+  fulfilmentType?: string | number
+  distinctItemsCount?: number
+  totalItemsQuantity?: number
+  total?: number
+  currency?: string
+  paymentMethod?: string
+  requiresPaymentProof?: boolean
+  submittedAtUtc?: string
+  submittedAtLocal?: string
+}
+
+export type OrderAlertResolvedPayload = {
+  eventId: string
+  orderId: string
+  orderNumber?: string
+  branchId?: string
+  resolution: 'Accepted' | 'Rejected' | 'PaymentProofConfirmed' | 'PaymentProofRejected' | string
+  resolvedByStaffId?: string
+  resolvedAtUtc?: string
+}
+
+export type OrdersHubHandlers = {
+  onPaymentProof?: (payload: OrderPaymentProofPayload) => void
+  onAlertResolved?: (payload: OrderAlertResolvedPayload) => void
+  /** 'live' once connected, 'reconnecting' while SignalR retries, 'offline' when it gave up. */
+  onStateChange?: (state: 'live' | 'reconnecting' | 'offline') => void
+  /** Fired after a dropped connection is back, so the caller can fetch what it missed. */
+  onReconnected?: () => void
 }
 
 export type OrdersHubConfig = {

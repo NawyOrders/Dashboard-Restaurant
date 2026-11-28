@@ -123,7 +123,11 @@ export function Topbar({
           </time>
           <button type="button" onClick={onOpenNotifications} aria-label={t.actions.notifications} title={t.actions.notifications} className={`${iconButton} relative`}>
             <BellIcon className="h-5 w-5" />
-            {unreadCount > 0 && <span className="absolute -top-1 -end-1 h-2.5 w-2.5 rounded-full bg-brand-600 ring-2 ring-white" />}
+            {unreadCount > 0 && (
+              <span className="absolute -top-1.5 -end-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand-600 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
           <button type="button" onClick={onToggleLang} lang={t.dir === 'rtl' ? 'en' : 'ar'} dir="auto" className="hidden min-h-11 rounded-xl bg-cream-100 px-3 text-xs font-bold text-stone-700 transition-colors hover:bg-cream-200 sm:block">
             {t.nav.langToggle}
