@@ -24,11 +24,9 @@ import { NotificationsDrawer, NotificationsToasts } from './components/Notificat
 import { chimeKindFor, playChime, readMuted, unlockAudio, writeMuted } from './notifications/chime'
 import { acknowledgeOrder, dismissAlert, enqueueAlert, shouldShowSystemNotification, flashTitle } from './notifications/alerts'
 import {
-  readSystemEnabled,
   requestSystemPermission,
   showSystemNotification,
   systemPermission,
-  writeSystemEnabled,
   type SystemPermission,
 } from './notifications/systemNotifications'
 import { useNotifications } from './notifications/useNotifications'
@@ -86,6 +84,18 @@ export default function App() {
   const loginBrandName = loginBrand.name ?? t.auth.brandTitle
 
   useEffect(() => { clearLegacySession() }, [])
+
+  // The click that signs in is the gesture browsers want for sound, so audio is
+  // opened from the very first touch, login screen included.
+  useEffect(() => {
+    const unlock = () => unlockAudio()
+    window.addEventListener('pointerdown', unlock, { once: true })
+    window.addEventListener('keydown', unlock, { once: true })
+    return () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
+  }, [])
 
   // Keep the tab's copy of the session in sync so a reload, a direct link or
   // a duplicated tab restores it instead of dropping to the login screen.
@@ -293,7 +303,6 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [muted, setMuted] = useState(() => readMuted())
   const [alerts, setAlerts] = useState<NotificationItem[]>([])
-  const [systemEnabled, setSystemEnabled] = useState(() => readSystemEnabled())
   const [systemState, setSystemState] = useState<SystemPermission>(() => systemPermission())
   const notifications = useNotifications({
     api: ordersApi ?? null,
@@ -322,7 +331,12 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   }, [])
   useEffect(() => {
     // Browsers keep audio locked until the first gesture; the chime needs one.
-    const unlock = () => unlockAudio()
+    // First touch in the dashboard: audio opens and the browser asks once for
+    // notification permission, so alerts work without any switch to flip.
+    const unlock = () => {
+      unlockAudio()
+      void requestSystemPermission().then(setSystemState)
+    }
     window.addEventListener('pointerdown', unlock, { once: true })
     window.addEventListener('keydown', unlock, { once: true })
     return () => {
@@ -392,7 +406,6 @@ function Dashboard({ session, lang, setLang, onLogout }: {
     const newest = alerts[alerts.length - 1]
     if (!newest || announced.current === newest.eventId) return
     announced.current = newest.eventId
-    if (!systemEnabled) return
     if (!shouldShowSystemNotification(document.visibilityState ?? 'unknown', document.hasFocus())) return
     showSystemNotification({
       title: `${t.notifications.title} · ${newest.orderNumber}`,
@@ -400,16 +413,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
       tag: newest.eventId,
       iconUrl: brandLogoUrl,
     })
-  }, [alerts, systemEnabled, t, brandLogoUrl])
-
-  const enableSystemAlerts = useCallback(() => {
-    void requestSystemPermission().then((state) => {
-      setSystemState(state)
-      const next = state === 'granted' ? !systemEnabled : false
-      setSystemEnabled(next)
-      writeSystemEnabled(next)
-    })
-  }, [systemEnabled])
+  }, [alerts, t, brandLogoUrl])
 
   const settleAlert = useCallback(
     (item: NotificationItem, action: 'accept' | 'reject') => {
@@ -616,13 +620,7 @@ function Dashboard({ session, lang, setLang, onLogout }: {
           navigateSection('orders')
         }}
         onToggleMuted={toggleMuted}
-        onTestSound={() => {
-          unlockAudio()
-          playChime()
-        }}
         systemPermission={systemState}
-        systemEnabled={systemEnabled}
-        onEnableSystem={enableSystemAlerts}
       />
 
       <NotificationsToasts

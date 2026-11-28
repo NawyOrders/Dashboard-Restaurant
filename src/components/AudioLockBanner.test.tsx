@@ -11,11 +11,12 @@ describe('AudioLockBanner', () => {
 
   it('shows the lock message and unlocks on click', () => {
     const unlock = vi.spyOn(chime, 'unlockAudio').mockImplementation(() => {})
-    vi.spyOn(chime, 'playChime').mockImplementation(() => {})
+    const play = vi.spyOn(chime, 'playChime').mockImplementation(() => {})
     render(<AudioLockBanner t={t} visible />)
     expect(screen.getByRole('alert').textContent).toContain(t.notifications.soundLocked)
     fireEvent.click(screen.getByRole('button', { name: t.notifications.soundLockedAction }))
     expect(unlock).toHaveBeenCalled()
+    expect(play).not.toHaveBeenCalled() // unlocking is silent
   })
 
   it('renders nothing when hidden', () => {

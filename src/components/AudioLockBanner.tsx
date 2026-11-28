@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { T } from '../i18n'
-import { isAudioLocked, playChime, subscribeAudioState, unlockAudio } from '../notifications/chime'
+import { isAudioLocked, subscribeAudioState, unlockAudio } from '../notifications/chime'
 
 /** True until the browser lets the page make sound; updates when that changes. */
 export function useAudioLocked(): boolean {
@@ -30,10 +30,7 @@ export function AudioLockBanner({ t, visible }: Props) {
       <span>{t.notifications.soundLocked}</span>
       <button
         type="button"
-        onClick={() => {
-          unlockAudio()
-          playChime()
-        }}
+        onClick={() => unlockAudio()}
         className="rounded-xl bg-stone-900 px-3 py-1 text-xs font-bold text-white hover:bg-stone-800"
       >
         {t.notifications.soundLockedAction}
