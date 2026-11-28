@@ -96,6 +96,19 @@ export default function App() {
       clearTimeout(timer)
       const remaining = session.expiresAt - Date.now()
       if (remaining <= 0) {
+        // Another tab may already have rotated this session. Adopt its copy
+        // instead of spending the single-use refresh token twice, which the API
+        // treats as reuse and answers by ending the whole session.
+        const stored = loadStoredSession()
+        if (
+          stored &&
+          stored.user.id === session.user.id &&
+          stored.apiOrigin === session.apiOrigin &&
+          stored.expiresAt > session.expiresAt
+        ) {
+          if (sessionVersion.current === version) setSession(stored)
+          return
+        }
         if (!session.refreshToken) {
           signOutExpired()
           return
