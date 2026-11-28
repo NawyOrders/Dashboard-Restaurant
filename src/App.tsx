@@ -20,6 +20,7 @@ import { SettingsAdminLinks } from './components/SettingsAdminLinks'
 import { Topbar } from './components/Topbar'
 import { NO_BRAND, useBranding } from './useBranding'
 import { useLoginBranding } from './loginBranding'
+import { setMediaBase } from './media'
 import { BrandContext } from './brandContext'
 import { applyTheme, saveThemeCache } from './theme'
 import { applyFavicon, faviconHref } from './favicon'
@@ -295,6 +296,12 @@ function Dashboard({ session, lang, setLang, onLogout }: {
   useEffect(() => {
     applyFavicon(document, faviconHref(branding.name, branding.logoUrl))
   }, [branding.name, branding.logoUrl])
+
+  // Menu images are object keys; the tenant's own public storage prefix (the one
+  // its logo already lives under) is what makes them loadable.
+  useEffect(() => {
+    setMediaBase(branding.logoUrl)
+  }, [branding.logoUrl])
 
   useEffect(() => {
     if (!toast) return

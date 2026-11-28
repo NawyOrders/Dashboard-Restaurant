@@ -1,4 +1,5 @@
 import type { Api } from './Api'
+import { resolveItemImageUrl } from '../media'
 import {
   ApiError,
   isRecord,
@@ -307,7 +308,7 @@ function parsePublicMenuItem(value: unknown): MenuItem | null {
     nameEn: stringOrNull(value.nameEn) ?? '',
     price: price ?? 0,
     available: value.isAvailable !== false,
-    imageUrl: stringOrNull(value.imageUrl) ?? stringOrNull(value.imageKey),
+    imageUrl: resolveItemImageUrl(stringOrNull(value.imageKey), stringOrNull(value.imageUrl)),
     categoryId: stringOrNull(value.categoryId) ?? '',
     branchAvailabilities,
   }
