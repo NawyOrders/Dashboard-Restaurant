@@ -120,6 +120,10 @@ export function useNotifications({ api, hub, muted, onAlert, onResolved }: UseNo
       setStatus('offline')
       return
     }
+    // A session refresh rebuilds the hub config, so this effect can run twice.
+    // Anything the replaced connection reports afterwards is stale and must not
+    // overwrite the status of the live one.
+    let cancelled = false
     const connection = createOrdersHub(
       hub.baseUrl,
       hub.getAccessToken,
@@ -141,8 +145,11 @@ export function useNotifications({ api, hub, muted, onAlert, onResolved }: UseNo
           })
           resolvedRef.current?.(payload.orderId)
         },
-        onStateChange: (next) => setStatus(next),
+        onStateChange: (next) => {
+          if (!cancelled) setStatus(next)
+        },
         onReconnected: () => {
+          if (cancelled) return
           const since = stateRef.current.lastSeenUtc
           api
             .listNotifications({ sinceUtc: since ?? undefined, pageSize: CATCH_UP_SIZE })
@@ -156,10 +163,31 @@ export function useNotifications({ api, hub, muted, onAlert, onResolved }: UseNo
       },
     )
     setStatus('reconnecting')
-    void connection.start().catch(() => setStatus('offline'))
+    // A cold start can lose the first handshake (a token refresh mid-flight, a
+    // flaky network). Retry a few times before giving up, so the dot only says
+    // offline when the browser really cannot reach the hub.
+    const retryDelays = [0, 3000, 8000, 20000]
+    void (async () => {
+      for (const delay of retryDelays) {
+        if (cancelled) return
+        if (delay) {
+          setStatus('reconnecting')
+          await new Promise((resolve) => setTimeout(resolve, delay))
+          if (cancelled) return
+        }
+        try {
+          await connection.start()
+          if (!cancelled) setStatus('live')
+          return
+        } catch {
+          // Fall through to the next attempt.
+        }
+      }
+      if (!cancelled) setStatus('offline')
+    })()
     return () => {
+      cancelled = true
       void connection.stop()
-      setStatus('offline')
     }
   }, [api, hub, apply])
 
