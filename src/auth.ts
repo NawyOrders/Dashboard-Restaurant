@@ -234,14 +234,28 @@ export interface RefreshResult {
 // family when a token is reused, so concurrent refreshes of the same session
 // must share one in-flight request instead of racing the rotation.
 let refreshFlight: Promise<RefreshResult> | null = null
+// A refresh that finishes and one that starts right after with the SAME (now
+// rotated) token is still the same logical refresh: hand back the rotated
+// result instead of reusing the revoked token and killing the session.
+let lastRefresh: { fromToken: string; at: number; result: RefreshResult } | null = null
 
 export function refreshSession(session: Session, signal?: AbortSignal): Promise<RefreshResult> {
   if (!API_BASE_URL || !session.refreshToken || session.apiOrigin !== API_BASE_URL) {
     return Promise.reject(new AuthError('configuration'))
   }
+  // The replay only dedupes back-to-back refreshes; a later attempt with the
+  // same token is genuinely a reuse and must reach the server.
+  if (lastRefresh && lastRefresh.fromToken === session.refreshToken && Date.now() - lastRefresh.at < 60_000) {
+    return Promise.resolve(lastRefresh.result)
+  }
   if (!refreshFlight) {
-    refreshFlight = request('/api/v1/auth/refresh', { refreshToken: session.refreshToken }, signal)
+    const fromToken = session.refreshToken
+    refreshFlight = request('/api/v1/auth/refresh', { refreshToken: fromToken }, signal)
       .then(parseRefresh)
+      .then((result) => {
+        lastRefresh = { fromToken, at: Date.now(), result }
+        return result
+      })
       .finally(() => { refreshFlight = null })
   }
   return refreshFlight
@@ -294,5 +308,53 @@ export function clearLegacySession(): void {
     localStorage.removeItem('nawy_session')
   } catch {
     // Authentication remains functional when browser storage is disabled.
+  }
+}
+
+// Persisted session storage. sessionStorage is per-tab and clears when the
+// tab closes, so a reload or a direct link keeps the user signed in without
+// leaking the session to other tabs or to a later visit on a shared machine.
+const SESSION_STORAGE_KEY = 'nawy_dashboard_session'
+
+function isStoredSession(value: unknown): value is Session {
+  if (!isRecord(value) || !isRecord(value.user)) return false
+  return (
+    nonEmptyString(value.apiOrigin) &&
+    nonEmptyString(value.accessToken) &&
+    (value.refreshToken === null || nonEmptyString(value.refreshToken)) &&
+    typeof value.expiresAt === 'number' &&
+    nonEmptyString(value.user.id) &&
+    nonEmptyString(value.user.email) &&
+    Array.isArray(value.user.roles) &&
+    Array.isArray(value.user.permissions)
+  )
+}
+
+export function loadStoredSession(): Session | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    // A session minted for another API origin (tenant host) is not ours.
+    if (!isStoredSession(parsed) || parsed.apiOrigin !== API_BASE_URL) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+export function saveStoredSession(session: Session): void {
+  try {
+    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
+  } catch {
+    // Storage disabled: the tab keeps working until it reloads.
+  }
+}
+
+export function clearStoredSession(): void {
+  try {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY)
+  } catch {
+    // Storage disabled: nothing to clear.
   }
 }

@@ -6,7 +6,7 @@ import type { Session } from './auth'
 import { canAny } from './authz'
 import { MANAGE_MODULES } from './manage/modules'
 import { manageCopy } from './manage/text'
-import { API_BASE_URL, clearLegacySession, refreshSession, revokeSession } from './auth'
+import { API_BASE_URL, clearLegacySession, clearStoredSession, loadStoredSession, refreshSession, revokeSession, saveStoredSession } from './auth'
 import { createApi, isMockErrorRequested, isMockRequested } from './api'
 import type { OrdersHubConfig } from './realtime/ordersHub'
 import { useOrders } from './useOrders'
@@ -60,12 +60,19 @@ function sectionFromPath(pathname: string): SectionKey {
 
 export default function App() {
   const [lang, setLang] = useState<Lang>('ar')
-  const [session, setSession] = useState<Session | null>(null)
+  const [session, setSession] = useState<Session | null>(() => loadStoredSession())
   const [notice, setNotice] = useState<'sessionExpired' | 'loggedOut' | 'revokeFailed' | null>(null)
   const sessionVersion = useRef(0)
   const t = translations[lang]
 
   useEffect(() => { clearLegacySession() }, [])
+
+  // Keep the tab's copy of the session in sync so a reload, a direct link or
+  // a duplicated tab restores it instead of dropping to the login screen.
+  useEffect(() => {
+    if (session) saveStoredSession(session)
+    else clearStoredSession()
+  }, [session])
 
   // Direction applies to the login screen too, before any dashboard mounts.
   useEffect(() => {
