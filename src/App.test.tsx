@@ -19,18 +19,26 @@ beforeEach(() => {
   vi.stubEnv('VITE_LOGIN_STAFF_EMAIL', '')
   vi.stubEnv('VITE_LOGIN_PASSWORD', '')
   localStorage.clear()
+  sessionStorage.clear()
 })
 
 function mount() {
   return render(<StrictMode><App /></StrictMode>)
 }
 
+let loginCount = 0
 async function signIn(role = 'Owner') {
-  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(staffLoginResponse(role))))
+  loginCount += 1
+  const body = staffLoginResponse(role)
+  // Unique refresh token per login: the refresh dedupe cache is module-level,
+  // so a shared token would replay one test's refresh into the next.
+  body.data.refreshToken = `test-refresh-token-${loginCount}`
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(body)))
   fireEvent.change(screen.getByLabelText(ar.auth.email), { target: { value: 'staff@example.test' } })
   fireEvent.change(screen.getByLabelText(ar.auth.password), { target: { value: 'test-only' } })
   fireEvent.click(screen.getByRole('button', { name: ar.auth.submit }))
   await screen.findByText(ar.auth.liveTitle)
+  return body.data.refreshToken as string
 }
 
 describe('authentication lifecycle', () => {
@@ -65,10 +73,12 @@ describe('authentication lifecycle', () => {
     expect(consoleError).not.toHaveBeenCalled()
   })
 
-  it('reload/remount cannot restore a token from browser storage', async () => {
+  it('a fresh tab without the stored session asks for the password again', async () => {
     const view = mount()
     await signIn()
     view.unmount()
+    // sessionStorage is per-tab: a new tab starts empty and stays signed out.
+    sessionStorage.clear()
     mount()
     expect(screen.getByLabelText(ar.auth.password)).toBeVisible()
   })
@@ -86,7 +96,7 @@ describe('authentication lifecycle', () => {
 
   it('refreshes the session instead of signing out when the token expires', async () => {
     mount()
-    await signIn()
+    const refreshToken = await signIn()
     vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 4_000_000)
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(staffRefreshResponse())))
     act(() => { window.dispatchEvent(new Event('focus')) })
@@ -96,7 +106,7 @@ describe('authentication lifecycle', () => {
       expect(refreshCall).toBeDefined()
       const [url, init] = refreshCall!
       expect(String(url)).toContain('/api/v1/auth/refresh')
-      expect(JSON.parse(init!.body as string)).toEqual({ refreshToken: 'test-refresh-token' })
+      expect(JSON.parse(init!.body as string)).toEqual({ refreshToken })
     })
     expect(screen.getByText(ar.auth.liveTitle)).toBeInTheDocument()
     expect(screen.queryByLabelText(ar.auth.password)).not.toBeInTheDocument()
@@ -139,6 +149,28 @@ describe('authentication lifecycle', () => {
     await signIn()
     // Two of the four orders are New (status 0); the badge must show 2, not 3.
     expect(await screen.findByRole('button', { name: /الطلبات\s*2/ })).toBeInTheDocument()
+  })
+
+  it('keeps the session across a full reload', async () => {
+    const first = mount()
+    await signIn()
+    first.unmount()
+    // A reload re-mounts the app from scratch; the stored session must bring
+    // the dashboard back without asking for the password again.
+    mount()
+    expect(await screen.findByText(ar.auth.liveTitle)).toBeInTheDocument()
+    expect(screen.queryByLabelText(ar.auth.password)).not.toBeInTheDocument()
+  })
+
+  it('drops to the login screen after logout, even across a reload', async () => {
+    const first = mount()
+    await signIn()
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ isSuccess: true, statusCode: 200, data: null })))
+    fireEvent.click(screen.getByRole('button', { name: ar.logout }))
+    await screen.findByLabelText(ar.auth.password)
+    first.unmount()
+    mount()
+    expect(await screen.findByLabelText(ar.auth.password)).toBeInTheDocument()
   })
 
   it('signs out when token refresh fails', async () => {

@@ -4,10 +4,13 @@ import {
   refreshSession,
   API_BASE_URL_ERROR,
   clearLegacySession,
+  clearStoredSession,
+  loadStoredSession,
   login,
   REQUEST_TIMEOUT_MS,
   resolveApiOrigin,
   revokeSession,
+  saveStoredSession,
 } from './auth'
 import { staffLoginResponse, staffRefreshResponse } from './test/fixtures'
 
@@ -172,6 +175,32 @@ describe('restaurant staff API adapter', () => {
     remove.mockImplementation(() => { throw new DOMException('Blocked', 'SecurityError') })
     expect(clearLegacySession).not.toThrow()
   })
+
+  it('replays the rotated tokens when a stale caller refreshes the same token again', async () => {
+    respond(staffLoginResponse())
+    const session = await login('staff@example.test', 'test')
+    respond(staffRefreshResponse())
+    const first = await refreshSession(session)
+    expect(first.refreshToken).toBe('test-refresh-token-rotated')
+    // A second refresh attempt with the OLD (now rotated) token must not hit
+    // the server again: reusing it would revoke the whole session family.
+    const second = await refreshSession(session)
+    expect(second).toEqual(first)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('stores and restores the session for the same API origin only', async () => {
+    respond(staffLoginResponse())
+    const session = await login('staff@example.test', 'test')
+    saveStoredSession(session)
+    expect(loadStoredSession()).toEqual(session)
+    saveStoredSession({ ...session, apiOrigin: 'https://other.example.test' })
+    expect(loadStoredSession()).toBeNull()
+    clearStoredSession()
+    expect(loadStoredSession()).toBeNull()
+    sessionStorage.setItem('nawy_dashboard_session', '{not json')
+    expect(loadStoredSession()).toBeNull()
+  })
 })
 
 describe('tenant API origin resolution', () => {
@@ -242,20 +271,25 @@ describe('tenant API origin resolution', () => {
 })
 
 describe('session refresh', () => {
-  const session = {
+  // A finished refresh replays its rotated pair to a caller still holding the
+  // revoked token (remount race), so each case mints its own token to exercise
+  // the server path.
+  let tokenSeq = 0
+  const session = () => ({
     apiOrigin: API_BASE_URL,
     user: { id: '1', name: 'n', email: 'e', roles: [], permissions: [] },
     accessToken: 'old-access',
-    refreshToken: 'old-refresh',
+    refreshToken: `old-refresh-${++tokenSeq}`,
     expiresAt: Date.now() - 1,
-  }
+  })
 
   it('sends the current refresh token and returns the rotated pair', async () => {
     respond(staffRefreshResponse())
-    const result = await refreshSession(session)
+    const s = session()
+    const result = await refreshSession(s)
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toBe(`${API_BASE_URL}/api/v1/auth/refresh`)
-    expect(JSON.parse(init!.body as string)).toEqual({ refreshToken: 'old-refresh' })
+    expect(JSON.parse(init!.body as string)).toEqual({ refreshToken: s.refreshToken })
     expect(result).toMatchObject({
       accessToken: 'test-access-token-rotated',
       refreshToken: 'test-refresh-token-rotated',
@@ -264,18 +298,28 @@ describe('session refresh', () => {
 
   it('shares one in-flight request so the single-use token is never sent twice', async () => {
     respond(staffRefreshResponse())
-    const [first, second] = await Promise.all([refreshSession(session), refreshSession(session)])
+    const s = session()
+    const [first, second] = await Promise.all([refreshSession(s), refreshSession(s)])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(second).toBe(first)
+  })
+
+  it('replays the rotated pair to a remount still holding the revoked token', async () => {
+    respond(staffRefreshResponse())
+    const s = session()
+    const first = await refreshSession(s)
+    const second = await refreshSession(s)
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(second).toBe(first)
   })
 
   it.each([[401, 'forbidden'], [403, 'forbidden'], [429, 'rateLimited'], [500, 'service'], [503, 'service']])('maps refresh HTTP %s to a safe error', async (status, code) => {
     respond({ errors: { detail: 'Sensitive server error not for display' } }, status as number)
-    await expect(refreshSession(session)).rejects.toMatchObject({ code, message: code })
+    await expect(refreshSession(session())).rejects.toMatchObject({ code, message: code })
   })
 
   it('does not call the server when the session has no refresh token', async () => {
-    await expect(refreshSession({ ...session, refreshToken: null })).rejects.toMatchObject({ code: 'configuration' })
+    await expect(refreshSession({ ...session(), refreshToken: null })).rejects.toMatchObject({ code: 'configuration' })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -284,6 +328,6 @@ describe('session refresh', () => {
     // @ts-expect-error verifies runtime validation of the contract
     delete body.data.refreshToken
     respond(body)
-    await expect(refreshSession(session)).rejects.toMatchObject({ code: 'invalidResponse' })
+    await expect(refreshSession(session())).rejects.toMatchObject({ code: 'invalidResponse' })
   })
 })
