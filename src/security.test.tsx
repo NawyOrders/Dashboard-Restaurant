@@ -65,6 +65,36 @@ describe('deployment security headers', () => {
     expect(csp).not.toContain("'unsafe-eval'")
   })
 
+  it('keeps the container that actually serves production in step with vercel.json', () => {
+    // Production is the nginx container on the VPS, so the header list above is
+    // only a promise while nginx.conf sends the same values. Read both files and
+    // compare them instead of trusting that a change reached both.
+    const nginx = readFileSync(process.cwd() + '/nginx.conf', 'utf8')
+    const nginxHeaders = new Map(
+      [...nginx.matchAll(/add_header\s+([A-Za-z-]+)\s+"([^"]*)"/g)].map((match) => [
+        match[1],
+        match[2],
+      ]),
+    )
+
+    for (const [key, value] of globalHeaders) {
+      expect(nginxHeaders.get(key), `${key} missing from nginx.conf`).toBe(value)
+    }
+  })
+
+  it('asks browsers to stay on HTTPS', () => {
+    // The API and the storefront already send this; the dashboard is served by
+    // the same Caddy edge, so it must not be the one host that allows a downgrade.
+    expect(globalHeaders.get('Strict-Transport-Security')).toBe('max-age=31536000')
+    const nginx = readFileSync(process.cwd() + '/nginx.conf', 'utf8')
+    const hsts = [...nginx.matchAll(/add_header\s+Strict-Transport-Security\s+"([^"]*)"/g)].map(
+      (match) => match[1],
+    )
+    // Both locations that add their own headers need it: nginx drops inherited
+    // add_header directives once a location declares one.
+    expect(hsts).toEqual(['max-age=31536000', 'max-age=31536000'])
+  })
+
   it('loads nothing from a third-party host (fonts are self-hosted)', () => {
     const html = readFileSync(process.cwd() + '/index.html', 'utf8')
     expect(html).not.toMatch(/<script[^>]+src=["']https?:/i)
