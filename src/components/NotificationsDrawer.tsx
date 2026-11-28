@@ -5,6 +5,8 @@ import { can, PERMISSIONS } from '../authz'
 import { BellIcon, CheckCircleIcon, CloseIcon, ReceiptIcon } from '../icons'
 import type { NotificationState } from '../notifications/model'
 import type { NotificationsStatus } from '../notifications/useNotifications'
+import { hiddenAlertCount, visibleAlerts } from '../notifications/alerts'
+import type { SystemPermission } from '../notifications/systemNotifications'
 
 type Labels = T['notifications']
 
@@ -46,6 +48,10 @@ type DrawerProps = {
   onLoadMore: () => void
   onOpenOrder: (item: NotificationItem) => void
   onToggleMuted: () => void
+  onTestSound: () => void
+  systemPermission: SystemPermission
+  systemEnabled: boolean
+  onEnableSystem: () => void
 }
 
 export function NotificationsDrawer({
@@ -63,6 +69,10 @@ export function NotificationsDrawer({
   onLoadMore,
   onOpenOrder,
   onToggleMuted,
+  onTestSound,
+  systemPermission,
+  systemEnabled,
+  onEnableSystem,
 }: DrawerProps) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const labels = t.notifications
@@ -117,6 +127,31 @@ export function NotificationsDrawer({
             <CloseIcon className="h-4 w-4 text-stone-500" />
           </button>
         </header>
+
+        <div className="flex flex-wrap items-center gap-2 border-b border-cream-50 px-4 py-2">
+          <button
+            type="button"
+            onClick={onTestSound}
+            className="rounded-lg border border-cream-200 px-2 py-1 text-[11px] font-bold text-stone-600 hover:bg-cream-50"
+          >
+            {labels.testSound}
+          </button>
+          {systemPermission === 'unsupported' ? null : (
+            <button
+              type="button"
+              onClick={onEnableSystem}
+              aria-pressed={systemEnabled && systemPermission === 'granted'}
+              disabled={systemPermission === 'denied'}
+              className="rounded-lg border border-cream-200 px-2 py-1 text-[11px] font-bold text-stone-600 hover:bg-cream-50 disabled:opacity-50"
+            >
+              {systemPermission === 'denied'
+                ? labels.systemBlocked
+                : systemEnabled && systemPermission === 'granted'
+                  ? labels.systemOn
+                  : labels.systemOff}
+            </button>
+          )}
+        </div>
 
         {state.unreadCount > 0 ? (
           <div className="flex justify-end border-b border-cream-50 px-4 py-2">
@@ -209,21 +244,18 @@ type ToastProps = {
 }
 
 /**
- * The live alert. It carries the actions a cashier actually needs, and only the
- * ones their session allows: the backend enforces the same permissions, so
- * showing a button the staff cannot use would only produce a 403.
+ * The live alert card. It carries the actions a cashier actually needs, and
+ * only the ones their session allows: the backend enforces the same
+ * permissions, so showing a button the staff cannot use would only produce a
+ * 403.
  */
-export function LiveAlertToast({ t, lang, item, permissions, onDismiss, onView, onAccept, onReject }: ToastProps) {
+export function AlertToastCard({ t, lang, item, permissions, onDismiss, onView, onAccept, onReject }: ToastProps) {
   const labels = t.notifications
   const canAccept = can(permissions, PERMISSIONS.ordersAccept) && item.type === 'OrderPlaced'
   const canReject = can(permissions, PERMISSIONS.ordersReject) && item.type === 'OrderPlaced'
 
   return (
-    <div
-      dir={t.dir}
-      role="status"
-      className="fixed bottom-5 start-5 z-[60] w-[min(92vw,380px)] rounded-2xl border border-cream-100 bg-white p-4 shadow-2xl"
-    >
+    <div dir={t.dir} role="status" className="rounded-2xl border border-cream-100 bg-white p-4 shadow-2xl">
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
           {item.type === 'PaymentProofSubmitted' ? <ReceiptIcon className="h-5 w-5" /> : <BellIcon className="h-5 w-5" />}
@@ -271,6 +303,64 @@ export function LiveAlertToast({ t, lang, item, permissions, onDismiss, onView, 
           </button>
         ) : null}
       </div>
+    </div>
+  )
+}
+
+/** One alert, kept for callers that only ever show a single card. */
+export function LiveAlertToast(props: ToastProps) {
+  return (
+    <div className="fixed bottom-5 start-5 z-[60] w-[min(92vw,380px)]">
+      <AlertToastCard {...props} />
+    </div>
+  )
+}
+
+type ToastsProps = {
+  t: T
+  lang: 'ar' | 'en'
+  alerts: NotificationItem[]
+  permissions: readonly string[]
+  onDismiss: (notificationId: string) => void
+  onView: (item: NotificationItem) => void
+  onAccept: (item: NotificationItem) => void
+  onReject: (item: NotificationItem) => void
+  onOpenAll: () => void
+}
+
+/**
+ * Up to two alerts on screen at once, with the rest counted underneath: during
+ * a rush the newest order must never sit behind an older toast.
+ */
+export function NotificationsToasts({ t, lang, alerts, permissions, onDismiss, onView, onAccept, onReject, onOpenAll }: ToastsProps) {
+  const labels = t.notifications
+  const shown = visibleAlerts(alerts)
+  const hidden = hiddenAlertCount(alerts)
+  if (!shown.length) return null
+  return (
+    <div className="fixed bottom-5 start-5 z-[60] flex w-[min(92vw,380px)] flex-col gap-2">
+      {shown.map((item) => (
+        <AlertToastCard
+          key={item.notificationId}
+          t={t}
+          lang={lang}
+          item={item}
+          permissions={permissions}
+          onDismiss={() => onDismiss(item.notificationId)}
+          onView={() => onView(item)}
+          onAccept={() => onAccept(item)}
+          onReject={() => onReject(item)}
+        />
+      ))}
+      {hidden > 0 ? (
+        <button
+          type="button"
+          onClick={onOpenAll}
+          className="self-start rounded-full bg-stone-800/90 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-stone-900"
+        >
+          {labels.moreAlerts.replace('{n}', String(hidden))}
+        </button>
+      ) : null}
     </div>
   )
 }

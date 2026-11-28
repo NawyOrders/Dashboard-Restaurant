@@ -64,6 +64,10 @@ function drawer(overrides: Partial<React.ComponentProps<typeof NotificationsDraw
     onLoadMore: vi.fn(),
     onOpenOrder: vi.fn(),
     onToggleMuted: vi.fn(),
+    onTestSound: vi.fn(),
+    systemPermission: 'granted' as const,
+    systemEnabled: true,
+    onEnableSystem: vi.fn(),
     ...overrides,
   }
   return { props, ...render(<NotificationsDrawer {...props} />) }
@@ -158,6 +162,23 @@ describe('NotificationsDrawer', () => {
     cleanup()
     drawer()
     expect(screen.queryByText(t.notifications.loadMore)).toBeNull()
+  })
+
+  it('tests the sound and toggles browser alerts', () => {
+    const { props } = drawer()
+    fireEvent.click(screen.getByText(t.notifications.testSound))
+    expect(props.onTestSound).toHaveBeenCalledTimes(1)
+    expect(screen.getByText(t.notifications.systemOn).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByText(t.notifications.systemOn))
+    expect(props.onEnableSystem).toHaveBeenCalledTimes(1)
+    cleanup()
+    drawer({ systemPermission: 'default', systemEnabled: false })
+    expect(screen.getByText(t.notifications.systemOff).getAttribute('aria-pressed')).toBe('false')
+    cleanup()
+    const blocked = drawer({ systemPermission: 'denied', systemEnabled: false })
+    const button = screen.getByText(t.notifications.systemBlocked) as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+    expect(blocked.props.onEnableSystem).not.toHaveBeenCalled()
   })
 
   it('shows the reconnecting and offline states', () => {
